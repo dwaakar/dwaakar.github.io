@@ -1,19 +1,9 @@
-// generate-manifests.js
-// Runs at Netlify build time to create manifest.json in each content folder
-// so the frontend knows which .md files to fetch.
-
-const fs = require('fs');
-const path = require('path');
-
-const dirs = [
-  'content/projects',
-  'content/publications',
-  'content/awards'
-];
-
-dirs.forEach(dir => {
-  if (!fs.existsSync(dir)) return;
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.md'));
-  fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(files, null, 2));
-  console.log(`✅ manifest.json written for ${dir} (${files.length} files)`);
-});
+---
+title: "Trace elements in fluvial sediments of the Gandaki River Basin, Central Himalaya, Nepal"
+authors: "Pant, R. R., Zhang, F., Qaiser, F. U. R., Varol, M., Adhikari, D., Wang, G., Saqr, A. M., & Bishwakarma, K."
+year: "2025"
+journal: "Journal of Soils and Sediments"
+status: "Published"
+doi: "https://doi.org/10.1007/s11368-025-04091-x"
+order: 2
+---
