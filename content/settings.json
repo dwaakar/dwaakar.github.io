@@ -3,9 +3,10 @@
   "email": "thisisdwakr@gmail.com",
   "phone": "+977-984-3247059",
   "location": "Kathmandu, Nepal",
-  "github": "https://github.com/dwaakar",
-  "linkedin": "",
-  "photo": "/images/profile.jpg",
+  "facebook": "https://www.facebook.com/mahaapooroosh",
+  "linkedin": "https://www.linkedin.com/in/diwakaradhikari/",
+  "storybook": "https://app.thestorygraph.com/profile/dwakar"
+  "photo": "/public/images/profile.jpg",
   "bio": "I am an environmental scientist specialising in water resource management, restoration ecology, and climate-resilient infrastructure. My work spans hydrologic modelling, contaminant fate and transport, and integrated urban water systems \u2014 with a focus on communities and rivers in the Hindu Kush Himalayan region.",
   "taglines": [
     "Environmental Scientist",
