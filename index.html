@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Diwakar Adhikari</title>
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
+  <!-- marked.js for rendering markdown project details -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg:#f7f5f0; --bg2:#eeeae2; --surface:#ffffff; --border:#ddd9d0;
+      --ink:#1a1814; --ink2:#5a5650; --accent:#2d6a4f; --accent2:#40916c;
+      --gold:#b7832a; --tag-bg:#e8f5ee; --tag-ink:#1b4332;
+      --radius:10px; --shadow:0 2px 16px rgba(0,0,0,0.07);
+      --shadow-lg:0 8px 40px rgba(0,0,0,0.12);
+      --nav-h:64px; --t:0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    [data-theme="dark"] {
+      --bg:#111410; --bg2:#1a1d17; --surface:#20241e; --border:#2e332b;
+      --ink:#e8e4dc; --ink2:#9a9890; --accent:#52b788; --accent2:#74c69d;
+      --gold:#d4a94a; --tag-bg:#1b3a2e; --tag-ink:#95d5b2;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;transition:background var(--t),color var(--t);overflow-x:hidden}
+    a{color:inherit;text-decoration:none}
+    button{cursor:pointer;border:none;background:none;font-family:inherit}
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-track{background:var(--bg2)}
+    ::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+
+    /* NAV */
+    #navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.5rem,5vw,4rem);background:transparent;transition:background var(--t),box-shadow var(--t)}
+    #navbar.scrolled{background:var(--surface);box-shadow:var(--shadow)}
+    .nav-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--ink)}
+    .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
+    .nav-links a{font-size:.85rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);transition:color var(--t)}
+    .nav-links a:hover{color:var(--accent)}
+    .theme-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:1rem;transition:all var(--t);background:var(--surface)}
+    .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .hamburger{display:none;flex-direction:column;gap:5px;width:28px;padding:4px 0}
+    .hamburger span{display:block;height:2px;background:var(--ink);border-radius:2px;transition:all var(--t)}
+
+    /* HERO */
+    #hero{min-height:100vh;display:flex;align-items:center;padding:calc(var(--nav-h) + 3rem) clamp(1.5rem,8vw,8rem) 4rem;position:relative;overflow:hidden}
+    .hero-bg{position:absolute;inset:0;z-index:0;background:radial-gradient(ellipse 80% 60% at 70% 40%,rgba(82,183,136,.10) 0%,transparent 70%),radial-gradient(ellipse 50% 50% at 20% 80%,rgba(183,131,42,.07) 0%,transparent 60%)}
+    .hero-content{position:relative;z-index:1;max-width:700px}
+    .hero-eyebrow{font-family:'DM Mono',monospace;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem;opacity:0;animation:fadeUp .6s .2s forwards}
+    .hero-name{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,7vw,5rem);line-height:1.1;letter-spacing:-.02em;color:var(--ink);margin-bottom:1.2rem;opacity:0;animation:fadeUp .6s .4s forwards}
+    .hero-photo-wrap{float:right;margin:0 0 1rem 2rem;opacity:0;animation:fadeUp .6s .3s forwards}
+    .hero-photo{width:140px;height:140px;border-radius:50%;object-fit:cover;border:3px solid var(--accent);box-shadow:var(--shadow)}
+    .hero-photo-placeholder{width:140px;height:140px;border-radius:50%;background:var(--bg2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:.75rem;text-align:center;padding:1rem}
+    .hero-tagline-wrap{height:2rem;overflow:hidden;margin-bottom:1.8rem;opacity:0;animation:fadeUp .6s .6s forwards}
+    .hero-tagline{font-size:1.15rem;color:var(--ink2);font-weight:300}
+    .typing-cursor{display:inline-block;width:2px;height:1.1em;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 1s step-end infinite}
+    .hero-bio{font-size:1.05rem;color:var(--ink2);line-height:1.75;max-width:560px;margin-bottom:2.5rem;opacity:0;animation:fadeUp .6s .8s forwards}
+    .hero-cta{display:flex;gap:1rem;flex-wrap:wrap;opacity:0;animation:fadeUp .6s 1s forwards}
+    .btn{padding:.75rem 1.8rem;border-radius:6px;font-size:.9rem;font-weight:500;letter-spacing:.03em;transition:all var(--t)}
+    .btn-primary{background:var(--accent);color:#fff}
+    .btn-primary:hover{background:var(--accent2);transform:translateY(-2px);box-shadow:0 6px 20px rgba(45,106,79,.3)}
+    .btn-outline{border:1.5px solid var(--border);color:var(--ink2)}
+    .btn-outline:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+    .hero-scroll{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:.5rem;color:var(--ink2);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;opacity:0;animation:fadeIn 1s 1.5s forwards}
+    .scroll-line{width:1px;height:48px;background:linear-gradient(to bottom,var(--accent),transparent);animation:scrollPulse 1.5s ease-in-out infinite}
+
+    /* SECTIONS */
+    section{padding:6rem clamp(1.5rem,8vw,8rem)}
+    section:nth-child(even){background:var(--bg2)}
+    .section-header{display:flex;align-items:baseline;gap:1rem;margin-bottom:3.5rem}
+    .section-number{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);letter-spacing:.1em}
+    .section-title{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3vw,2.2rem);letter-spacing:-.01em;color:var(--ink)}
+    .section-line{flex:1;height:1px;background:var(--border);align-self:center}
+
+    /* ABOUT */
+    .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
+    .about-text p{color:var(--ink2);font-size:1.05rem;line-height:1.8;margin-bottom:1.2rem}
+    .ri-label{font-size:.9rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);margin-top:1.5rem;margin-bottom:.5rem}
+    .research-interests{list-style:none}
+    .research-interests li{display:flex;align-items:flex-start;gap:.75rem;padding:.6rem 0;border-bottom:1px solid var(--border);color:var(--ink2);font-size:.95rem}
+    .research-interests li:last-child{border-bottom:none}
+    .ri-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:.6em}
+    .education-block{display:flex;flex-direction:column;gap:1.5rem}
+    .edu-card{padding:1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);border-left:3px solid var(--accent);transition:box-shadow var(--t)}
+    .edu-card:hover{box-shadow:var(--shadow)}
+    .edu-degree{font-weight:600;font-size:1rem;color:var(--ink);margin-bottom:.3rem}
+    .edu-inst{font-size:.9rem;color:var(--accent);margin-bottom:.4rem}
+    .edu-year{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--ink2);letter-spacing:.08em;margin-bottom:.6rem}
+    .edu-detail{font-size:.88rem;color:var(--ink2);line-height:1.6}
+
+    /* SKILLS */
+    .skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}
+    .skill-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;transition:transform var(--t),box-shadow var(--t)}
+    .skill-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+    .skill-group-name{font-size:.8rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
+    .skill-tags{display:flex;flex-wrap:wrap;gap:.5rem}
+    .skill-tag{padding:.3rem .75rem;border-radius:20px;background:var(--tag-bg);color:var(--tag-ink);font-size:.82rem;font-weight:500}
+
+    /* PROJECTS */
+    .filter-bar{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:2.5rem}
+    .filter-btn{padding:.45rem 1.1rem;border-radius:20px;border:1.5px solid var(--border);font-size:.83rem;font-weight:500;color:var(--ink2);transition:all var(--t)}
+    .filter-btn.active,.filter-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .projects-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:1.5rem}
+    .project-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;transition:transform var(--t),box-shadow var(--t);cursor:pointer}
+    .project-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg)}
+    .project-card.hidden{display:none}
+    .project-img{width:100%;height:160px;object-fit:cover}
+    .project-img-placeholder{width:100%;height:160px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));display:flex;align-items:center;justify-content:center;font-size:2rem}
+    .project-card-top{padding:1.5rem 1.5rem 0}
+    .project-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
+    .project-year{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--ink2);letter-spacing:.08em}
+    .project-status-badge{font-size:.72rem;padding:.2rem .6rem;border-radius:12px;background:var(--tag-bg);color:var(--tag-ink);font-weight:500}
+    .project-title{font-family:'Playfair Display',serif;font-size:1.1rem;line-height:1.35;color:var(--ink);margin-bottom:.8rem}
+    .project-desc{font-size:.9rem;color:var(--ink2);line-height:1.65;padding:0 1.5rem;flex:1}
+    .project-card-bottom{padding:1rem 1.5rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
+    .project-tags{display:flex;flex-wrap:wrap;gap:.4rem}
+    .project-tag{font-size:.75rem;padding:.2rem .6rem;border-radius:12px;background:var(--tag-bg);color:var(--tag-ink)}
+    .read-more-link{font-size:.82rem;font-weight:500;color:var(--accent);display:flex;align-items:center;gap:.3rem;flex-shrink:0;transition:gap var(--t)}
+    .read-more-link:hover{gap:.6rem}
+
+    /* PUBLICATIONS */
+    .pub-list{display:flex;flex-direction:column;gap:1.2rem}
+    .pub-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;display:flex;gap:1.5rem;align-items:flex-start;transition:box-shadow var(--t)}
+    .pub-card:hover{box-shadow:var(--shadow)}
+    .pub-status{flex-shrink:0;padding:.3rem .8rem;border-radius:20px;font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+    .status-Published{background:#d8f3dc;color:#1b4332}
+    .status-Accepted{background:#fff3cd;color:#7d4e00}
+    .status-Submitted,.status-Revision-Submitted{background:#e2e8f0;color:#334155}
+    [data-theme="dark"] .status-Published{background:#1b4332;color:#95d5b2}
+    [data-theme="dark"] .status-Accepted{background:#3d2d00;color:#fcd34d}
+    [data-theme="dark"] .status-Submitted,[data-theme="dark"] .status-Revision-Submitted{background:#1e293b;color:#94a3b8}
+    .pub-body{flex:1}
+    .pub-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink);margin-bottom:.4rem;line-height:1.4}
+    .pub-authors{font-size:.85rem;color:var(--ink2);margin-bottom:.3rem}
+    .pub-journal{font-size:.85rem;color:var(--accent);font-style:italic}
+    .pub-doi{display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem;font-size:.8rem;color:var(--accent);text-decoration:underline}
+
+    /* AWARDS */
+    .awards-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+    .award-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem;display:flex;gap:1rem;align-items:flex-start;transition:transform var(--t),box-shadow var(--t)}
+    .award-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+    .award-year{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);letter-spacing:.05em;flex-shrink:0;background:rgba(183,131,42,.12);padding:.2rem .5rem;border-radius:4px}
+    .award-title{font-size:.92rem;font-weight:600;color:var(--ink);margin-bottom:.2rem}
+    .award-org{font-size:.82rem;color:var(--ink2)}
+
+    /* CONTACT */
+    .contact-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
+    .contact-text h3{font-family:'Playfair Display',serif;font-size:1.6rem;margin-bottom:1rem;color:var(--ink)}
+    .contact-text p{color:var(--ink2);font-size:1rem;line-height:1.75}
+    .contact-links{display:flex;flex-direction:column;gap:1rem;margin-top:2rem}
+    .contact-link{display:flex;align-items:center;gap:1rem;padding:1rem 1.3rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);transition:all var(--t);color:var(--ink2)}
+    .contact-link:hover{border-color:var(--accent);color:var(--accent);transform:translateX(4px)}
+    .contact-link-icon{width:36px;height:36px;border-radius:8px;background:var(--tag-bg);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
+    .contact-link-text small{display:block;font-size:.75rem;opacity:.7;margin-bottom:.1rem}
+    .contact-link-text span{font-size:.95rem}
+
+    /* MODAL */
+    .modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:2rem;opacity:0;pointer-events:none;transition:opacity var(--t)}
+    .modal-overlay.open{opacity:1;pointer-events:all}
+    .modal{background:var(--surface);border-radius:14px;max-width:720px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:var(--shadow-lg);transform:translateY(20px) scale(.97);transition:transform var(--t)}
+    .modal-overlay.open .modal{transform:none}
+    .modal-img{width:100%;height:220px;object-fit:cover;border-radius:14px 14px 0 0}
+    .modal-header{padding:2rem 2rem 1.2rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+    .modal-title{font-family:'Playfair Display',serif;font-size:1.35rem;line-height:1.35;color:var(--ink)}
+    .modal-close{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:1.1rem;transition:all var(--t)}
+    .modal-close:hover{border-color:var(--accent);color:var(--accent)}
+    .modal-body{padding:1.5rem 2rem 2rem}
+    .modal-meta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+    .modal-tags{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.2rem}
+    .modal-detail{font-size:.97rem;color:var(--ink2);line-height:1.85}
+    .modal-detail p{margin-bottom:1rem}
+    .modal-detail h1,.modal-detail h2,.modal-detail h3{font-family:'Playfair Display',serif;color:var(--ink);margin:1.5rem 0 .5rem}
+    .modal-detail ul,.modal-detail ol{padding-left:1.5rem;margin-bottom:1rem}
+    .modal-detail blockquote{border-left:3px solid var(--accent);padding-left:1rem;color:var(--ink2);font-style:italic;margin:1rem 0}
+    .modal-link{display:inline-flex;align-items:center;gap:.4rem;margin-top:1.5rem;padding:.7rem 1.4rem;background:var(--accent);color:#fff;border-radius:6px;font-size:.9rem;font-weight:500;transition:background var(--t),transform var(--t)}
+    .modal-link:hover{background:var(--accent2);transform:translateY(-2px)}
+
+    /* FOOTER */
+    footer{padding:2.5rem clamp(1.5rem,8vw,8rem);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;color:var(--ink2);font-size:.85rem}
+    .footer-logo{font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink)}
+    .admin-link{font-size:.78rem;color:var(--ink2);opacity:.5;transition:opacity var(--t)}
+    .admin-link:hover{opacity:1;color:var(--accent)}
+
+    /* LOADING */
+    #loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;transition:opacity .5s}
+    #loading.done{opacity:0;pointer-events:none}
+    .loader{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* ANIMATIONS */
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+    @keyframes fadeIn{to{opacity:1}}
+    @keyframes blink{50%{opacity:0}}
+    @keyframes scrollPulse{0%,100%{opacity:.4}50%{opacity:1}}
+    .reveal{opacity:0;transform:translateY(24px);transition:opacity .6s ease,transform .6s ease}
+    .reveal.visible{opacity:1;transform:none}
+
+    @media(max-width:768px){
+      .nav-links{display:none;flex-direction:column;position:absolute;top:var(--nav-h);left:0;right:0;background:var(--surface);padding:1.5rem 2rem;box-shadow:var(--shadow);gap:1.2rem}
+      .nav-links.open{display:flex}
+      .hamburger{display:flex}
+      .about-grid,.contact-inner{grid-template-columns:1fr;gap:3rem}
+      #hero{padding:calc(var(--nav-h) + 2rem) 1.5rem 4rem}
+      .hero-scroll{display:none}
+      .pub-card{flex-direction:column;gap:.8rem}
+      .hero-photo-wrap{float:none;margin:0 0 1.5rem 0;display:flex;justify-content:center}
+    }
+  </style>
+</head>
+<body>
+
+<div id="loading"><div class="loader"></div></div>
+
+<nav id="navbar">
+  <div class="nav-logo" id="nav-name">Diwakar Adhikari</div>
+  <ul class="nav-links" id="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#skills">Skills</a></li>
+    <li><a href="#projects">Projects</a></li>
+    <li><a href="#publications">Publications</a></li>
+    <li><a href="#awards">Awards</a></li>
+    <li><a href="#contact">Contact</a></li>
+    <li><button class="theme-btn" id="theme-btn" aria-label="Toggle theme">🌙</button></li>
+  </ul>
+  <button class="hamburger" id="hamburger"><span></span><span></span><span></span></button>
+</nav>
+
+<section id="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <p class="hero-eyebrow">Environmental Scientist · Nepal</p>
+    <div id="hero-photo-container"></div>
+    <h1 class="hero-name" id="hero-name">Diwakar Adhikari</h1>
+    <div class="hero-tagline-wrap">
+      <p class="hero-tagline"><span id="typing-text"></span><span class="typing-cursor"></span></p>
+    </div>
+    <p class="hero-bio" id="hero-bio"></p>
+    <div class="hero-cta">
+      <a href="#projects" class="btn btn-primary">View Projects</a>
+      <a href="#contact" class="btn btn-outline">Get in Touch</a>
+    </div>
+  </div>
+  <div class="hero-scroll"><span>Scroll</span><div class="scroll-line"></div></div>
+</section>
+
+<section id="about">
+  <div class="section-header reveal">
+    <span class="section-number">01</span>
+    <h2 class="section-title">About</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="about-grid">
+    <div class="about-text reveal">
+      <p id="about-bio"></p>
+      <p class="ri-label">Research Interests</p>
+      <ul class="research-interests" id="research-interests"></ul>
+    </div>
+    <div class="education-block reveal" id="education-block"></div>
+  </div>
+</section>
+
+<section id="skills">
+  <div class="section-header reveal">
+    <span class="section-number">02</span>
+    <h2 class="section-title">Skills</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="skills-grid" id="skills-grid"></div>
+</section>
+
+<section id="projects">
+  <div class="section-header reveal">
+    <span class="section-number">03</span>
+    <h2 class="section-title">Projects</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="filter-bar reveal" id="filter-bar"></div>
+  <div class="projects-grid" id="projects-grid"></div>
+</section>
+
+<section id="publications">
+  <div class="section-header reveal">
+    <span class="section-number">04</span>
+    <h2 class="section-title">Publications</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="pub-list" id="pub-list"></div>
+</section>
+
+<section id="awards">
+  <div class="section-header reveal">
+    <span class="section-number">05</span>
+    <h2 class="section-title">Grants & Awards</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="awards-list" id="awards-list"></div>
+</section>
+
+<section id="contact">
+  <div class="section-header reveal">
+    <span class="section-number">06</span>
+    <h2 class="section-title">Contact</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="contact-inner">
+    <div class="contact-text reveal">
+      <h3>Let's connect.</h3>
+      <p>I'm open to research collaborations, consultancy opportunities, and discussions on water resource management, climate adaptation, and environmental policy in Nepal and the broader Himalayan region.</p>
+    </div>
+    <div class="contact-links reveal" id="contact-links"></div>
+  </div>
+</section>
+
+<footer>
+  <span class="footer-logo" id="footer-name">Diwakar Adhikari</span>
+  <span>dwakaradhikari.com.np</span>
+  <a class="admin-link" href="/admin">⚙ Admin</a>
+</footer>
+
+<div class="modal-overlay" id="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" id="modal">
+    <div id="modal-img-wrap"></div>
+    <div class="modal-header">
+      <h3 class="modal-title" id="modal-title"></h3>
+      <button class="modal-close" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-tags" id="modal-tags"></div>
+      <div class="modal-detail" id="modal-detail"></div>
+      <div id="modal-link-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── HELPERS ─────────────────────────────────────────────────
+function parseFrontmatter(text) {
+  const match = text.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return { data: {}, content: text };
+  const data = {};
+  match[1].split('\n').forEach(line => {
+    const [key, ...rest] = line.split(':');
+    if (!key || !rest.length) return;
+    let val = rest.join(':').trim().replace(/^["']|["']$/g, '');
+    if (val.startsWith('[')) {
+      try { val = JSON.parse(val); } catch(e) {}
+    }
+    data[key.trim()] = val;
+  });
+  // parse tags as array if string like [a, b]
+  if (data.tags && typeof data.tags === 'string') {
+    data.tags = data.tags.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
+  }
+  const content = text.slice(match[0].length).trim();
+  return { data, content };
+}
+
+async function fetchJSON(url) {
+  const r = await fetch(url); return r.json();
+}
+async function fetchText(url) {
+  const r = await fetch(url); return r.text();
+}
+
+// ── LOAD ALL CONTENT ────────────────────────────────────────
+async function loadSite() {
+  try {
+    // Settings
+    const settings = await fetchJSON('/content/settings.json');
+    const education = await fetchJSON('/content/education.json');
+    const skills    = await fetchJSON('/content/skills.json');
+
+    // Project files — fetched via a manifest approach using known filenames
+    // Netlify CMS writes files to content/projects/*.md
+    // We fetch the directory listing via a generated manifest
+    const projectFiles = await fetchFileList('/content/projects/');
+    const pubFiles     = await fetchFileList('/content/publications/');
+    const awardFiles   = await fetchFileList('/content/awards/');
+
+    const projects = await Promise.all(projectFiles.map(async f => {
+      const txt = await fetchText(`/content/projects/${f}`);
+      const { data, content } = parseFrontmatter(txt);
+      return { ...data, detail: content, slug: f.replace('.md','') };
+    }));
+    const publications = await Promise.all(pubFiles.map(async f => {
+      const txt = await fetchText(`/content/publications/${f}`);
+      const { data } = parseFrontmatter(txt);
+      return data;
+    }));
+    const awards = await Promise.all(awardFiles.map(async f => {
+      const txt = await fetchText(`/content/awards/${f}`);
+      const { data } = parseFrontmatter(txt);
+      return data;
+    }));
+
+    projects.sort((a,b) => (a.order||99) - (b.order||99));
+    publications.sort((a,b) => (a.order||99) - (b.order||99));
+    awards.sort((a,b) => (a.order||99) - (b.order||99));
+
+    renderSite(settings, education.items, skills.items, projects, publications, awards);
+  } catch(e) {
+    console.error('Load error', e);
+  } finally {
+    document.getElementById('loading').classList.add('done');
+  }
+}
+
+// Fetch directory file list via manifest.json (generated at build) or fallback
+async function fetchFileList(dir) {
+  try {
+    const r = await fetch(dir + 'manifest.json');
+    if (r.ok) return r.json();
+  } catch(e) {}
+  // Fallback: hardcoded list (updated by CMS automatically via manifest)
+  const fallbacks = {
+    '/content/projects/': ['hydroclimatic-variability-marsyangdi.md','sediment-dynamics-hydropower.md','water-soil-food-nexus.md','sisdol-landfill-pollution.md','nepal-waste-map.md','climate-adaptation-marginalized.md','spring-water-karnali.md'],
+    '/content/publications/': ['drinking-water-marsyangdi.md','trace-elements-gandaki.md','ecological-restoration-nepal.md','sediment-dynamics-hydropower.md','hydroclimatic-variability-submitted.md'],
+    '/content/awards/': ['research-fellowship-tu.md','data-fellowship.md','most-innovative.md','climate-action-fund.md','digital-solution.md','sasgp.md']
+  };
+  return fallbacks[dir] || [];
+}
+
+// ── RENDER ──────────────────────────────────────────────────
+function renderSite(s, edu, skillGroups, projects, pubs, awards) {
+  // Name
+  document.title = s.name;
+  document.getElementById('nav-name').textContent = s.name;
+  document.getElementById('hero-name').textContent = s.name;
+  document.getElementById('footer-name').textContent = s.name;
+
+  // Photo
+  const photoWrap = document.getElementById('hero-photo-container');
+  if (s.photo) {
+    photoWrap.innerHTML = `<div class="hero-photo-wrap"><img class="hero-photo" src="${s.photo}" alt="${s.name}"/></div>`;
+  } else {
+    photoWrap.innerHTML = `<div class="hero-photo-wrap"><div class="hero-photo-placeholder">Add your photo via Admin panel</div></div>`;
+  }
+
+  // Bio
+  document.getElementById('hero-bio').textContent = s.bio;
+  document.getElementById('about-bio').textContent = s.bio;
+
+  // Taglines typing
+  startTyping(Array.isArray(s.taglines) ? s.taglines : [s.taglines]);
+
+  // Research interests
+  const riEl = document.getElementById('research-interests');
+  (s.researchInterests || []).forEach(r => {
+    riEl.innerHTML += `<li><span class="ri-dot"></span>${r}</li>`;
+  });
+
+  // Education
+  const eduEl = document.getElementById('education-block');
+  edu.forEach(e => {
+    eduEl.innerHTML += `
+      <div class="edu-card">
+        <div class="edu-degree">${e.degree}</div>
+        <div class="edu-inst">${e.institution}</div>
+        <div class="edu-year">${e.year}</div>
+        <div class="edu-detail">${e.detail}</div>
+      </div>`;
+  });
+
+  // Skills
+  const sgEl = document.getElementById('skills-grid');
+  skillGroups.forEach(g => {
+    const tags = g.items.map(i => `<span class="skill-tag">${i}</span>`).join('');
+    sgEl.innerHTML += `<div class="skill-card reveal"><div class="skill-group-name">${g.group}</div><div class="skill-tags">${tags}</div></div>`;
+  });
+
+  // Projects filter
+  const allTags = ['All', ...new Set(projects.flatMap(p => Array.isArray(p.tags) ? p.tags : []))];
+  const fb = document.getElementById('filter-bar');
+  allTags.forEach((tag, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (i===0?' active':'');
+    btn.textContent = tag;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.project-card').forEach(card => {
+        const ct = card.dataset.tags.split(',');
+        card.classList.toggle('hidden', tag !== 'All' && !ct.includes(tag));
+      });
+    });
+    fb.appendChild(btn);
+  });
+
+  // Projects grid
+  const tagIcons = { Research:'🔬', Program:'📋', Hydrology:'💧', 'Climate Change':'🌍', Sediment:'🪨', Hydropower:'⚡', Pollution:'⚠️', Policy:'📜', Digital:'💻', 'Water Quality':'🧪', 'Field Work':'🏔️', 'Food Systems':'🌾', Livelihoods:'👥', 'Lab Analysis':'🔬', 'Waste Management':'♻️' };
+  const pg = document.getElementById('projects-grid');
+  projects.forEach(p => {
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    const tagHtml = tags.map(t => `<span class="project-tag">${t}</span>`).join('');
+    const icon = tagIcons[tags[0]] || '📁';
+    const imgHtml = p.image
+      ? `<img class="project-img" src="${p.image}" alt="${p.title}" loading="lazy"/>`
+      : `<div class="project-img-placeholder">${icon}</div>`;
+    const div = document.createElement('div');
+    div.className = 'project-card reveal';
+    div.dataset.tags = tags.join(',');
+    div.innerHTML = `
+      ${imgHtml}
+      <div class="project-card-top">
+        <div class="project-meta">
+          <span class="project-year">${p.year||''}</span>
+          <span class="project-status-badge">${p.status||''}</span>
+        </div>
+        <div class="project-title">${p.title}</div>
+      </div>
+      <p class="project-desc">${p.shortDesc}</p>
+      <div class="project-card-bottom">
+        <div class="project-tags">${tagHtml}</div>
+        <span class="read-more-link">More →</span>
+      </div>`;
+    div.addEventListener('click', () => openModal(p));
+    pg.appendChild(div);
+  });
+
+  // Publications
+  const pubEl = document.getElementById('pub-list');
+  pubs.forEach(p => {
+    const sc = 'status-' + (p.status||'').replace(/\s+/g,'-');
+    const doiHtml = p.doi ? `<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>` : '';
+    pubEl.innerHTML += `
+      <div class="pub-card reveal">
+        <span class="pub-status ${sc}">${p.status}</span>
+        <div class="pub-body">
+          <div class="pub-title">${p.title}</div>
+          <div class="pub-authors">${p.authors}${p.year?' ('+p.year+')':''}</div>
+          <div class="pub-journal">${p.journal}</div>
+          ${doiHtml}
+        </div>
+      </div>`;
+  });
+
+  // Awards
+  const awEl = document.getElementById('awards-list');
+  awards.forEach(a => {
+    awEl.innerHTML += `
+      <div class="award-card reveal">
+        <span class="award-year">${a.year}</span>
+        <div>
+          <div class="award-title">${a.title}</div>
+          <div class="award-org">${a.org}</div>
+        </div>
+      </div>`;
+  });
+
+  // Contact
+  const cl = document.getElementById('contact-links');
+  const items = [
+    {icon:'✉️',label:'Email',val:s.email,href:`mailto:${s.email}`},
+    {icon:'📍',label:'Location',val:s.location,href:null},
+    {icon:'📞',label:'Phone',val:s.phone,href:`tel:${s.phone}`},
+    ...(s.github?[{icon:'🐙',label:'GitHub',val:'github.com/dwaakar',href:s.github}]:[]),
+    ...(s.linkedin?[{icon:'💼',label:'LinkedIn',val:'linkedin.com',href:s.linkedin}]:[]),
+  ];
+  items.forEach(item => {
+    const el = document.createElement(item.href?'a':'div');
+    el.className = 'contact-link reveal';
+    if (item.href) { el.href=item.href; if (!item.href.startsWith('mailto')&&!item.href.startsWith('tel')) el.target='_blank'; }
+    el.innerHTML = `<div class="contact-link-icon">${item.icon}</div><div class="contact-link-text"><small>${item.label}</small><span>${item.val}</span></div>`;
+    cl.appendChild(el);
+  });
+
+  // Trigger observers
+  setTimeout(() => document.querySelectorAll('.reveal').forEach(el => observer.observe(el)), 100);
+}
+
+// ── TYPING ──────────────────────────────────────────────────
+function startTyping(tags) {
+  const el = document.getElementById('typing-text');
+  let ti=0, ci=0, del=false;
+  function tick() {
+    const w = tags[ti];
+    el.textContent = del ? w.slice(0,ci--) : w.slice(0,ci++);
+    if (!del && ci > w.length) { del=true; setTimeout(tick,1600); return; }
+    if (del && ci < 0) { del=false; ti=(ti+1)%tags.length; ci=0; }
+    setTimeout(tick, del?40:80);
+  }
+  tick();
+}
+
+// ── MODAL ───────────────────────────────────────────────────
+const overlay = document.getElementById('modal-overlay');
+function openModal(p) {
+  document.getElementById('modal-img-wrap').innerHTML = p.image
+    ? `<img class="modal-img" src="${p.image}" alt="${p.title}"/>`
+    : '';
+  document.getElementById('modal-title').textContent = p.title;
+  document.getElementById('modal-meta').innerHTML = `
+    <span class="project-year" style="font-size:.85rem">${p.year||''}</span>
+    <span class="project-status-badge">${p.status||''}</span>`;
+  const tags = Array.isArray(p.tags)?p.tags:[];
+  document.getElementById('modal-tags').innerHTML = tags.map(t=>`<span class="project-tag">${t}</span>`).join('');
+  document.getElementById('modal-detail').innerHTML = typeof marked !== 'undefined'
+    ? marked.parse(p.detail||'')
+    : (p.detail||'').replace(/\n/g,'<br>');
+  document.getElementById('modal-link-wrap').innerHTML = p.link
+    ? `<a class="modal-link" href="${p.link}" target="_blank">View on GitHub ↗</a>` : '';
+  overlay.classList.add('open');
+  document.body.style.overflow='hidden';
+}
+document.getElementById('modal-close').addEventListener('click', closeModal);
+overlay.addEventListener('click', e => { if(e.target===overlay) closeModal(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeModal(); });
+function closeModal() { overlay.classList.remove('open'); document.body.style.overflow=''; }
+
+// ── NAVBAR ──────────────────────────────────────────────────
+window.addEventListener('scroll', () => {
+  document.getElementById('navbar').classList.toggle('scrolled', scrollY > 60);
+});
+
+// ── HAMBURGER ───────────────────────────────────────────────
+document.getElementById('hamburger').addEventListener('click', () => {
+  document.getElementById('nav-links').classList.toggle('open');
+});
+
+// ── THEME ───────────────────────────────────────────────────
+const themeBtn = document.getElementById('theme-btn');
+const saved = localStorage.getItem('theme')||'light';
+document.documentElement.setAttribute('data-theme', saved);
+themeBtn.textContent = saved==='dark'?'☀️':'🌙';
+themeBtn.addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('theme', next);
+  themeBtn.textContent = next==='dark'?'☀️':'🌙';
+});
+
+// ── REVEAL ──────────────────────────────────────────────────
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ── NETLIFY IDENTITY ────────────────────────────────────────
+if (window.netlifyIdentity) {
+  window.netlifyIdentity.on('init', user => {
+    if (!user) window.netlifyIdentity.on('login', () => { document.location.href = '/admin/'; });
+  });
+}
+
+// ── BOOT ────────────────────────────────────────────────────
+loadSite();
+</script>
+</body>
+</html>
