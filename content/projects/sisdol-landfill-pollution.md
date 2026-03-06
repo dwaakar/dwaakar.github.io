@@ -1,13 +1,14 @@
 ---
-title: "Environmental Pollution Assessment — Sisdol Landfill"
-shortDesc: "Post-closure pollution assessment of the Sisdol Landfill site, covering water, soil, air, and leachate contamination."
-year: "2023–2024"
-status: "Research Assistant — RECAST"
-tags: ["Research", "Pollution", "Lab Analysis"]
+title: Environmental Pollution Assessment — Sisdol Landfill
+shortDesc: Post-closure pollution assessment of the Sisdol Landfill site,
+  covering water, soil, air, and leachate contamination.
+year: 2023–2024
+status: Research Assistant — RECAST
+category: research
+tags: []
 image: ""
+displayMode: fullpage
 link: ""
-category: "research"
-displayMode: "fullpage"
 order: 4
 ---
 
