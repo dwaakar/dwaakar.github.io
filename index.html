@@ -6,7 +6,6 @@
   <title>Diwakar Adhikari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
-  <script src="config.js"></script>
   <style>
     /* ── TOKENS ───────────────────────────────────────────── */
     :root {
@@ -748,184 +747,197 @@
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-// ── BOOTSTRAP FROM CONFIG ───────────────────────────────────
-const C = SITE_CONFIG;
-
-// Hero
-document.getElementById('nav-name').textContent = C.name;
-document.getElementById('hero-name').textContent = C.name;
-document.getElementById('hero-bio').textContent = C.bio.replace(/\s+/g,' ').trim();
-document.getElementById('footer-name').textContent = C.name;
-document.getElementById('footer-domain').textContent = 'dwakaradhikari.com.np';
-
-// Hero photo — large portrait layout
-const photoContainer = document.getElementById('hero-photo-container');
-if (C.photo) {
-  photoContainer.innerHTML = `
-    <img class="hero-photo" src="${C.photo}" alt="${C.name}"/>
-    <div class="hero-photo-overlay"></div>`;
-} else {
-  photoContainer.innerHTML = `
-    <div class="hero-photo-placeholder">
-      <span>🖼️</span>
-      <p>Add your photo via<br><strong>Admin → Site Settings</strong></p>
-    </div>`;
+// ── HELPERS ─────────────────────────────────────────────────
+function parseFrontmatter(text) {
+  const match = text.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return { data: {}, content: text };
+  const data = {};
+  match[1].split('\n').forEach(line => {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) return;
+    const key = line.slice(0, colonIdx).trim();
+    let val = line.slice(colonIdx + 1).trim().replace(/^["\'']|["\'']$/g, '');
+    if (val.startsWith('[')) { try { val = JSON.parse(val); } catch(e) { val = val.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean); } }
+    data[key] = val;
+  });
+  return { data, content: text.slice(match[0].length).trim() };
+}
+async function fetchJSON(url) { const r = await fetch(url); return r.json(); }
+async function fetchText(url) { const r = await fetch(url); return r.text(); }
+async function fetchFileList(dir) {
+  try {
+    const r = await fetch(dir + 'manifest.json');
+    if (r.ok) return r.json();
+  } catch(e) {}
+  const fallbacks = {
+    '/content/projects/': ['hydroclimatic-variability-marsyangdi.md','sediment-dynamics-hydropower.md','water-soil-food-nexus.md','sisdol-landfill-pollution.md','nepal-waste-map.md','climate-adaptation-marginalized.md','spring-water-karnali.md'],
+    '/content/publications/': ['drinking-water-marsyangdi.md','trace-elements-gandaki.md','ecological-restoration-nepal.md','sediment-dynamics-hydropower.md','hydroclimatic-variability-submitted.md'],
+    '/content/awards/': ['research-fellowship-tu.md','data-fellowship.md','most-innovative.md','climate-action-fund.md','digital-solution.md','sasgp.md']
+  };
+  return fallbacks[dir] || [];
 }
 
-// About bio
-document.getElementById('about-bio').textContent = C.bio.replace(/\s+/g,' ').trim();
+// ── LOAD & RENDER ────────────────────────────────────────────
+async function loadSite() {
+  try {
+    const [settings, education, skills] = await Promise.all([
+      fetchJSON('/content/settings.json'),
+      fetchJSON('/content/education.json'),
+      fetchJSON('/content/skills.json')
+    ]);
+    const projectFiles = await fetchFileList('/content/projects/');
+    const pubFiles     = await fetchFileList('/content/publications/');
+    const awardFiles   = await fetchFileList('/content/awards/');
+    const projects = (await Promise.all(projectFiles.map(async f => {
+      const txt = await fetchText('/content/projects/' + f);
+      const { data, content } = parseFrontmatter(txt);
+      if (data.tags && typeof data.tags === 'string') data.tags = data.tags.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
+      if (data.gallery && typeof data.gallery === 'string') data.gallery = [];
+      return { ...data, detail: content, slug: f.replace('.md','') };
+    }))).sort((a,b)=>(a.order||99)-(b.order||99));
+    const publications = (await Promise.all(pubFiles.map(async f => {
+      const txt = await fetchText('/content/publications/' + f);
+      return parseFrontmatter(txt).data;
+    }))).sort((a,b)=>(a.order||99)-(b.order||99));
+    const awards = (await Promise.all(awardFiles.map(async f => {
+      const txt = await fetchText('/content/awards/' + f);
+      return parseFrontmatter(txt).data;
+    }))).sort((a,b)=>(a.order||99)-(b.order||99));
 
-// Research interests
-const riEl = document.getElementById('research-interests');
-C.researchInterests.forEach(r => {
-  riEl.innerHTML += `<li><span class="ri-dot"></span>${r}</li>`;
-});
+    renderSite(settings, (await fetchJSON('/content/education.json')).items, (await fetchJSON('/content/skills.json')).items, projects, publications, awards);
+  } catch(e) {
+    console.error('Load error:', e);
+    document.getElementById('loading').classList.add('done');
+  }
+}
 
-// Education
-const eduEl = document.getElementById('education-block');
-C.education.forEach(e => {
-  eduEl.innerHTML += `
-    <div class="edu-card">
-      <div class="edu-degree">${e.degree}</div>
-      <div class="edu-inst">${e.institution}</div>
-      <div class="edu-year">${e.year}</div>
-      <div class="edu-detail">${e.detail}</div>
-    </div>`;
-});
+function renderSite(s, edu, skillGroups, projects, pubs, awards) {
+  // Names
+  document.title = s.name;
+  document.getElementById('nav-name').textContent = s.name;
+  document.getElementById('hero-name').textContent = s.name;
+  document.getElementById('hero-bio').textContent = s.bio || '';
+  document.getElementById('footer-name').textContent = s.name;
+  document.getElementById('footer-domain').textContent = 'dwakaradhikari.com.np';
 
-// Skills
-const sgEl = document.getElementById('skills-grid');
-C.skills.forEach(s => {
-  const tags = s.items.map(i => `<span class="skill-tag">${i}</span>`).join('');
-  sgEl.innerHTML += `
-    <div class="skill-card reveal">
-      <div class="skill-group-name">${s.group}</div>
-      <div class="skill-tags">${tags}</div>
-    </div>`;
-});
+  // Hero photo
+  const photoContainer = document.getElementById('hero-photo-container');
+  if (s.photo) {
+    photoContainer.innerHTML = `<img class="hero-photo" src="${s.photo}" alt="${s.name}"/><div class="hero-photo-overlay"></div>`;
+  } else {
+    photoContainer.innerHTML = `<div class="hero-photo-placeholder"><span>🖼️</span><p>Add your photo via<br><strong>Admin → Site Settings</strong></p></div>`;
+  }
 
-// Projects — collect all tags
-const allTags = ['All', ...new Set(C.projects.flatMap(p => p.tags))];
-const filterBar = document.getElementById('filter-bar');
-allTags.forEach((tag, i) => {
-  const btn = document.createElement('button');
-  btn.className = 'filter-btn' + (i === 0 ? ' active' : '');
-  btn.textContent = tag;
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.project-card').forEach(card => {
-      const cardTags = card.dataset.tags.split(',');
-      const show = tag === 'All' || cardTags.includes(tag);
-      card.classList.toggle('hidden', !show);
-    });
+  // About bio
+  document.getElementById('about-bio').textContent = s.bio || '';
+
+  // Research interests
+  const riEl = document.getElementById('research-interests');
+  (s.researchInterests || []).forEach(r => { riEl.innerHTML += `<li><span class="ri-dot"></span>${r}</li>`; });
+
+  // Education
+  const eduEl = document.getElementById('education-block');
+  (edu || []).forEach(e => {
+    eduEl.innerHTML += `<div class="edu-card"><div class="edu-degree">${e.degree}</div><div class="edu-inst">${e.institution}</div><div class="edu-year">${e.year}</div><div class="edu-detail">${e.detail}</div></div>`;
   });
-  filterBar.appendChild(btn);
-});
 
-const pgEl = document.getElementById('projects-grid');
-const tagIcons2 = {Research:'🔬',Program:'📋',Hydrology:'💧','Climate Change':'🌍',Sediment:'🪨',Hydropower:'⚡',Pollution:'⚠️','Water Quality':'🧪','Field Work':'🏔️','Food Systems':'🌾','Waste Management':'♻️'};
-C.projects.forEach(p => {
-  const tags = Array.isArray(p.tags) ? p.tags : [];
-  const tagHtml = tags.map(t => `<span class="project-tag">${t}</span>`).join('');
-  const icon = tagIcons2[tags[0]] || '📁';
-  const imgHtml = p.image
-    ? `<img class="project-img" src="${p.image}" alt="${p.title}" loading="lazy"/>`
-    : `<div class="project-img-placeholder">${icon}</div>`;
-  const fullPageBadge = (p.displayMode === 'fullpage' || p.displayMode === 'fullPage')
-    ? `<span style="font-size:.7rem;padding:.2rem .5rem;background:var(--ink);color:#fff;border-radius:8px;margin-left:.4rem">Full Page</span>` : '';
-  const div = document.createElement('div');
-  div.className = 'project-card reveal';
-  div.dataset.tags = tags.join(',');
-  div.innerHTML = `
-    ${imgHtml}
-    <div class="project-card-top">
-      <div class="project-meta">
-        <span class="project-year">${p.year||''}</span>
-        <span class="project-status-badge">${p.status||''}</span>
-      </div>
-      <div class="project-title">${p.title}${fullPageBadge}</div>
-    </div>
-    <p class="project-desc">${p.shortDesc}</p>
-    <div class="project-card-bottom">
-      <div class="project-tags">${tagHtml}</div>
-      <span class="read-more-link">More →</span>
-    </div>`;
-  div.addEventListener('click', () => openModal(p));
-  pgEl.appendChild(div);
-});
+  // Skills
+  const sgEl = document.getElementById('skills-grid');
+  (skillGroups || []).forEach(sg => {
+    const tags = (sg.items||[]).map(i => `<span class="skill-tag">${i}</span>`).join('');
+    sgEl.innerHTML += `<div class="skill-card reveal"><div class="skill-group-name">${sg.group}</div><div class="skill-tags">${tags}</div></div>`;
+  });
 
-// Publications
-const pubEl = document.getElementById('pub-list');
-C.publications.forEach(p => {
-  const statusClass = {
-    'Published': 'status-published',
-    'Accepted': 'status-accepted',
-    'Submitted': 'status-submitted',
-    'Revision Submitted': 'status-submitted'
-  }[p.status] || 'status-submitted';
-  const doiHtml = p.doi ? `<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>` : '';
-  pubEl.innerHTML += `
-    <div class="pub-card reveal">
-      <span class="pub-status ${statusClass}">${p.status}</span>
-      <div class="pub-body">
-        <div class="pub-title">${p.title}</div>
-        <div class="pub-authors">${p.authors}${p.year ? ' (' + p.year + ')' : ''}</div>
-        <div class="pub-journal">${p.journal}</div>
-        ${doiHtml}
-      </div>
-    </div>`;
-});
+  // Projects filter
+  const allTags = ['All', ...new Set(projects.flatMap(p => Array.isArray(p.tags) ? p.tags : []))];
+  const filterBar = document.getElementById('filter-bar');
+  allTags.forEach((tag, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = tag;
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      document.querySelectorAll('.project-card').forEach(card => {
+        const ct = card.dataset.tags.split(',');
+        card.classList.toggle('hidden', tag !== 'All' && !ct.includes(tag));
+      });
+    });
+    filterBar.appendChild(btn);
+  });
 
-// Awards
-const awEl = document.getElementById('awards-list');
-C.awards.forEach(a => {
-  awEl.innerHTML += `
-    <div class="award-card reveal">
-      <span class="award-year">${a.year}</span>
-      <div class="award-text">
-        <div class="award-title">${a.title}</div>
-        <div class="award-org">${a.org}</div>
-      </div>
-    </div>`;
-});
+  // Projects grid
+  const pgEl = document.getElementById('projects-grid');
+  const tagIcons2 = {Research:'🔬',Program:'📋',Hydrology:'💧','Climate Change':'🌍',Sediment:'🪨',Hydropower:'⚡',Pollution:'⚠️','Water Quality':'🧪','Field Work':'🏔️','Food Systems':'🌾','Waste Management':'♻️'};
+  projects.forEach(p => {
+    const tags = Array.isArray(p.tags) ? p.tags : [];
+    const tagHtml = tags.map(t => `<span class="project-tag">${t}</span>`).join('');
+    const icon = tagIcons2[tags[0]] || '📁';
+    const imgHtml = p.image ? `<img class="project-img" src="${p.image}" alt="${p.title}" loading="lazy"/>` : `<div class="project-img-placeholder">${icon}</div>`;
+    const fullPageBadge = (p.displayMode === 'fullpage') ? `<span style="font-size:.7rem;padding:.2rem .5rem;background:var(--ink);color:#fff;border-radius:8px;margin-left:.4rem">Full Page</span>` : '';
+    const div = document.createElement('div');
+    div.className = 'project-card reveal';
+    div.dataset.tags = tags.join(',');
+    div.innerHTML = `${imgHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${p.year||''}</span><span class="project-status-badge">${p.status||''}</span></div><div class="project-title">${p.title}${fullPageBadge}</div></div><p class="project-desc">${p.shortDesc||''}</p><div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
+    div.addEventListener('click', () => openModal(p));
+    pgEl.appendChild(div);
+  });
 
-// Contact
-const clEl = document.getElementById('contact-links');
-const contactItems = [
-  { icon: '✉️', label: 'Email', value: C.email, href: `mailto:${C.email}` },
-  { icon: '📍', label: 'Location', value: C.location, href: null },
-  { icon: '📞', label: 'Phone', value: C.phone, href: `tel:${C.phone}` },
-  ...(C.github ? [{ icon: '🐙', label: 'GitHub', value: 'github.com', href: C.github }] : []),
-  ...(C.linkedin ? [{ icon: '💼', label: 'LinkedIn', value: 'linkedin.com', href: C.linkedin }] : []),
-];
-contactItems.forEach(item => {
-  const el = document.createElement(item.href ? 'a' : 'div');
-  el.className = 'contact-link reveal';
-  if (item.href) { el.href = item.href; if (!item.href.startsWith('mailto') && !item.href.startsWith('tel')) el.target = '_blank'; }
-  el.innerHTML = `
-    <div class="contact-link-icon">${item.icon}</div>
-    <div class="contact-link-text">
-      <small>${item.label}</small>
-      <span>${item.value}</span>
-    </div>`;
-  clEl.appendChild(el);
-});
+  // Publications
+  const pubEl = document.getElementById('pub-list');
+  pubs.forEach(p => {
+    const sc = {'Published':'status-published','Accepted':'status-accepted','Submitted':'status-submitted','Revision Submitted':'status-submitted'}[p.status]||'status-submitted';
+    const doiHtml = p.doi ? `<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>` : '';
+    pubEl.innerHTML += `<div class="pub-card reveal"><span class="pub-status ${sc}">${p.status}</span><div class="pub-body"><div class="pub-title">${p.title}</div><div class="pub-authors">${p.authors||''}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${p.journal||''}</div>${doiHtml}</div></div>`;
+  });
 
-// ── TYPING ANIMATION ────────────────────────────────────────
-(function() {
+  // Awards
+  const awEl = document.getElementById('awards-list');
+  awards.forEach(a => {
+    awEl.innerHTML += `<div class="award-card reveal"><span class="award-year">${a.year}</span><div><div class="award-title">${a.title}</div><div class="award-org">${a.org}</div></div></div>`;
+  });
+
+  // Contact
+  const clEl = document.getElementById('contact-links');
+  const cItems = [
+    {icon:'✉️',label:'Email',val:s.email,href:`mailto:${s.email}`},
+    {icon:'📍',label:'Location',val:s.location,href:null},
+    {icon:'📞',label:'Phone',val:s.phone,href:`tel:${s.phone}`},
+    ...(s.github?[{icon:'🐙',label:'GitHub',val:'github.com/dwaakar',href:s.github}]:[]),
+    ...(s.linkedin?[{icon:'💼',label:'LinkedIn',val:'linkedin.com',href:s.linkedin}]:[]),
+  ];
+  cItems.forEach(item => {
+    const el = document.createElement(item.href?'a':'div');
+    el.className = 'contact-link reveal';
+    if (item.href) { el.href=item.href; if (!item.href.startsWith('mailto')&&!item.href.startsWith('tel')) el.target='_blank'; }
+    el.innerHTML = `<div class="contact-link-icon">${item.icon}</div><div class="contact-link-text"><small>${item.label}</small><span>${item.val||''}</span></div>`;
+    clEl.appendChild(el);
+  });
+
+  // Typing animation
+  startTyping(Array.isArray(s.taglines) ? s.taglines : ['Environmental Scientist','Water Resource Researcher']);
+
+  // Trigger scroll reveal
+  setTimeout(() => document.querySelectorAll('.reveal').forEach(el => observer.observe(el)), 100);
+
+  // Hide loading
+  document.getElementById('loading').classList.add('done');
+}
+
+function startTyping(taglines) {
   const el = document.getElementById('typing-text');
-  const tags = C.taglines;
   let ti = 0, ci = 0, deleting = false;
   function tick() {
-    const word = tags[ti];
+    const word = taglines[ti];
     el.textContent = deleting ? word.slice(0, ci--) : word.slice(0, ci++);
     if (!deleting && ci > word.length) { deleting = true; setTimeout(tick, 1600); return; }
-    if (deleting && ci < 0) { deleting = false; ti = (ti + 1) % tags.length; ci = 0; }
+    if (deleting && ci < 0) { deleting = false; ti = (ti + 1) % taglines.length; ci = 0; }
     setTimeout(tick, deleting ? 40 : 80);
   }
   tick();
-})();
+}
+
+loadSite();
 
 // ── YOUTUBE HELPER ──────────────────────────────────────────
 function getYouTubeId(url) {
