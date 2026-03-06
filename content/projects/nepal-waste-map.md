@@ -6,6 +6,7 @@ status: "Program Officer — Clean Up Nepal"
 tags: ["Program", "Waste Management", "Digital"]
 image: ""
 link: ""
+displayMode: "fullpage"
 order: 5
 ---
 

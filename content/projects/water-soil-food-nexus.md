@@ -6,6 +6,7 @@ status: "Research Fellow — Dept. of Botany, TU"
 tags: ["Research", "Food Systems", "Livelihoods"]
 image: ""
 link: ""
+displayMode: "fullpage"
 order: 3
 ---
 

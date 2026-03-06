@@ -6,6 +6,7 @@ status: "Consultant — Nepal Peacebuilding Initiative"
 tags: ["Program", "Climate Change", "Policy"]
 image: ""
 link: ""
+displayMode: "fullpage"
 order: 6
 ---
 

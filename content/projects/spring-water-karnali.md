@@ -6,6 +6,7 @@ status: "Research Assistant — Kathmandu University"
 tags: ["Research", "Water Quality", "Field Work"]
 image: ""
 link: ""
+displayMode: "fullpage"
 order: 7
 ---
 

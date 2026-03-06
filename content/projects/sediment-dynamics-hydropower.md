@@ -6,6 +6,7 @@ status: "MSc Thesis — Tribhuvan University"
 tags: ["Research", "Sediment", "Hydropower"]
 image: ""
 link: ""
+displayMode: "fullpage"
 order: 2
 ---
 

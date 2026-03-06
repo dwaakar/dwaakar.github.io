@@ -6,6 +6,7 @@ status: "Research Assistant — RECAST"
 tags: ["Research", "Pollution", "Lab Analysis"]
 image: ""
 link: ""
+displayMode: "fullpage"
 order: 4
 ---
 

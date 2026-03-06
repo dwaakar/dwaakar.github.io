@@ -6,6 +6,7 @@ status: "Independent Project"
 tags: ["Research", "Hydrology", "Climate Change"]
 image: ""
 link: ""
+displayMode: "fullpage"
 order: 1
 ---
 
