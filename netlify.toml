@@ -1,19 +1,6 @@
-[build]
-  publish = "."
-  command = "node generate-manifests.js"
-
-[[headers]]
-  for = "/*"
-  [headers.values]
-    X-Frame-Options = "DENY"
-    X-XSS-Protection = "1; mode=block"
-
-[[redirects]]
-  from = "/admin"
-  to = "/admin/index.html"
-  status = 200
-
-[[redirects]]
-  from = "/projects/*"
-  to = "/project.html"
-  status = 200
+---
+title: "Climate Action Fund"
+org: "The Asia Foundation"
+year: "2021"
+order: 4
+---

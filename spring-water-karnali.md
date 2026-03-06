@@ -1,13 +1,16 @@
----
-title: "Climate Change Adaptation for Marginalized Communities"
-shortDesc: "Policy and grassroots capacity-building programme for climate adaptation with marginalised communities in Nepal."
-year: "2024–2025"
-status: "Consultant — Nepal Peacebuilding Initiative"
-tags: ["Program", "Climate Change", "Policy"]
-image: ""
-link: ""
-displayMode: "fullpage"
-order: 6
----
-
-This project strengthened policy-level and grassroots capacity to enhance climate change adaptation for marginalised communities across Nepal. Key activities included participatory climate risk assessments, training 90+ youth leaders from 6 municipalities in climate advocacy, facilitating Policy Dialogue Consultations, and bridging governance gaps between communities and local government. The work resulted in community-identified priorities being integrated into district climate plans, and adaptive livelihood strategies being designed for vulnerable populations.
+{
+  "items": [
+    {
+      "degree": "MSc in Environmental Science",
+      "institution": "Central Department of Environmental Science, Tribhuvan University",
+      "year": "2021–2024",
+      "detail": "CGPA: 3.85 | Specialisation: Water Resource Management, Restoration Ecology | Thesis: Assessment of Sediment Load, Transport Mechanisms, and the Impacts Due to Hydropower Plants in the Marsyangdi River Basin."
+    },
+    {
+      "degree": "BSc in Environmental Science",
+      "institution": "Tri-Chandra Multiple Campus, Tribhuvan University",
+      "year": "2015–2018",
+      "detail": "Major: Environmental Science and Chemistry | Elective: Zoology"
+    }
+  ]
+}

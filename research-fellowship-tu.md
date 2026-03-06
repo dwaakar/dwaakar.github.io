@@ -1,21 +1,14 @@
-{
-  "name": "Diwakar Adhikari",
-  "email": "thisisdwakr@gmail.com",
-  "phone": "+977-984-3247059",
-  "location": "Kathmandu, Nepal",
-  "github": "https://github.com/dwaakar",
-  "linkedin": "",
-  "photo": "/images/profile.jpg",
-  "bio": "I am an environmental scientist specialising in water resource management, restoration ecology, and climate-resilient infrastructure. My work spans hydrologic modelling, contaminant fate and transport, and integrated urban water systems \u2014 with a focus on communities and rivers in the Hindu Kush Himalayan region.",
-  "taglines": [
-    "Environmental Scientist",
-    "Water Resource Researcher",
-    "Hydrologic Modeller",
-    "Climate Adaptation Advocate"
-  ],
-  "researchInterests": [
-    "Integrated & Urban Water Systems, Governance and Political Economy",
-    "Modelling Water Systems for Climate-Resilient Infrastructure and Adaptation",
-    "Contaminant Fate, Transport, and Treatment"
-  ]
-}
+---
+title: "Water-Soil-Food Nexus & Agrobiodiversity — Marsyangdi Basin"
+shortDesc: "Research fellowship exploring sustainable livelihoods through agrobiodiversity mainstreaming along the Marsyangdi River Basin."
+year: "2023–2024"
+status: "Research Fellow — Dept. of Botany, TU"
+tags: ["Research", "Food Systems", "Livelihoods"]
+image: ""
+link: ""
+category: "research"
+displayMode: "fullpage"
+order: 3
+---
+
+As a Research Fellow at the Department of Botany, Tribhuvan University, this project examined the water-soil-food nexus to promote sustainable livelihoods in the Marsyangdi River Basin, Gandaki Province. The research included comprehensive surveys on water poverty, climate vulnerability, and socioeconomic implications for local communities. It also assessed the potential of agrobiodiversity mainstreaming as a strategy for food and livelihood security under climate change.

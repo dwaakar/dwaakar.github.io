@@ -1,13 +1,35 @@
----
-title: "Nepal Waste Map — Digital Waste Management System"
-shortDesc: "City-scale digital waste management platform mapping 70,000+ households across six municipalities in Nepal."
-year: "2018–2022"
-status: "Program Officer — Clean Up Nepal"
-tags: ["Program", "Waste Management", "Digital"]
-image: ""
-link: ""
-displayMode: "fullpage"
-order: 5
----
-
-The Nepal Waste Map (now Safa Nepal) was a flagship digital waste management initiative connecting waste generators, collectors, and recyclers through a mobile application and web dashboard. As Program Officer, key achievements included mapping ~70,000 households across Tulsipur, Birgunj, Waling, Kathmandu, Bharatpur, and Ilam; training 500+ waste management workers and officials; resolving 1,000+ waste-related grievances; and enabling 200+ households to directly connect with recyclers. The project secured approximately $100,000 in grants and won the Most Innovative Development Project (Runner Up) award from the Global Development Network in 2021.
+{
+  "name": "Diwakar Adhikari",
+  "email": "thisisdwakr@gmail.com",
+  "phone": "+977-984-3247059",
+  "location": "Kathmandu, Nepal",
+  "photo": "/public/images/profile.jpg",
+  "bio": "I am an environmental scientist specialising in water resource management, restoration ecology, and climate-resilient infrastructure. My work spans hydrologic modelling, contaminant fate and transport, and integrated urban water systems — with a focus on communities and rivers in the Hindu Kush Himalayan region.",
+  "taglines": [
+    "Environmental Scientist",
+    "Water Resource Researcher",
+    "Hydrologic Modeller",
+    "Climate Adaptation Advocate"
+  ],
+  "aboutResearchObjective": "My research focuses on understanding hydrological and sediment dynamics in Himalayan river systems, and how climate change and anthropogenic pressures — particularly hydropower development — alter these systems. I aim to produce actionable science that informs climate-resilient water infrastructure and equitable resource governance in Nepal and the broader Hindu Kush Himalayan region.",
+  "researchInterests": [
+    "Integrated & Urban Water Systems, Governance and Political Economy",
+    "Modelling Water Systems for Climate-Resilient Infrastructure and Adaptation",
+    "Contaminant Fate, Transport, and Treatment"
+  ],
+  "aboutProfessionalObjective": "I am a program management and consultancy professional with experience designing and delivering environmental programs across Nepal. I am interested in roles at the intersection of environmental science, policy, and community development — particularly in climate adaptation, waste management, and sustainable livelihoods.",
+  "professionalInterests": [
+    "Climate Change Adaptation Program Design",
+    "Environmental Policy and Advocacy",
+    "Waste Management and Circular Economy",
+    "Community-Based Natural Resource Management"
+  ],
+  "cvAcademic": "",
+  "cvProfessional": "",
+  "github": "https://github.com/dwaakar",
+  "linkedin": "https://www.linkedin.com/in/diwakaradhikari/",
+  "facebook": "https://www.facebook.com/mahaapooroosh",
+  "instagram": "",
+  "storygraph": "https://app.thestorygraph.com/profile/dwakar",
+  "customSocials": []
+}
