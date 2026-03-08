@@ -74,7 +74,8 @@ collections:
         required: false
         field: { label: "Course", name: "course", widget: "string" }
       - { label: "Detail / Description", name: "body", widget: "markdown", required: false }
-      - label: "Images (slideshow if multiple, static if one)"
+      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
+      - label: "Detail Images (auto-slideshow every 3 seconds)"
         name: "gallery"
         widget: "list"
         required: false
@@ -146,7 +147,8 @@ collections:
         widget: "list"
         required: false
         field: { label: "Tag", name: "tag", widget: "string" }
-      - label: "Images (slideshow if multiple, static if one)"
+      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
+      - label: "Detail Images (auto-slide for community, manual slider for research)"
         name: "gallery"
         widget: "list"
         required: false
