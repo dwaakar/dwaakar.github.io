@@ -74,14 +74,13 @@ collections:
         required: false
         field: { label: "Course", name: "course", widget: "string" }
       - { label: "Detail / Description", name: "body", widget: "markdown", required: false }
-      - { label: "Cover Image", name: "image", widget: "image", required: false }
-      - label: "Image Gallery (up to 10)"
+      - label: "Images (slideshow if multiple, static if one)"
         name: "gallery"
         widget: "list"
         required: false
         fields:
-          - { label: "Image", name: "src", widget: "image" }
-          - { label: "Caption", name: "caption", widget: "string", required: false }
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
+          - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
       - { label: "Link", name: "link", widget: "string", required: false }
       - label: "Display Mode"
         name: "displayMode"
@@ -94,16 +93,14 @@ collections:
         name: "popupVisLabel"
         widget: "hidden"
         default: ""
-      - { label: "[Popup] Show Cover Image", name: "showImage", widget: "boolean", default: true, required: false }
-      - { label: "[Popup] Show Gallery", name: "showGallery", widget: "boolean", default: true, required: false }
+      - { label: "[Popup] Show Images / Slideshow", name: "showGallery", widget: "boolean", default: true, required: false }
       - { label: "[Popup] Show Description/Detail", name: "showDetail", widget: "boolean", default: true, required: false }
       - { label: "[Popup] Show Coursework", name: "showCoursework", widget: "boolean", default: true, required: false }
       - label: "── Full Page Visibility ──"
         name: "fullpageVisLabel"
         widget: "hidden"
         default: ""
-      - { label: "[Full Page] Show Cover Image", name: "fpShowImage", widget: "boolean", default: true, required: false }
-      - { label: "[Full Page] Show Gallery", name: "fpShowGallery", widget: "boolean", default: true, required: false }
+      - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Description/Detail", name: "fpShowDetail", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Coursework", name: "fpShowCoursework", widget: "boolean", default: true, required: false }
       - { label: "Sort Order", name: "order", widget: "number", default: 99 }
@@ -149,14 +146,13 @@ collections:
         widget: "list"
         required: false
         field: { label: "Tag", name: "tag", widget: "string" }
-      - { label: "Cover Image", name: "image", widget: "image", required: false }
-      - label: "Image Gallery (up to 10)"
+      - label: "Images (slideshow if multiple, static if one)"
         name: "gallery"
         widget: "list"
         required: false
         fields:
-          - { label: "Image", name: "src", widget: "image" }
-          - { label: "Caption", name: "caption", widget: "string", required: false }
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
+          - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
       - { label: "YouTube Video URL", name: "videoUrl", widget: "string", required: false }
       - label: "Downloadable Report"
         name: "report"
@@ -182,8 +178,7 @@ collections:
         name: "popupVisLabel"
         widget: "hidden"
         default: ""
-      - { label: "[Popup] Show Cover Image", name: "showImage", widget: "boolean", default: true, required: false }
-      - { label: "[Popup] Show Gallery", name: "showGallery", widget: "boolean", default: true, required: false }
+      - { label: "[Popup] Show Images / Slideshow", name: "showGallery", widget: "boolean", default: true, required: false }
       - { label: "[Popup] Show Description/Detail", name: "showDetail", widget: "boolean", default: true, required: false }
       - { label: "[Popup] Show Video", name: "showVideo", widget: "boolean", default: true, required: false }
       - { label: "[Popup] Show Report Download", name: "showReport", widget: "boolean", default: true, required: false }
@@ -192,8 +187,7 @@ collections:
         name: "fullpageVisLabel"
         widget: "hidden"
         default: ""
-      - { label: "[Full Page] Show Cover Image", name: "fpShowImage", widget: "boolean", default: true, required: false }
-      - { label: "[Full Page] Show Gallery", name: "fpShowGallery", widget: "boolean", default: true, required: false }
+      - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Description/Detail", name: "fpShowDetail", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Video", name: "fpShowVideo", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Report Download", name: "fpShowReport", widget: "boolean", default: true, required: false }
@@ -215,14 +209,13 @@ collections:
       - { label: "DOI / URL", name: "doi", widget: "string", required: false }
       - { label: "Abstract", name: "abstract", widget: "text", required: false }
       - { label: "Detailed Overview", name: "body", widget: "markdown", required: false }
-      - { label: "Cover Image", name: "image", widget: "image", required: false }
-      - label: "Image Gallery (up to 10)"
+      - label: "Images (slideshow if multiple, static if one)"
         name: "gallery"
         widget: "list"
         required: false
         fields:
-          - { label: "Image", name: "src", widget: "image" }
-          - { label: "Caption", name: "caption", widget: "string", required: false }
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
+          - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
       - { label: "External Link", name: "link", widget: "string", required: false }
       - label: "Display Mode"
         name: "displayMode"
@@ -235,16 +228,14 @@ collections:
         name: "popupVisLabel"
         widget: "hidden"
         default: ""
-      - { label: "[Popup] Show Cover Image", name: "showImage", widget: "boolean", default: true, required: false }
-      - { label: "[Popup] Show Gallery/Figures", name: "showGallery", widget: "boolean", default: true, required: false }
+      - { label: "[Popup] Show Images / Slideshow", name: "showGallery", widget: "boolean", default: true, required: false }
       - { label: "[Popup] Show Abstract", name: "showAbstract", widget: "boolean", default: true, required: false }
       - { label: "[Popup] Show Detail/Overview", name: "showDetail", widget: "boolean", default: true, required: false }
       - label: "── Full Page Visibility ──"
         name: "fullpageVisLabel"
         widget: "hidden"
         default: ""
-      - { label: "[Full Page] Show Cover Image", name: "fpShowImage", widget: "boolean", default: true, required: false }
-      - { label: "[Full Page] Show Gallery/Figures", name: "fpShowGallery", widget: "boolean", default: true, required: false }
+      - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Abstract", name: "fpShowAbstract", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Detail/Overview", name: "fpShowDetail", widget: "boolean", default: true, required: false }
       - { label: "Sort Order", name: "order", widget: "number", default: 99 }

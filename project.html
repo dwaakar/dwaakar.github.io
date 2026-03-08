@@ -188,12 +188,11 @@ function parseFM(text) {
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
-  // CMS saves to /images/ at root, Cloudflare serves it fine
+  // Already an absolute path we can use directly
   if (p.startsWith('/images/')) return p;
+  if (p.startsWith('/public/images/')) return p; // also valid, Cloudflare serves public/
   if (p.startsWith('images/')) return '/' + p;
-  // Legacy: if somehow saved to public/images
-  if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
-  if (p.startsWith('public/images/')) return '/images/' + p.slice('public/images/'.length);
+  if (p.startsWith('public/images/')) return '/' + p;
   return p;
 }
 
@@ -230,10 +229,14 @@ async function load() {
 
     document.title = `${p.title||'Project'} — Diwakar Adhikari`;
 
-    // Hero
+    // Hero — use first gallery image
     const heroEl = document.getElementById('project-hero');
-    if (p.image) {
-      heroEl.innerHTML=`<img class="project-hero-img" src="${imgPath(p.image)}" alt="${p.title||''}"/><div class="project-hero-overlay"></div>`;
+    const rawG = Array.isArray(p.gallery) ? p.gallery : [];
+    const heroSrc = rawG.length > 0
+      ? imgPath(typeof rawG[0]==='string' ? rawG[0] : (rawG[0].src||''))
+      : (p.image ? imgPath(p.image) : '');
+    if (heroSrc) {
+      heroEl.innerHTML=`<img class="project-hero-img" src="${heroSrc}" alt="${p.title||''}"/><div class="project-hero-overlay"></div>`;
     } else {
       const icons={Hydrology:'💧','Climate Change':'🌍',Sediment:'🪨',Hydropower:'⚡',Pollution:'⚠️','Water Quality':'🧪','Field Work':'🏔️','Food Systems':'🌾','Waste Management':'♻️'};
       const tags=Array.isArray(p.tags)?p.tags:[];
@@ -279,11 +282,7 @@ async function load() {
       });
     }
 
-    // Cover image (if no gallery)
-    if(fp('image') && p.image && gallery.length===0){
-      document.getElementById('project-gallery').innerHTML=
-        `<div style="border-radius:12px;overflow:hidden;margin:1rem 0"><img src="${imgPath(p.image)}" style="width:100%;max-height:400px;object-fit:cover;display:block"/></div>`;
-    }
+
 
     // Video
     if(fp('video') && p.videoUrl){

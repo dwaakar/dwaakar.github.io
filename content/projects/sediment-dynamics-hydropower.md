@@ -1,20 +1,13 @@
 ---
-title: Sediment Dynamics & Hydropower Impacts — Marsyangdi River
-shortDesc: MSc thesis examining sediment load, transport mechanisms, and
-  environmental impacts of run-of-river hydropower plants.
+title: "Sediment Dynamics & Hydropower Impacts — Marsyangdi River"
+shortDesc: "MSc thesis examining sediment load, transport mechanisms, and environmental impacts of run-of-river hydropower plants."
 year: "2024"
-status: MSc Thesis — Tribhuvan University
-category: research
-tags:
-  - Research
-  - Sediment
-  - Hydropower
-image: /images/picture2.png
-gallery:
-  - src: /images/picture2.png
-    caption: conceptual framework
-displayMode: fullpage
+status: "MSc Thesis — Tribhuvan University"
+tags: ["Research", "Sediment", "Hydropower"]
+image: ""
 link: ""
+category: "research"
+displayMode: "fullpage"
 order: 2
 ---
 
