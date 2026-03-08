@@ -1,0 +1,6 @@
+/images/* /images/:splat 200
+/public/images/* /public/images/:splat 200
+/content/* /content/:splat 200
+/admin/* /admin/:splat 200
+/project /project.html 200
+/projects/* /project.html 200
