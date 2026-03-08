@@ -17,11 +17,11 @@ coursework:
     Methodology and Biostatistics, Field Work (Research), Community Work
     (Research), Water Resource Management, Restoration Ecology"
   - "Fourth Semester: Environment Modelling and Applications, Dissertation "
+image: ""
 link: ""
 displayMode: popup
-showCoursework: false
+showCoursework: true
 order: 1
-image: ""
 ---
 I completed my Master of Science (M.Sc.) in Environmental Science from the Central Department of Environmental Science (CDES), Tribhuvan University, Kirtipur. This comprehensive two‑year, four‑semester program strengthened my academic and practical understanding of environmental systems, climate processes, resource management, and modern analytical approaches within environmental science. My coursework covered a wide range of subjects including ecology and environmental philosophy, atmospheric science, earth science, environmental chemistry, climate change and resilience, environmental quality management, environmental economics, remote sensing and GIS, hydrology, meteorology, geology, environmental modelling, and interdisciplinary studies in energy and environment.
 
