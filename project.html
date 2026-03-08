@@ -75,12 +75,11 @@
     .img-panel-empty{padding:3rem;text-align:center;color:var(--ink2);font-size:.9rem;background:var(--bg2)}
 
     /* SLIDER TRACK */
-    /* SLIDER TRACK — no fixed box, image flows naturally */
-    .slider-track{position:relative;width:100%;background:var(--bg2);cursor:zoom-in}
-    .slider-img-wrap{position:relative;width:100%;line-height:0}
-    .slider-img-wrap img{width:100%;height:auto;display:block;transition:opacity .5s ease;opacity:0;position:absolute;top:0;left:0}
-    .slider-img-wrap img.active{opacity:1;position:relative}
-    .slider-img-wrap img.sizing{opacity:0;position:relative;pointer-events:none}
+    /* SLIDER TRACK — fixed square, image fits inside */
+    .slider-track{position:relative;width:100%;aspect-ratio:1/1;background:var(--bg2);cursor:zoom-in;overflow:hidden;border-radius:12px 12px 0 0}
+    .slider-img-wrap{position:absolute;inset:0}
+    .slider-img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .5s ease;opacity:0;display:block}
+    .slider-img-wrap img.active{opacity:1}
 
     /* FULLSCREEN BUTTON */
     .slider-fullscreen{position:absolute;top:.6rem;right:.6rem;z-index:10;width:32px;height:32px;border-radius:6px;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all var(--t);border:1px solid rgba(255,255,255,.2)}
@@ -294,7 +293,7 @@ function buildImagePanel(gallery, mode) {
   // All images stacked — first is active (relative), rest absolute
   const imgMarkup = gallery.map((g,i) =>
     `<img src="${g.src}" alt="${g.caption||'Image '+(i+1)}"
-      class="${i===0?'active':''}${i===1?' sizing':''}"
+      class="${i===0?'active':''}"
       loading="${i===0?'eager':'lazy'}"/>`
   ).join('');
 
@@ -328,9 +327,7 @@ function buildImagePanel(gallery, mode) {
 
   function goTo(idx, fromUser) {
     imgEls[current].classList.remove('active');
-    imgEls[current].classList.add('sizing');
     current = (idx + gallery.length) % gallery.length;
-    imgEls[current].classList.remove('sizing');
     imgEls[current].classList.add('active');
     captionEl.textContent = gallery[current].caption||'';
 
