@@ -501,12 +501,19 @@ const md = t => t && typeof marked !== 'undefined' ? marked.parse(t) : (t||'').r
 async function fj(u) { try { const r=await fetch(u); if(!r.ok) return null; return r.json(); } catch(e){ return null; } }
 async function ft(u) { try { const r=await fetch(u); if(!r.ok) return null; return r.text(); } catch(e){ return null; } }
 async function fileList(dir) {
-  try { const r=await fetch(dir+'manifest.json'); if(r.ok) return r.json(); } catch(e){}
+  try {
+    const r=await fetch(dir+'manifest.json');
+    if(r.ok) {
+      const ct = r.headers.get('content-type')||'';
+      if(ct.includes('json')) return r.json();
+    }
+  } catch(e){}
   const fb={
     '/content/projects/':['hydroclimatic-variability-marsyangdi.md','sediment-dynamics-hydropower.md','water-soil-food-nexus.md','sisdol-landfill-pollution.md','nepal-waste-map.md','climate-adaptation-marginalized.md','spring-water-karnali.md'],
     '/content/publications/':['drinking-water-marsyangdi.md','trace-elements-gandaki.md','ecological-restoration-nepal.md','sediment-dynamics-hydropower.md','hydroclimatic-variability-submitted.md'],
     '/content/awards/':['research-fellowship-tu.md','data-fellowship.md','most-innovative.md','climate-action-fund.md','digital-solution.md','sasgp.md'],
-    '/content/education/':['msc-environmental-science.md','bsc-environmental-science.md']
+    '/content/education/':['msc-environmental-science.md','bsc-environmental-science.md'],
+    '/content/experience/':['research-assistant-tribhuvan.md','environmental-consultant.md']
   };
   return fb[dir]||[];
 }
