@@ -243,10 +243,11 @@ function parseFM(text) {
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
+  // Cloudflare Pages strips /public/ prefix — normalise everything to /images/
+  if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
+  if (p.startsWith('public/images/')) return p.replace('public/images/', '/images/');
   if (p.startsWith('/images/')) return p;
   if (p.startsWith('images/')) return '/' + p;
-  if (p.startsWith('/public/images/')) return p;
-  if (p.startsWith('public/images/')) return '/' + p;
   return p;
 }
 

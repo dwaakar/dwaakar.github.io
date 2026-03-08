@@ -490,11 +490,11 @@ const safe = v => v || '';
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
-  // Already an absolute path we can use directly
+  // Cloudflare Pages strips /public/ prefix — normalise everything to /images/
+  if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
+  if (p.startsWith('public/images/')) return p.replace('public/images/', '/images/');
   if (p.startsWith('/images/')) return p;
-  if (p.startsWith('/public/images/')) return p; // also valid, Cloudflare serves public/
   if (p.startsWith('images/')) return '/' + p;
-  if (p.startsWith('public/images/')) return '/' + p;
   return p;
 }
 const md = t => t && typeof marked !== 'undefined' ? marked.parse(t) : (t||'').replace(/\n/g,'<br>');
