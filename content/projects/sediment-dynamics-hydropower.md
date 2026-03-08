@@ -9,7 +9,7 @@ tags:
   - Research
   - Sediment
   - Hydropower
-image: ""
+image: /images/picture2.png
 gallery:
   - src: /images/picture2.png
     caption: conceptual framework
