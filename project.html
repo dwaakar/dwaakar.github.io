@@ -75,39 +75,40 @@
     .img-panel-empty{padding:3rem;text-align:center;color:var(--ink2);font-size:.9rem;background:var(--bg2)}
 
     /* SLIDER TRACK */
-    .slider-track{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--bg2)}
-    .slider-track img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .5s ease;opacity:0;padding:0}
+    /* SLIDER TRACK — tall for diagrams */
+    .slider-track{position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;background:var(--bg2);cursor:zoom-in}
+    .slider-track img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .5s ease;opacity:0}
     .slider-track img.active{opacity:1}
 
-    /* MANUAL slider controls (research) — ‹ image › */
-    .slider-controls-manual{display:flex;align-items:center;justify-content:space-between;padding:.6rem .8rem;background:var(--surface);border-top:1px solid var(--border)}
-    .slider-arrow{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--ink2);transition:all var(--t);flex-shrink:0}
-    .slider-arrow:hover{border-color:var(--accent);color:var(--accent);background:var(--tag-bg)}
-    .slider-counter{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ink2);text-align:center;flex:1}
+    /* FULLSCREEN BUTTON */
+    .slider-fullscreen{position:absolute;top:.6rem;right:.6rem;z-index:10;width:32px;height:32px;border-radius:6px;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all var(--t);border:1px solid rgba(255,255,255,.2)}
+    .slider-fullscreen:hover{background:rgba(0,0,0,.8);transform:scale(1.1)}
 
-    /* AUTO slider controls (community/education) — dots only */
+    /* MANUAL controls */
+    .slider-controls-manual{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;background:var(--surface);border-top:1px solid var(--border)}
+    .slider-arrow{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--ink2);transition:all var(--t);flex-shrink:0}
+    .slider-arrow:hover{border-color:var(--accent);color:var(--accent);background:var(--tag-bg)}
+    .slider-counter{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--ink2);text-align:center;flex:1}
+
+    /* AUTO controls — dots */
     .slider-controls-auto{display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.8rem;background:var(--surface);border-top:1px solid var(--border)}
-    .slider-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all var(--t);cursor:default}
-    .slider-dot.active{background:var(--accent);width:20px;border-radius:4px}
+    .slider-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all var(--t)}
+    .slider-dot.active{background:var(--accent);width:22px;border-radius:4px}
 
     /* CAPTION */
-    .slider-caption{padding:.7rem 1rem;font-size:.82rem;color:var(--ink2);line-height:1.5;min-height:2.5rem;border-top:1px solid var(--border);background:var(--bg2);font-style:italic}
+    .slider-caption{padding:.7rem 1rem;font-size:.82rem;color:var(--ink2);line-height:1.5;min-height:2.4rem;border-top:1px solid var(--border);background:var(--bg2);font-style:italic}
 
-    /* LIGHTBOX */
-    .lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.93);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--t)}
+    /* LIGHTBOX — near full screen */
+    .lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--t)}
     .lightbox.open{opacity:1;pointer-events:all}
-    .lightbox img{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:8px;cursor:zoom-out}
-    .lb-close{position:absolute;top:1.2rem;right:1.2rem;color:#fff;width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all var(--t)}
+    .lightbox img{max-width:96vw;max-height:94vh;object-fit:contain;cursor:zoom-out}
+    .lb-close{position:absolute;top:1rem;right:1rem;color:#fff;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all var(--t);background:rgba(0,0,0,.3)}
     .lb-close:hover{background:rgba(255,255,255,.15)}
-    .lb-nav{position:absolute;top:50%;transform:translateY(-50%);color:#fff;width:44px;height:44px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:1.4rem;transition:all var(--t)}
-    .lb-nav:hover{background:rgba(255,255,255,.12)}
-    .lb-prev{left:1.2rem}.lb-next{right:1.2rem}
-    .lb-caption{position:absolute;bottom:1.5rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.85);font-size:.88rem;text-align:center;max-width:80vw}
-    .lb-counter{position:absolute;top:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.6);font-family:'JetBrains Mono',monospace;font-size:.78rem}
-
-    /* EXPAND hint */
-    .img-expand-hint{position:absolute;bottom:.5rem;right:.5rem;background:rgba(0,0,0,.45);color:#fff;font-size:.7rem;padding:.2rem .5rem;border-radius:4px;opacity:0;transition:opacity var(--t);pointer-events:none}
-    .slider-track:hover .img-expand-hint{opacity:1}
+    .lb-nav{position:absolute;top:50%;transform:translateY(-50%);color:#fff;width:48px;height:48px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:1.6rem;transition:all var(--t);background:rgba(0,0,0,.3)}
+    .lb-nav:hover{background:rgba(255,255,255,.15)}
+    .lb-prev{left:1rem}.lb-next{right:1rem}
+    .lb-caption{position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.9);font-size:.9rem;text-align:center;max-width:80vw;background:rgba(0,0,0,.4);padding:.3rem .8rem;border-radius:4px}
+    .lb-counter{position:absolute;top:1rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.65);font-family:'JetBrains Mono',monospace;font-size:.8rem;background:rgba(0,0,0,.3);padding:.2rem .6rem;border-radius:4px}
 
     footer{padding:2rem clamp(1.5rem,6vw,6rem);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;color:var(--ink2);font-size:.85rem;margin-top:2rem}
     #loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;transition:opacity .5s}
@@ -311,7 +312,7 @@ function buildImagePanel(gallery, mode) {
   panel.innerHTML = `
     <div class="slider-track" id="sl-track">
       ${imgs}
-      <div class="img-expand-hint">🔍 click to expand</div>
+      <button class="slider-fullscreen" id="sl-fullscreen" title="View fullscreen">⛶</button>
     </div>
     ${controls}
     <div class="slider-caption" id="sl-caption">${gallery[0].caption||''}</div>`;
@@ -341,8 +342,14 @@ function buildImagePanel(gallery, mode) {
     autoTimer = setInterval(() => goTo(current+1), 3000);
   }
 
-  // Click image to open lightbox
-  track.addEventListener('click', () => openLB(gallery, current));
+  // Click image or fullscreen button to open lightbox
+  track.addEventListener('click', e => {
+    if (!e.target.closest('.slider-fullscreen')) openLB(gallery, current);
+  });
+  document.getElementById('sl-fullscreen').addEventListener('click', e => {
+    e.stopPropagation();
+    openLB(gallery, current);
+  });
 }
 
 // ── LOAD PROJECT ───────────────────────────────────────────────────
