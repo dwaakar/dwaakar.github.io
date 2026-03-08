@@ -1,14 +1,13 @@
 ---
-title: Spring Water Assessment — Karnali River Basin
-shortDesc: Physicochemical and biological analysis of 5,000+ spring water
-  samples across the Karnali River Basin.
+title: "Spring Water Assessment — Karnali River Basin"
+shortDesc: "Physicochemical and biological analysis of 5,000+ spring water samples across the Karnali River Basin."
 year: "2022"
-status: Research Assistant — Kathmandu University
-category: research
-tags: []
+status: "Research Assistant — Kathmandu University"
+tags: ["Research", "Water Quality", "Field Work"]
 image: ""
-displayMode: fullpage
 link: ""
+category: "research"
+displayMode: "fullpage"
 order: 7
 ---
 

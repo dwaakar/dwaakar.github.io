@@ -18,18 +18,17 @@
     ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
 
     /* NAV */
-    #navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.5rem,5vw,4rem);background:transparent;transition:background var(--t),box-shadow var(--t)}
-    #navbar.scrolled{background:var(--surface);box-shadow:var(--shadow)}
+    #navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.5rem,5vw,4rem);background:var(--surface);box-shadow:var(--shadow);transition:background var(--t),box-shadow var(--t)}
     .nav-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--ink)}
     .nav-links{display:flex;align-items:center;gap:1.5rem;list-style:none}
-    .nav-links a{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);transition:color var(--t)}
+    .nav-links a{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);transition:color var(--t)}
     .nav-links a:hover{color:var(--accent)}
     .theme-btn,.hamburger-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:.95rem;transition:all var(--t);background:var(--surface)}
     .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
 
     /* CV DROPDOWN */
     .cv-dropdown{position:relative}
-    .cv-btn{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);display:flex;align-items:center;gap:.3rem;transition:color var(--t);padding:.3rem .6rem;border-radius:6px;border:1.5px solid var(--border);background:transparent}
+    .cv-btn{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:.3rem;transition:color var(--t);padding:.3rem .6rem;border-radius:6px;border:1.5px solid var(--border);background:transparent}
     .cv-btn:hover{color:var(--accent);border-color:var(--accent)}
     .cv-menu{position:absolute;top:calc(100% + .5rem);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);min-width:200px;opacity:0;pointer-events:none;transform:translateY(-8px);transition:all var(--t);z-index:200}
     .cv-menu.open{opacity:1;pointer-events:all;transform:none}
@@ -269,10 +268,9 @@
   <div class="nav-logo" id="nav-name">Diwakar Adhikari</div>
   <ul class="nav-links" id="nav-links">
     <li><a href="#about">About</a></li>
-    <li><a href="#skills">Skills</a></li>
     <li><a href="#projects">Projects</a></li>
     <li><a href="#publications">Publications</a></li>
-    <li><a href="#awards">Awards</a></li>
+    <li><a href="#skills">Skills</a></li>
     <li><a href="#contact">Contact</a></li>
     <li>
       <div class="cv-dropdown" id="cv-dropdown">
@@ -331,18 +329,9 @@
   </div>
 </section>
 
-<section id="skills">
-  <div class="section-header reveal">
-    <span class="section-number">02</span>
-    <h2 class="section-title">Skills</h2>
-    <div class="section-line"></div>
-  </div>
-  <div class="skills-grid" id="skills-grid"></div>
-</section>
-
 <section id="projects">
   <div class="section-header reveal">
-    <span class="section-number">03</span>
+    <span class="section-number">02</span>
     <h2 class="section-title">Projects</h2>
     <div class="section-line"></div>
   </div>
@@ -357,25 +346,25 @@
 
 <section id="publications">
   <div class="section-header reveal">
-    <span class="section-number">04</span>
+    <span class="section-number">03</span>
     <h2 class="section-title">Publications</h2>
     <div class="section-line"></div>
   </div>
   <div class="pub-list" id="pub-list"></div>
 </section>
 
-<section id="awards">
+<section id="skills">
   <div class="section-header reveal">
-    <span class="section-number">05</span>
-    <h2 class="section-title">Grants & Awards</h2>
+    <span class="section-number">04</span>
+    <h2 class="section-title">Skills</h2>
     <div class="section-line"></div>
   </div>
-  <div class="awards-list" id="awards-list"></div>
+  <div class="skills-grid" id="skills-grid"></div>
 </section>
 
 <section id="contact">
   <div class="section-header reveal">
-    <span class="section-number">06</span>
+    <span class="section-number">05</span>
     <h2 class="section-title">Contact</h2>
     <div class="section-line"></div>
   </div>
@@ -712,7 +701,7 @@ const observer = new IntersectionObserver(entries=>{
 },{threshold:0.1});
 
 // ── RENDER ───────────────────────────────────────────────────
-function renderSite(s, eduItems, skillGroups, projects, pubs, awards) {
+function renderSite(s, eduItems, skillGroups, projects, pubs) {
   // Names & bio
   document.title = safe(s.name);
   ['nav-name','hero-name','footer-name'].forEach(id=>document.getElementById(id).textContent=safe(s.name));
@@ -760,6 +749,7 @@ function renderSite(s, eduItems, skillGroups, projects, pubs, awards) {
       icon: '🎓',
       detail: e.detail,
       coursework: Array.isArray(e.coursework)?e.coursework:[],
+      gallery: Array.isArray(e.gallery)?e.gallery:[],
       link: e.link||'',
       displayMode: e.displayMode||'popup',
       slug: e.slug,
@@ -799,14 +789,14 @@ function renderSite(s, eduItems, skillGroups, projects, pubs, awards) {
     const tagHtml=tags.map(t=>`<span class="project-tag">${t}</span>`).join('');
     const icon=tagIcons[tags[0]]||'📁';
     const imgHtml=p.image?`<img class="project-img" src="${p.image}" alt="${safe(p.title)}" loading="lazy"/>`:`<div class="project-img-placeholder">${icon}</div>`;
-    const fpBadge=(p.displayMode==='fullpage')?`<span style="font-size:.68rem;padding:.15rem .4rem;background:var(--ink);color:#fff;border-radius:6px;margin-left:.4rem">Full Page</span>`:'';
     const div=document.createElement('div');
     div.className='project-card reveal';
     div.dataset.tags=tags.join(',');
     div.dataset.cat=p.category||'research';
-    div.innerHTML=`${imgHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}${fpBadge}</div></div><p class="project-desc">${safe(p.shortDesc)}</p><div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
+    div.innerHTML=`${imgHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}</div></div>${p.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${p.organisation}</p>`:''}<p class="project-desc">${safe(p.shortDesc)}</p><div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
     div.addEventListener('click',()=>openModal({
-      title:p.title, meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>`,
+      title:p.title,
+      meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>${p.organisation?`<span style="font-size:.82rem;color:var(--accent)">🏢 ${p.organisation}</span>`:''}`,
       tags, image:p.image||'', icon, detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[],
       videoUrl:p.videoUrl||'', report:p.report||null, relatedPubs:p.relatedPubs||[],
       link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project'
@@ -833,12 +823,6 @@ function renderSite(s, eduItems, skillGroups, projects, pubs, awards) {
       }));
     }
     pubEl.appendChild(div);
-  });
-
-  // Awards
-  const awEl=document.getElementById('awards-list');
-  awards.forEach(a=>{
-    awEl.innerHTML+=`<div class="award-card reveal"><span class="award-year">${safe(a.year)}</span><div><div class="award-title">${safe(a.title)}</div><div class="award-org">${safe(a.org)}</div></div></div>`;
   });
 
   // Contact
@@ -881,19 +865,18 @@ function renderSite(s, eduItems, skillGroups, projects, pubs, awards) {
 // ── BOOT ─────────────────────────────────────────────────────
 async function loadSite() {
   try {
-    const [settings, skillsData, eduItems, projects, pubs, awards] = await Promise.all([
+    const [settings, skillsData, eduItems, projects, pubs] = await Promise.all([
       fj('/content/settings.json'),
       fj('/content/skills.json'),
       loadMDs('/content/education/'),
       loadMDs('/content/projects/'),
-      loadMDs('/content/publications/'),
-      loadMDs('/content/awards/')
+      loadMDs('/content/publications/')
     ]);
     renderSite(
       settings||{name:'Diwakar Adhikari'},
       eduItems,
       (skillsData||{}).items||[],
-      projects, pubs, awards
+      projects, pubs
     );
   } catch(e) {
     console.error('Load error:',e);

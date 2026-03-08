@@ -1,14 +1,13 @@
 ---
-title: Climate Change Adaptation for Marginalized Communities
-shortDesc: Policy and grassroots capacity-building programme for climate
-  adaptation with marginalised communities in Nepal.
-year: 2024–2025
-status: Consultant — Nepal Peacebuilding Initiative
-category: community
-tags: []
+title: "Climate Change Adaptation for Marginalized Communities"
+shortDesc: "Policy and grassroots capacity-building programme for climate adaptation with marginalised communities in Nepal."
+year: "2024–2025"
+status: "Consultant — Nepal Peacebuilding Initiative"
+tags: ["Program", "Climate Change", "Policy"]
 image: ""
-displayMode: popup
 link: ""
+category: "community"
+displayMode: "fullpage"
 order: 6
 ---
 

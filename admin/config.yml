@@ -80,6 +80,13 @@ collections:
         field: { label: "Course", name: "course", widget: "string" }
       - { label: "Detail / Description", name: "body", widget: "markdown", required: false }
       - { label: "Cover Image", name: "image", widget: "image", required: false }
+      - label: "Image Gallery (up to 10 images)"
+        name: "gallery"
+        widget: "list"
+        required: false
+        fields:
+          - { label: "Image", name: "src", widget: "image" }
+          - { label: "Caption", name: "caption", widget: "string", required: false }
       - { label: "Link (e.g. institution website)", name: "link", widget: "string", required: false }
       - label: "Display Mode"
         name: "displayMode"
@@ -118,6 +125,7 @@ collections:
       - { label: "Full Detail", name: "body", widget: "markdown", required: false }
       - { label: "Year", name: "year", widget: "string", required: false }
       - { label: "Status / Role", name: "status", widget: "string", required: false }
+      - { label: "Organisation / Institution", name: "organisation", widget: "string", required: false, hint: "e.g. ICIMOD, Tribhuvan University" }
       - label: "Category"
         name: "category"
         widget: "select"

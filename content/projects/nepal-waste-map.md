@@ -1,14 +1,13 @@
 ---
-title: Nepal Waste Map — Digital Waste Management System
-shortDesc: City-scale digital waste management platform mapping 70,000+
-  households across six municipalities in Nepal.
-year: 2018–2022
-status: Program Officer — Clean Up Nepal
-category: community
-tags: []
+title: "Nepal Waste Map — Digital Waste Management System"
+shortDesc: "City-scale digital waste management platform mapping 70,000+ households across six municipalities in Nepal."
+year: "2018–2022"
+status: "Program Officer — Clean Up Nepal"
+tags: ["Program", "Waste Management", "Digital"]
 image: ""
-displayMode: fullpage
 link: ""
+category: "community"
+displayMode: "fullpage"
 order: 5
 ---
 

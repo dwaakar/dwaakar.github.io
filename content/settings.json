@@ -1,34 +1,35 @@
 {
+  "name": "Diwakar Adhikari",
+  "email": "thisisdwakr@gmail.com",
+  "phone": "+977-984-3247059",
+  "location": "Kathmandu, Nepal",
+  "photo": "/public/images/profile.jpg",
+  "bio": "I am an environmental scientist specialising in water resource management, restoration ecology, and climate-resilient infrastructure. My work spans hydrologic modelling, contaminant fate and transport, and integrated urban water systems — with a focus on communities and rivers in the Hindu Kush Himalayan region.",
+  "taglines": [
+    "Environmental Scientist",
+    "Water Resource Researcher",
+    "Hydrologic Modeller",
+    "Climate Adaptation Advocate"
+  ],
+  "aboutResearchObjective": "My research focuses on understanding hydrological and sediment dynamics in Himalayan river systems, and how climate change and anthropogenic pressures — particularly hydropower development — alter these systems. I aim to produce actionable science that informs climate-resilient water infrastructure and equitable resource governance in Nepal and the broader Hindu Kush Himalayan region.",
+  "researchInterests": [
+    "Integrated & Urban Water Systems, Governance and Political Economy",
+    "Modelling Water Systems for Climate-Resilient Infrastructure and Adaptation",
+    "Contaminant Fate, Transport, and Treatment"
+  ],
+  "aboutProfessionalObjective": "I am a program management and consultancy professional with experience designing and delivering environmental programs across Nepal. I am interested in roles at the intersection of environmental science, policy, and community development — particularly in climate adaptation, waste management, and sustainable livelihoods.",
   "professionalInterests": [
     "Climate Change Adaptation Program Design",
     "Environmental Policy and Advocacy",
     "Waste Management and Circular Economy",
     "Community-Based Natural Resource Management"
   ],
-  "github": "",
-  "aboutProfessionalObjective": "An environmental professional with 3+ years of experience supporting youth \nengagement, civic participation, and community-driven development initiatives in Nepal. \nProven ability to work with local governments, civil society organizations, and youth \nnetworks to design and implement inclusive programmes, facilitate policy dialogue, and \ntranslate community voices into actionable governance outcomes. Strong background in \nresults-based management (RBM), monitoring and evaluation, and the use of data and \ndigital tools to support evidence-based decision-making. Experienced in working with \nmarginalized communities, youth leaders, and municipal institutions across multiple \nprovinces",
-  "taglines": [
-    "Researcher",
-    "Wanderer",
-    "Just Another Environmentalist"
-  ],
+  "cvAcademic": "",
+  "cvProfessional": "",
+  "github": "https://github.com/dwaakar",
+  "linkedin": "https://www.linkedin.com/in/diwakaradhikari/",
   "facebook": "https://www.facebook.com/mahaapooroosh",
-  "bio": "I bring over four years of experience in environmental research and action, specializing in water resources, waste management, climate resilience, ecosystem health, and WASH. I’ve analyzed thousands of water samples, facilitated the mapping and analysis of waste-related data from 70,000+ households across several municipalities, studied the hydrological regime of Himalayan rivers, and trained youth in environmental advocacy. In between, I’ve managed projects, raised funds, and built partnerships across local governments, communities, and other sectors.",
-  "name": "Diwakar Adhikari",
-  "phone": "+977-984-3247059",
-  "researchInterests": [
-    "Integrated & Urban Water Systems, Governance and Political Economy",
-    "Modelling Water Systems for Climate-Resilient Infrastructure and Adaptation",
-    "Contaminant Fate, Transport, and Treatment"
-  ],
-  "aboutResearchObjective": "I bring over four years of experience in environmental research and action, specializing in water resources, waste management, climate resilience, ecosystem health, and WASH. I’ve analyzed thousands of water samples, facilitated the mapping and analysis of waste-related data from 70,000+ households across several municipalities, studied the hydrological regime of Himalayan rivers, and trained youth in environmental advocacy. In between, I’ve managed projects, raised funds, and built partnerships across local governments, communities, and other sectors.",
-  "photo": "/public/images/profile.jpg",
   "instagram": "",
-  "customSocials": [],
-  "location": "Kathmandu, Nepal",
   "storygraph": "https://app.thestorygraph.com/profile/dwakar",
-  "cvProfessional": "/public/images/diwakar-adhikari.pdf",
-  "cvAcademic": "/public/images/diwakar-adhikari-cv.pdf",
-  "email": "thisisdwakr@gmail.com",
-  "linkedin": "https://www.linkedin.com/in/diwakaradhikari/"
+  "customSocials": []
 }

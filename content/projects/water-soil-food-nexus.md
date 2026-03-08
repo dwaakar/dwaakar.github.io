@@ -1,14 +1,13 @@
 ---
-title: Water-Soil-Food Nexus & Agrobiodiversity — Marsyangdi Basin
-shortDesc: Research fellowship exploring sustainable livelihoods through
-  agrobiodiversity mainstreaming along the Marsyangdi River Basin.
-year: 2023–2024
-status: Research Fellow — Dept. of Botany, TU
-category: research
-tags: []
+title: "Water-Soil-Food Nexus & Agrobiodiversity — Marsyangdi Basin"
+shortDesc: "Research fellowship exploring sustainable livelihoods through agrobiodiversity mainstreaming along the Marsyangdi River Basin."
+year: "2023–2024"
+status: "Research Fellow — Dept. of Botany, TU"
+tags: ["Research", "Food Systems", "Livelihoods"]
 image: ""
-displayMode: fullpage
 link: ""
+category: "research"
+displayMode: "fullpage"
 order: 3
 ---
 
