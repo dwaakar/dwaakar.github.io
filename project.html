@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8"/>
@@ -381,7 +381,9 @@ async function load() {
 
     // ── COVER IMAGE (hero) ──
     const heroEl = document.getElementById('project-hero');
+    console.log('raw image field:', p.image);
     const coverSrc = p.image ? imgPath(p.image) : '';
+    console.log('coverSrc after imgPath:', coverSrc);
     if (coverSrc) {
       heroEl.innerHTML = `<img src="${coverSrc}" alt="${p.title||''}"/><div class="project-hero-overlay"></div>`;
     } else {
