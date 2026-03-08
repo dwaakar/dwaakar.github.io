@@ -75,10 +75,12 @@
     .img-panel-empty{padding:3rem;text-align:center;color:var(--ink2);font-size:.9rem;background:var(--bg2)}
 
     /* SLIDER TRACK */
-    /* SLIDER TRACK — tall for diagrams */
-    .slider-track{position:relative;width:100%;aspect-ratio:3/4;overflow:hidden;background:var(--bg2);cursor:zoom-in}
-    .slider-track img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .5s ease;opacity:0}
-    .slider-track img.active{opacity:1}
+    /* SLIDER TRACK — no fixed box, image flows naturally */
+    .slider-track{position:relative;width:100%;background:var(--bg2);cursor:zoom-in}
+    .slider-img-wrap{position:relative;width:100%;line-height:0}
+    .slider-img-wrap img{width:100%;height:auto;display:block;transition:opacity .5s ease;opacity:0;position:absolute;top:0;left:0}
+    .slider-img-wrap img.active{opacity:1;position:relative}
+    .slider-img-wrap img.sizing{opacity:0;position:relative;pointer-events:none}
 
     /* FULLSCREEN BUTTON */
     .slider-fullscreen{position:absolute;top:.6rem;right:.6rem;z-index:10;width:32px;height:32px;border-radius:6px;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all var(--t);border:1px solid rgba(255,255,255,.2)}
@@ -286,69 +288,85 @@ function buildImagePanel(gallery, mode) {
 
   let current = 0;
   let autoTimer = null;
+  const INTERVAL = 3000;   // auto-slide every 3s
+  const PAUSE    = 10000;  // pause 10s after manual click then resume
 
-  // Build image track
-  const imgs = gallery.map((g,i) =>
-    `<img src="${g.src}" alt="${g.caption||'Image '+(i+1)}" data-i="${i}" class="${i===0?'active':''}" loading="${i===0?'eager':'lazy'}"/>`
+  // All images stacked — first is active (relative), rest absolute
+  const imgMarkup = gallery.map((g,i) =>
+    `<img src="${g.src}" alt="${g.caption||'Image '+(i+1)}"
+      class="${i===0?'active':''}${i===1?' sizing':''}"
+      loading="${i===0?'eager':'lazy'}"/>`
   ).join('');
 
-  // Build controls based on mode
-  let controls = '';
-  if (mode === 'manual') {
-    controls = `
-      <div class="slider-controls-manual">
+  // Dots for all modes
+  const dots = gallery.length > 1
+    ? `<div class="slider-controls-auto" id="sl-dots">
+        ${gallery.map((_,i)=>`<div class="slider-dot${i===0?' active':''}" data-dot="${i}"></div>`).join('')}
+       </div>`
+    : '';
+
+  // Arrows always shown (both auto and manual modes)
+  const arrows = gallery.length > 1
+    ? `<div class="slider-controls-manual">
         <button class="slider-arrow" id="sl-prev">‹</button>
         <div class="slider-counter" id="sl-counter">1 / ${gallery.length}</div>
         <button class="slider-arrow" id="sl-next">›</button>
-      </div>`;
-  } else {
-    // Auto mode — dots
-    const dots = gallery.map((_,i) =>
-      `<div class="slider-dot${i===0?' active':''}" data-dot="${i}"></div>`
-    ).join('');
-    controls = `<div class="slider-controls-auto" id="sl-dots">${dots}</div>`;
-  }
+       </div>`
+    : '';
 
   panel.innerHTML = `
     <div class="slider-track" id="sl-track">
-      ${imgs}
+      <div class="slider-img-wrap" id="sl-wrap">${imgMarkup}</div>
       <button class="slider-fullscreen" id="sl-fullscreen" title="View fullscreen">⛶</button>
     </div>
-    ${controls}
+    ${mode === 'auto' ? dots : arrows + dots}
     <div class="slider-caption" id="sl-caption">${gallery[0].caption||''}</div>`;
 
-  // Get refs
-  const track = document.getElementById('sl-track');
   const captionEl = document.getElementById('sl-caption');
-  const imgEls = track.querySelectorAll('img');
+  const wrap = document.getElementById('sl-wrap');
+  const imgEls = wrap.querySelectorAll('img');
 
-  function goTo(idx) {
+  function goTo(idx, fromUser) {
     imgEls[current].classList.remove('active');
+    imgEls[current].classList.add('sizing');
     current = (idx + gallery.length) % gallery.length;
+    imgEls[current].classList.remove('sizing');
     imgEls[current].classList.add('active');
     captionEl.textContent = gallery[current].caption||'';
 
-    if (mode === 'manual') {
-      document.getElementById('sl-counter').textContent = `${current+1} / ${gallery.length}`;
-    } else {
-      document.querySelectorAll('.slider-dot').forEach((d,i) => d.classList.toggle('active', i===current));
+    // Update counter and dots
+    const counter = document.getElementById('sl-counter');
+    if (counter) counter.textContent = `${current+1} / ${gallery.length}`;
+    document.querySelectorAll('.slider-dot').forEach((d,i) => d.classList.toggle('active', i===current));
+
+    // If user clicked manually — pause then resume
+    if (fromUser && gallery.length > 1) {
+      clearInterval(autoTimer);
+      autoTimer = null;
+      setTimeout(() => {
+        autoTimer = setInterval(() => goTo(current+1, false), INTERVAL);
+      }, PAUSE);
     }
   }
 
-  if (mode === 'manual') {
-    document.getElementById('sl-prev').addEventListener('click', () => goTo(current-1));
-    document.getElementById('sl-next').addEventListener('click', () => goTo(current+1));
-  } else if (gallery.length > 1) {
-    autoTimer = setInterval(() => goTo(current+1), 3000);
+  // Auto-start for all modes when multiple images
+  if (gallery.length > 1) {
+    autoTimer = setInterval(() => goTo(current+1, false), INTERVAL);
   }
 
-  // Click image or fullscreen button to open lightbox
+  // Arrow buttons — pause then resume
+  const prevBtn = document.getElementById('sl-prev');
+  const nextBtn = document.getElementById('sl-next');
+  if (prevBtn) prevBtn.addEventListener('click', e => { e.stopPropagation(); goTo(current-1, true); });
+  if (nextBtn) nextBtn.addEventListener('click', e => { e.stopPropagation(); goTo(current+1, true); });
+
+  // Click image → lightbox
+  const track = document.getElementById('sl-track');
   track.addEventListener('click', e => {
-    if (!e.target.closest('.slider-fullscreen')) openLB(gallery, current);
+    if (!e.target.closest('.slider-fullscreen') && !e.target.closest('.slider-arrow')) openLB(gallery, current);
   });
   document.getElementById('sl-fullscreen').addEventListener('click', e => {
-    e.stopPropagation();
-    openLB(gallery, current);
+    e.stopPropagation(); openLB(gallery, current);
   });
 }
 
@@ -399,9 +417,10 @@ async function load() {
     })).filter(g => g.src);
 
     // Research = manual slider, Community/others = auto
+    // Both modes: auto-slide + manual arrows
+    // 'research' shows arrows + dots, 'auto' shows dots only
     const isResearch = (p.category||'').toLowerCase() === 'research';
-    const sliderMode = isResearch ? 'manual' : 'auto';
-    buildImagePanel(gallery, sliderMode);
+    buildImagePanel(gallery, isResearch ? 'research' : 'auto');
 
     // Full page visibility
     const fp = key => p['fpShow'+key.charAt(0).toUpperCase()+key.slice(1)] !== false;
