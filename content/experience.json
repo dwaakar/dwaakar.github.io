@@ -1,24 +1,60 @@
 {
   "items": [
     {
-      "title": "Research Assistant",
-      "organisation": "Central Department of Environmental Science, Tribhuvan University",
-      "location": "Kathmandu, Nepal",
-      "startDate": "2022",
-      "endDate": "2024",
+      "title": "Program Coordinator",
+      "organisation": "Nepal Peacebuilding Initiative",
+      "location": "Lalitpur, Nepal",
+      "startDate": "2025",
+      "endDate": "2025",
       "current": false,
-      "type": "research",
-      "description": "Conducted field research on sediment dynamics and hydropower impacts in the Marsyangdi River Basin. Responsibilities included field sampling, GIS analysis, hydrological modelling, and preparation of peer-reviewed manuscripts."
+      "type": "work",
+      "description": ""
     },
     {
-      "title": "Environmental Consultant",
-      "organisation": "Independent",
+      "title": "Program Officer",
+      "organisation": "CLEAN UP NEPAL",
       "location": "Kathmandu, Nepal",
-      "startDate": "2020",
-      "endDate": "",
+      "startDate": "December 2018",
+      "endDate": "February 2022",
       "current": true,
-      "type": "consultancy",
-      "description": "Providing environmental consultancy services for NGOs and government agencies on water resource management, environmental impact assessment, and climate adaptation program design."
+      "type": "work",
+      "description": ""
+    },
+    {
+      "current": false,
+      "type": "research",
+      "title": "Research Fellow",
+      "organisation": "Central Department of Botany, Tribhuvan University",
+      "location": "Kirtipur Kathmandu",
+      "startDate": "October 2023",
+      "endDate": "September 2024"
+    },
+    {
+      "current": false,
+      "type": "research",
+      "title": "Research Assistant",
+      "organisation": "Research Centre for Applied Science and Technology",
+      "location": "Kirtipur, Kathmandu",
+      "startDate": "September 2023",
+      "endDate": "February 2024"
+    },
+    {
+      "current": false,
+      "type": "research",
+      "title": "Research Assistant",
+      "organisation": "Kathmandu University",
+      "location": "Karnali, Nepal",
+      "startDate": "Jun 2022",
+      "endDate": "Jul 2022"
+    },
+    {
+      "current": false,
+      "type": "work",
+      "title": "Counsellor",
+      "organisation": "ECCA Nepal",
+      "location": "Jwagal, Kathmandu",
+      "startDate": "June 2018",
+      "endDate": "November 2010"
     }
   ]
 }
