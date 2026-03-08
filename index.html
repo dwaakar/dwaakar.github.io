@@ -162,6 +162,8 @@
     .exp-org{font-size:.9rem;color:var(--accent);margin-bottom:.6rem;font-weight:500}
     .exp-desc{font-size:.92rem;color:var(--ink2);line-height:1.75}
     .exp-current-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:.4rem;vertical-align:middle;animation:pulse 2s infinite}
+    .exp-clickable{cursor:pointer;transition:background var(--t)}
+    .exp-clickable:hover{background:var(--bg2);border-radius:var(--radius);margin:0 -1rem;padding:0 1rem}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
     @media(max-width:700px){.exp-item{grid-template-columns:1fr}.exp-left{text-align:left;display:flex;gap:1rem;flex-wrap:wrap;align-items:center}}
 
@@ -595,7 +597,7 @@ function openModal(cfg) {
   // Cover image — separate field, respects showImage toggle
   const vis0 = cfg.vis || {};
   const coverSrc = cfg.image ? imgPath(cfg.image) : '';
-  const showCover = vis0.showImage !== false;
+  const showCover = vis0.showImage === true;
   document.getElementById('modal-cover-wrap').innerHTML = (showCover && coverSrc)
     ? `<img class="modal-cover" src="${coverSrc}" alt="${cfg.title}"/>`
     : `<div class="modal-cover-placeholder">${icon}</div>`;
@@ -607,7 +609,7 @@ function openModal(cfg) {
   // If vis object is provided with explicit values, respect them exactly
   // default is true only if vis key is absent (not explicitly set to false)
   const vis = cfg.vis || {};
-  const show = (key) => vis[key] !== false;
+  const show = (key) => vis[key] === true;
 
   let html = '';
   if (cfg.subtitle) html += `<p style="font-size:1rem;color:var(--ink2);margin-bottom:1rem">${cfg.subtitle}</p>`;
@@ -833,7 +835,7 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       displayMode: e.displayMode||'popup',
       slug: e.slug,
       pageType: 'education',
-      vis: { showImage: e.showImage!==false, showGallery: e.showGallery!==false, showDetail: e.showDetail!==false, showCoursework: e.showCoursework!==false },
+      vis: { showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showDetail: e.showDetail===true||e.showDetail==='true', showCoursework: e.showCoursework===true||e.showCoursework==='true' },
       fpVis: { showImage: e.fpShowImage!==false, showGallery: e.fpShowGallery!==false, showDetail: e.fpShowDetail!==false, showCoursework: e.fpShowCoursework!==false }
     }));
     eduEl.appendChild(card);
@@ -875,7 +877,7 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       tags, image:imgPath(p.image)||'', icon, detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[],
       videoUrl:p.videoUrl||'', report:p.report||null, relatedPubs:p.relatedPubs||[],
       link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project',
-      vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showDetail: p.showDetail!==false, showVideo: p.showVideo!==false, showReport: p.showReport!==false, showRelatedPubs: p.showRelatedPubs!==false },
+      vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showDetail: p.showDetail===true||p.showDetail==='true', showVideo: p.showVideo===true||p.showVideo==='true', showReport: p.showReport===true||p.showReport==='true', showRelatedPubs: p.showRelatedPubs===true||p.showRelatedPubs==='true' },
       fpVis: { showImage: p.fpShowImage!==false, showGallery: p.fpShowGallery!==false, showDetail: p.fpShowDetail!==false, showVideo: p.fpShowVideo!==false, showReport: p.fpShowReport!==false, showRelatedPubs: p.fpShowRelatedPubs!==false }
     }));
     pgEl.appendChild(div);
@@ -922,8 +924,8 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
         abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
         link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
-        vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showAbstract: p.showAbstract!==false, showDetail: p.showDetail!==false },
-        fpVis: { showImage: p.fpShowImage!==false, showGallery: p.fpShowGallery!==false, showAbstract: p.fpShowAbstract!==false, showDetail: p.fpShowDetail!==false }
+        vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
+        fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
       }));
     }
     pubEl.appendChild(div);
@@ -931,15 +933,19 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
 
   // Experience
   const expEl = document.getElementById('exp-list');
-  const expItems2 = expItems || [];
+  const expItems2 = (expItems||[]).sort((a,b)=>(a.order||99)-(b.order||99));
   function renderExp(filter) {
     const filtered = filter === 'all' ? expItems2 : expItems2.filter(e => e.type === filter);
-    expEl.innerHTML = filtered.map(e => {
-      const endLabel = e.current ? '<span class="exp-current-dot"></span>Present' : (e.endDate || '');
+    expEl.innerHTML = '';
+    filtered.forEach(e => {
+      const endLabel = (e.current==='true'||e.current===true) ? '<span class="exp-current-dot"></span>Present' : (e.endDate || '');
       const dateRange = e.startDate ? `${e.startDate}${endLabel ? ' — ' + endLabel : ''}` : endLabel;
       const typeClass = `exp-type-${e.type || 'work'}`;
       const typeLabel = (e.type || 'work').charAt(0).toUpperCase() + (e.type || 'work').slice(1);
-      return `<div class="exp-item">
+      const hasMore = e.shortDesc || e.body || e.image || (e.gallery && e.gallery.length);
+      const div = document.createElement('div');
+      div.className = 'exp-item reveal' + (hasMore ? ' exp-clickable' : '');
+      div.innerHTML = `
         <div class="exp-left">
           <div class="exp-dates">${dateRange}</div>
           ${e.location ? `<div class="exp-location">📍 ${e.location}</div>` : ''}
@@ -948,13 +954,30 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
         <div class="exp-right">
           <div class="exp-title">${safe(e.title)}</div>
           <div class="exp-org">${safe(e.organisation)}</div>
-          ${e.description ? `<div class="exp-desc">${e.description}</div>` : ''}
-        </div>
-      </div>`;
-    }).join('');
+          ${e.shortDesc ? `<div class="exp-desc">${safe(e.shortDesc)}</div>` : ''}
+          ${hasMore ? `<span class="pub-more">Read more →</span>` : ''}
+        </div>`;
+      if (hasMore) {
+        div.addEventListener('click', () => openModal({
+          title: e.title,
+          meta: `<span class="project-status-badge">${typeLabel}</span>`,
+          tags: [],
+          image: imgPath(e.image)||'',
+          icon: '💼',
+          subtitle: `${safe(e.organisation)}${e.location?' · '+e.location:''}`,
+          detail: e.body||'',
+          abstract: e.shortDesc||'',
+          gallery: Array.isArray(e.gallery) ? e.gallery : [],
+          displayMode: e.displayMode||'popup',
+          slug: e.slug, pageType: 'experience',
+          vis: { showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showAbstract: e.showAbstract===true||e.showAbstract==='true'||true, showDetail: e.showDetail===true||e.showDetail==='true' },
+          fpVis: { showImage: e.fpShowImage===true||e.fpShowImage==='true', showGallery: e.fpShowGallery===true||e.fpShowGallery==='true', showDetail: e.fpShowDetail===true||e.fpShowDetail==='true' }
+        }));
+      }
+      expEl.appendChild(div);
+    });
   }
   renderExp('all');
-  // Experience type tabs
   document.querySelectorAll('[data-exp]').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('[data-exp]').forEach(b => b.classList.remove('active'));
@@ -962,7 +985,6 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       renderExp(btn.dataset.exp);
     });
   });
-  // Hide tabs that have no items
   ['research','work','consultancy'].forEach(type => {
     const hasItems = expItems2.some(e => e.type === type);
     const btn = document.querySelector(`[data-exp="${type}"]`);
@@ -1009,18 +1031,18 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
 // ── BOOT ─────────────────────────────────────────────────────
 async function loadSite() {
   try {
-    const [settings, expData, eduItems, projects, pubs] = await Promise.all([
+    const [settings, eduItems, projects, pubs, expItems] = await Promise.all([
       fj('/content/settings.json'),
-      fj('/content/experience.json'),
       loadMDs('/content/education/'),
       loadMDs('/content/projects/'),
-      loadMDs('/content/publications/')
+      loadMDs('/content/publications/'),
+      loadMDs('/content/experience/')
     ]);
     renderSite(
       settings||{name:'Diwakar Adhikari'},
       eduItems,
       projects, pubs,
-      (expData||{}).items||[]
+      expItems||[]
     );
   } catch(e) {
     console.error('Load error:',e);
