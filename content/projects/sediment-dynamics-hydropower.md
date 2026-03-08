@@ -1,7 +1,11 @@
 ---
 title: Sediment Dynamics & Hydropower Impacts — Marsyangdi River
-shortDesc: MSc thesis examining sediment load, transport mechanisms, and
-  environmental impacts of run-of-river hydropower plants.
+shortDesc: This study examines how cascade dams alter sediment load, grain size,
+  and transport dynamics in the Marsyangdi River Basin. Field data, SWAT
+  modeling, and sediment sampling reveal disrupted sediment continuity,
+  significant trapping of fine particles, and coarser sediment downstream. These
+  changes influence river morphology, aquatic habitats, and hydropower
+  performance, highlighting the need for integrated sediment management.
 year: "2024"
 status: MSc Thesis — Tribhuvan University
 category: research
