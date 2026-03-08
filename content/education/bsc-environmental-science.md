@@ -14,7 +14,7 @@ coursework:
 image: ""
 link: ""
 displayMode: popup
-order: 2
+order: 0
 ---
 I completed my **Bachelor (Undergraduate degree) of Science (B.Sc.) in Environmental Science** from **Tri-Chandra Multiple Campus, Tribhuvan University**, one of Nepal’s oldest and most prestigious academic institutions. The four–year program provided a strong interdisciplinary foundation in environmental systems, scientific research, and analytical methods. Throughout the course, I studied core subjects such as chemistry, zoology, applied statistics, scientific communication, and a comprehensive suite of environmental science courses covering pollution control, biodiversity conservation and management, climate change, ecosystem management, environmental assessment, and project management.
 
