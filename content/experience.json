@@ -1,0 +1,24 @@
+{
+  "items": [
+    {
+      "title": "Research Assistant",
+      "organisation": "Central Department of Environmental Science, Tribhuvan University",
+      "location": "Kathmandu, Nepal",
+      "startDate": "2022",
+      "endDate": "2024",
+      "current": false,
+      "type": "research",
+      "description": "Conducted field research on sediment dynamics and hydropower impacts in the Marsyangdi River Basin. Responsibilities included field sampling, GIS analysis, hydrological modelling, and preparation of peer-reviewed manuscripts."
+    },
+    {
+      "title": "Environmental Consultant",
+      "organisation": "Independent",
+      "location": "Kathmandu, Nepal",
+      "startDate": "2020",
+      "endDate": "",
+      "current": true,
+      "type": "consultancy",
+      "description": "Providing environmental consultancy services for NGOs and government agencies on water resource management, environmental impact assessment, and climate adaptation program design."
+    }
+  ]
+}
