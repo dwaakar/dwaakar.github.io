@@ -19,7 +19,7 @@ coursework:
   - "Fourth Semester: Environment Modelling and Applications, Dissertation "
 link: ""
 displayMode: popup
-showCoursework: true
+showCoursework: false
 order: 1
 image: ""
 ---
