@@ -435,31 +435,51 @@
 // ── HELPERS ──────────────────────────────────────────────────
 function parseFM(text) {
   const m = text.match(/^---\n([\s\S]*?)\n---/);
-  if (!m) return { data:{}, content: text };
+  if (!m) return { data:{}, content:text };
   const data = {};
   const lines = m[1].split('\n');
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
+    if (!line.trim() || line.startsWith('#')) { i++; continue; }
     const ci = line.indexOf(':');
     if (ci === -1) { i++; continue; }
     const key = line.slice(0, ci).trim();
-    const val = line.slice(ci+1).trim();
+    const val = line.slice(ci + 1).trim();
+    i++;
     if (val === '' || val === '[]') {
-      const items = []; i++;
-      while (i < lines.length && lines[i].match(/^- /)) {
-        items.push(lines[i].slice(2).trim().replace(/^["']|["']$/g,''));
-        i++;
+      // Indented list follows
+      const items = [];
+      while (i < lines.length && lines[i].match(/^  /)) {
+        const itemLine = lines[i];
+        if (itemLine.match(/^  - /)) {
+          const itemVal = itemLine.slice(4).trim();
+          if (itemVal.includes(':')) {
+            // Object item e.g. "  - src: /images/x.png"
+            const obj = {};
+            const ici = itemVal.indexOf(':');
+            obj[itemVal.slice(0,ici).trim()] = itemVal.slice(ici+1).trim().replace(/^["']|["']$/g,'');
+            i++;
+            while (i < lines.length && lines[i].match(/^    \S/)) {
+              const cl = lines[i].trim();
+              const cci = cl.indexOf(':');
+              if (cci !== -1) obj[cl.slice(0,cci).trim()] = cl.slice(cci+1).trim().replace(/^["']|["']$/g,'');
+              i++;
+            }
+            items.push(obj);
+          } else {
+            items.push(itemVal.replace(/^["']|["']$/g,''));
+            i++;
+          }
+        } else { i++; }
       }
-      data[key] = items; continue;
-    }
-    if (val.startsWith('[')) {
+      data[key] = items;
+    } else if (val.startsWith('[')) {
       try { data[key] = JSON.parse(val); }
       catch(e) { data[key] = val.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean); }
     } else {
       data[key] = val.replace(/^["']|["']$/g,'');
     }
-    i++;
   }
   return { data, content: text.slice(m[0].length).trim() };
 }
