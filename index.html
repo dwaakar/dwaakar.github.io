@@ -5,30 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Diwakar Adhikari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
   <style>
     :root{--bg:#f7f5f0;--bg2:#eeeae2;--surface:#fff;--border:#ddd9d0;--ink:#1a1814;--ink2:#5a5650;--accent:#2d6a4f;--accent2:#40916c;--gold:#b7832a;--tag-bg:#e8f5ee;--tag-ink:#1b4332;--radius:10px;--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 40px rgba(0,0,0,.12);--nav-h:64px;--t:0.3s cubic-bezier(.4,0,.2,1)}
     [data-theme="dark"]{--bg:#111410;--bg2:#1a1d17;--surface:#20241e;--border:#2e332b;--ink:#e8e4dc;--ink2:#9a9890;--accent:#52b788;--accent2:#74c69d;--gold:#d4a94a;--tag-bg:#1b3a2e;--tag-ink:#95d5b2}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     html{scroll-behavior:smooth}
-    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;overflow-x:hidden;transition:background var(--t),color var(--t)}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;overflow-x:hidden;transition:background var(--t),color var(--t)}
     a{color:inherit;text-decoration:none}
     button{cursor:pointer;border:none;background:none;font-family:inherit}
     ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
 
     /* NAV */
-    #navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.5rem,5vw,4rem);background:var(--surface);box-shadow:var(--shadow);transition:background var(--t),box-shadow var(--t)}
-    .nav-logo{font-family:'Playfair Display',serif;font-size:1.2rem;color:var(--ink)}
+    #navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.5rem,5vw,4rem);background:linear-gradient(to bottom,rgba(0,0,0,.45) 0%,transparent 100%);transition:background var(--t),box-shadow var(--t)}
+    #navbar.scrolled{background:var(--surface);box-shadow:var(--shadow)}
+    .nav-logo{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:#fff;transition:color var(--t)}
+    #navbar.scrolled .nav-logo{color:var(--ink)}
     .nav-links{display:flex;align-items:center;gap:1.5rem;list-style:none}
-    .nav-links a{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);transition:color var(--t)}
-    .nav-links a:hover{color:var(--accent)}
-    .theme-btn,.hamburger-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:.95rem;transition:all var(--t);background:var(--surface)}
-    .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .nav-links a{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.9);transition:color var(--t)}
+    #navbar.scrolled .nav-links a{color:var(--ink)}
+    .nav-links a:hover{color:#fff}
+    #navbar.scrolled .nav-links a:hover{color:var(--accent)}
+    .theme-btn,.hamburger-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.9);font-size:.95rem;transition:all var(--t);background:transparent}
+    .theme-btn:hover{border-color:#fff;color:#fff}
+    #navbar.scrolled .theme-btn{border-color:var(--border);color:var(--ink2);background:var(--surface)}
+    #navbar.scrolled .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
 
     /* CV DROPDOWN */
     .cv-dropdown{position:relative}
-    .cv-btn{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:.3rem;transition:color var(--t);padding:.3rem .6rem;border-radius:6px;border:1.5px solid var(--border);background:transparent}
-    .cv-btn:hover{color:var(--accent);border-color:var(--accent)}
+    .cv-btn{font-size:.82rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.9);display:flex;align-items:center;gap:.3rem;transition:all var(--t);padding:.3rem .6rem;border-radius:6px;border:1.5px solid rgba(255,255,255,.4);background:transparent}
+    .cv-btn:hover{color:#fff;border-color:#fff}
+    #navbar.scrolled .cv-btn{color:var(--ink);border-color:var(--border)}
+    #navbar.scrolled .cv-btn:hover{color:var(--accent);border-color:var(--accent)}
     .cv-menu{position:absolute;top:calc(100% + .5rem);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-lg);min-width:200px;opacity:0;pointer-events:none;transform:translateY(-8px);transition:all var(--t);z-index:200}
     .cv-menu.open{opacity:1;pointer-events:all;transform:none}
     .cv-menu a{display:flex;align-items:center;gap:.6rem;padding:.75rem 1.1rem;font-size:.88rem;color:var(--ink2);transition:background var(--t),color var(--t)}
@@ -45,8 +53,8 @@
     .hero-photo{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
     .hero-photo-overlay{position:absolute;inset:0;background:linear-gradient(to right,var(--bg) 0%,transparent 25%),linear-gradient(to top,var(--bg) 0%,transparent 15%)}
     .hero-photo-placeholder{width:100%;height:100%;min-height:100vh;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;color:var(--ink2);font-size:.9rem;text-align:center;padding:2rem}
-    .hero-eyebrow{font-family:'DM Mono',monospace;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem;opacity:0;animation:fadeUp .6s .2s forwards}
-    .hero-name{font-family:'Playfair Display',serif;font-size:clamp(2.8rem,7vw,5rem);line-height:1.1;letter-spacing:-.02em;color:var(--ink);margin-bottom:1.2rem;opacity:0;animation:fadeUp .6s .4s forwards}
+    .hero-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem;opacity:0;animation:fadeUp .6s .2s forwards}
+    .hero-name{font-family:'Cormorant Garamond',serif;font-size:clamp(2.8rem,7vw,5rem);line-height:1.1;letter-spacing:-.02em;color:var(--ink);margin-bottom:1.2rem;opacity:0;animation:fadeUp .6s .4s forwards}
     .hero-tagline-wrap{height:2rem;overflow:hidden;margin-bottom:1.8rem;opacity:0;animation:fadeUp .6s .6s forwards}
     .hero-tagline{font-size:1.15rem;color:var(--ink2);font-weight:300}
     .typing-cursor{display:inline-block;width:2px;height:1.1em;background:var(--accent);margin-left:2px;vertical-align:middle;animation:blink 1s step-end infinite}
@@ -62,8 +70,7 @@
     section{padding:6rem clamp(1.5rem,8vw,8rem)}
     section:nth-child(even){background:var(--bg2)}
     .section-header{display:flex;align-items:baseline;gap:1rem;margin-bottom:3.5rem}
-    .section-number{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--accent);letter-spacing:.1em}
-    .section-title{font-family:'Playfair Display',serif;font-size:clamp(1.6rem,3vw,2.2rem);letter-spacing:-.01em;color:var(--ink)}
+    .section-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,3vw,2.6rem);letter-spacing:-.01em;color:var(--ink)}
     .section-line{flex:1;height:1px;background:var(--border);align-self:center}
 
     /* TOGGLE TABS */
@@ -87,17 +94,11 @@
     .edu-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
     .edu-degree{font-weight:600;font-size:1rem;color:var(--ink);margin-bottom:.3rem}
     .edu-inst{font-size:.9rem;color:var(--accent);margin-bottom:.4rem}
-    .edu-year{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--ink2);letter-spacing:.08em;margin-bottom:.5rem}
+    .edu-year{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ink2);letter-spacing:.08em;margin-bottom:.5rem}
     .edu-detail{font-size:.88rem;color:var(--ink2);line-height:1.6}
     .edu-more{display:inline-flex;align-items:center;gap:.3rem;margin-top:.8rem;font-size:.82rem;font-weight:500;color:var(--accent)}
 
-    /* SKILLS */
-    .skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}
-    .skill-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;transition:transform var(--t),box-shadow var(--t)}
-    .skill-card:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
-    .skill-group-name{font-size:.8rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:1rem}
-    .skill-tags{display:flex;flex-wrap:wrap;gap:.5rem}
-    .skill-tag{padding:.3rem .75rem;border-radius:20px;background:var(--tag-bg);color:var(--tag-ink);font-size:.82rem;font-weight:500}
+
 
     /* PROJECTS */
     .filter-bar{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:2.5rem}
@@ -107,13 +108,14 @@
     .project-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;cursor:pointer;transition:transform var(--t),box-shadow var(--t)}
     .project-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg)}
     .project-card.hidden{display:none}
+    .pub-card.hidden{display:none}
     .project-img{width:100%;height:160px;object-fit:cover}
     .project-img-placeholder{width:100%;height:160px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));display:flex;align-items:center;justify-content:center;font-size:2rem}
     .project-card-top{padding:1.5rem 1.5rem 0}
     .project-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
-    .project-year{font-family:'DM Mono',monospace;font-size:.78rem;color:var(--ink2);letter-spacing:.08em}
+    .project-year{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ink2);letter-spacing:.08em}
     .project-status-badge{font-size:.72rem;padding:.2rem .6rem;border-radius:12px;background:var(--tag-bg);color:var(--tag-ink);font-weight:500}
-    .project-title{font-family:'Playfair Display',serif;font-size:1.1rem;line-height:1.35;color:var(--ink);margin-bottom:.8rem}
+    .project-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;line-height:1.35;color:var(--ink);margin-bottom:.8rem}
     .project-desc{font-size:.9rem;color:var(--ink2);line-height:1.65;padding:0 1.5rem;flex:1}
     .project-card-bottom{padding:1rem 1.5rem 1.5rem;display:flex;align-items:center;justify-content:space-between}
     .project-tags{display:flex;flex-wrap:wrap;gap:.4rem}
@@ -125,15 +127,10 @@
     .pub-list{display:flex;flex-direction:column;gap:1.2rem}
     .pub-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.5rem;display:flex;gap:1.5rem;align-items:flex-start;transition:box-shadow var(--t);cursor:pointer}
     .pub-card:hover{box-shadow:var(--shadow)}
-    .pub-status{flex-shrink:0;padding:.3rem .8rem;border-radius:20px;font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
-    .status-Published{background:#d8f3dc;color:#1b4332}
-    .status-Accepted{background:#fff3cd;color:#7d4e00}
-    .status-Submitted,.status-Revision-Submitted{background:#e2e8f0;color:#334155}
-    [data-theme="dark"] .status-Published{background:#1b4332;color:#95d5b2}
-    [data-theme="dark"] .status-Accepted{background:#3d2d00;color:#fcd34d}
-    [data-theme="dark"] .status-Submitted,[data-theme="dark"] .status-Revision-Submitted{background:#1e293b;color:#94a3b8}
+    .pub-status{flex-shrink:0;padding:.3rem .8rem;border-radius:20px;font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;background:var(--tag-bg);color:var(--tag-ink)}
+    .pub-category-badge{flex-shrink:0;padding:.3rem .8rem;border-radius:20px;font-size:.75rem;font-weight:500;background:var(--bg2);color:var(--ink2);border:1px solid var(--border)}
     .pub-body{flex:1}
-    .pub-title{font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink);margin-bottom:.4rem;line-height:1.4}
+    .pub-title{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--ink);margin-bottom:.4rem;line-height:1.4}
     .pub-authors{font-size:.85rem;color:var(--ink2);margin-bottom:.3rem}
     .pub-journal{font-size:.85rem;color:var(--accent);font-style:italic}
     .pub-doi{display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem;font-size:.8rem;color:var(--accent);text-decoration:underline}
@@ -143,13 +140,13 @@
     .awards-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
     .award-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem;display:flex;gap:1rem;align-items:flex-start;transition:transform var(--t),box-shadow var(--t)}
     .award-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
-    .award-year{font-family:'DM Mono',monospace;font-size:.75rem;color:var(--gold);letter-spacing:.05em;flex-shrink:0;background:rgba(183,131,42,.12);padding:.2rem .5rem;border-radius:4px}
+    .award-year{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--gold);letter-spacing:.05em;flex-shrink:0;background:rgba(183,131,42,.12);padding:.2rem .5rem;border-radius:4px}
     .award-title{font-size:.92rem;font-weight:600;color:var(--ink);margin-bottom:.2rem}
     .award-org{font-size:.82rem;color:var(--ink2)}
 
     /* CONTACT */
     .contact-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
-    .contact-text h3{font-family:'Playfair Display',serif;font-size:1.6rem;margin-bottom:1rem;color:var(--ink)}
+    .contact-text h3{font-family:'Cormorant Garamond',serif;font-size:1.6rem;margin-bottom:1rem;color:var(--ink)}
     .contact-text p{color:var(--ink2);font-size:1rem;line-height:1.75}
     .contact-links{display:flex;flex-direction:column;gap:.8rem;margin-top:1.5rem}
     .contact-link{display:flex;align-items:center;gap:1rem;padding:.9rem 1.2rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);transition:all var(--t);color:var(--ink2)}
@@ -169,7 +166,7 @@
     .modal-cover{width:100%;height:240px;object-fit:cover;border-radius:16px 16px 0 0;display:block}
     .modal-cover-placeholder{width:100%;height:160px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem}
     .modal-header{padding:1.8rem 2rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
-    .modal-title{font-family:'Playfair Display',serif;font-size:1.4rem;line-height:1.3;color:var(--ink)}
+    .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;line-height:1.3;color:var(--ink)}
     .modal-close{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:1.1rem;transition:all var(--t)}
     .modal-close:hover{border-color:var(--accent);color:var(--accent)}
     .modal-body{padding:0 2rem 2rem}
@@ -178,7 +175,7 @@
     .modal-section-title{font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:.8rem 0 .4rem;padding-top:.8rem;border-top:1px solid var(--border)}
     .modal-detail{font-size:.97rem;color:var(--ink2);line-height:1.85}
     .modal-detail p{margin-bottom:.9rem}
-    .modal-detail h2,.modal-detail h3{font-family:'Playfair Display',serif;color:var(--ink);margin:1.2rem 0 .5rem}
+    .modal-detail h2,.modal-detail h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:1.2rem 0 .5rem}
     .modal-detail ul,.modal-detail ol{padding-left:1.4rem;margin-bottom:.9rem}
     .modal-detail blockquote{border-left:3px solid var(--accent);padding:.8rem 1rem;background:var(--bg2);border-radius:0 8px 8px 0;margin:1rem 0;font-style:italic}
     /* SLIDESHOW (auto - education & projects) */
@@ -202,7 +199,7 @@
     .slider-controls{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0}
     .slider-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--ink2);transition:all var(--t)}
     .slider-btn:hover{border-color:var(--accent);color:var(--accent)}
-    .slider-counter{font-size:.82rem;color:var(--ink2);font-family:'DM Mono',monospace}
+    .slider-counter{font-size:.82rem;color:var(--ink2);font-family:'JetBrains Mono',monospace}
 
     .modal-video{margin:.8rem 0}
     .modal-video-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px}
@@ -231,7 +228,7 @@
 
     /* FOOTER */
     footer{padding:2.5rem clamp(1.5rem,8vw,8rem);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;color:var(--ink2);font-size:.85rem}
-    .footer-logo{font-family:'Playfair Display',serif;font-size:1rem;color:var(--ink)}
+    .footer-logo{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--ink)}
     .admin-link{font-size:.75rem;color:var(--ink2);opacity:.4;transition:opacity var(--t)}
     .admin-link:hover{opacity:1;color:var(--accent)}
 
@@ -269,7 +266,6 @@
     <li><a href="#about">About</a></li>
     <li><a href="#projects">Projects</a></li>
     <li><a href="#publications">Publications</a></li>
-    <li><a href="#skills">Skills</a></li>
     <li><a href="#contact">Contact</a></li>
     <li>
       <div class="cv-dropdown" id="cv-dropdown">
@@ -305,7 +301,6 @@
 
 <section id="about">
   <div class="section-header reveal">
-    <span class="section-number">01</span>
     <h2 class="section-title">About</h2>
     <div class="section-line"></div>
   </div>
@@ -330,7 +325,6 @@
 
 <section id="projects">
   <div class="section-header reveal">
-    <span class="section-number">02</span>
     <h2 class="section-title">Projects</h2>
     <div class="section-line"></div>
   </div>
@@ -345,25 +339,16 @@
 
 <section id="publications">
   <div class="section-header reveal">
-    <span class="section-number">03</span>
     <h2 class="section-title">Publications</h2>
     <div class="section-line"></div>
   </div>
+  <div class="filter-bar reveal" id="pub-filter-bar"></div>
   <div class="pub-list" id="pub-list"></div>
 </section>
 
-<section id="skills">
-  <div class="section-header reveal">
-    <span class="section-number">04</span>
-    <h2 class="section-title">Skills</h2>
-    <div class="section-line"></div>
-  </div>
-  <div class="skills-grid" id="skills-grid"></div>
-</section>
 
 <section id="contact">
   <div class="section-header reveal">
-    <span class="section-number">05</span>
     <h2 class="section-title">Contact</h2>
     <div class="section-line"></div>
   </div>
@@ -547,58 +532,80 @@ function openModal(cfg) {
   document.getElementById('modal-meta').innerHTML = cfg.meta||'';
   document.getElementById('modal-tags').innerHTML = (cfg.tags||[]).map(t=>`<span class="project-tag">${t}</span>`).join('');
 
+  // vis: visibility toggles — default all true if not set
+  const vis = cfg.vis || {};
+  const show = (key) => vis[key] !== false; // default ON unless explicitly false
+
   let html = '';
   if (cfg.subtitle) html += `<p style="font-size:1rem;color:var(--ink2);margin-bottom:1rem">${cfg.subtitle}</p>`;
-  if (cfg.abstract) html += `<div class="modal-section-title">Abstract</div><p style="font-size:.95rem;color:var(--ink2);line-height:1.8">${cfg.abstract}</p>`;
-  if (cfg.detail) html += `<div class="modal-section-title">Detail</div><div class="modal-detail">${md(cfg.detail)}</div>`;
-  if (cfg.coursework && cfg.coursework.length) {
+
+  // Cover image (single, shown at top of body if no gallery)
+  const gallery = (cfg.gallery||[]).slice(0,10);
+  if (show('showImage') && cfg.image && gallery.length === 0) {
+    html += `<div style="border-radius:12px;overflow:hidden;margin:.8rem 0"><img src="${cfg.image}" style="width:100%;max-height:260px;object-fit:cover;display:block" loading="lazy"/></div>`;
+  }
+
+  // Abstract
+  if (show('showAbstract') && cfg.abstract) {
+    html += `<div class="modal-section-title">Abstract</div><p style="font-size:.95rem;color:var(--ink2);line-height:1.8">${cfg.abstract}</p>`;
+  }
+
+  // Detail
+  if (show('showDetail') && cfg.detail) {
+    html += `<div class="modal-section-title">Detail</div><div class="modal-detail">${md(cfg.detail)}</div>`;
+  }
+
+  // Coursework (education only)
+  if (show('showCoursework') && cfg.coursework && cfg.coursework.length) {
     html += `<div class="modal-section-title">Key Coursework</div><div class="modal-coursework">${cfg.coursework.map(c=>`<span class="modal-course-tag">${c}</span>`).join('')}</div>`;
   }
 
-  const gallery = (cfg.gallery||[]).slice(0,10);
-  if (gallery.length === 1) {
-    // Single image — static
-    const src = typeof gallery[0]==='string' ? gallery[0] : (gallery[0].src||gallery[0]);
-    const cap = typeof gallery[0]==='object' && gallery[0].caption ? gallery[0].caption : '';
-    html += `<div class="modal-section-title">Image</div><div style="border-radius:12px;overflow:hidden;margin:.8rem 0"><img src="${src}" style="width:100%;max-height:260px;object-fit:cover;display:block" loading="lazy"/>${cap?`<p style="font-size:.8rem;color:var(--ink2);padding:.4rem 0">${cap}</p>`:''}</div>`;
-  } else if (gallery.length > 1) {
-    if (cfg.pageType === 'publication') {
-      // Manual slider for publications
-      const slides = gallery.map((g,i) => {
-        const src = typeof g==='string'?g:(g.src||g);
-        const cap = typeof g==='object'&&g.caption?g.caption:'';
-        return `<div class="slider-slide${i===0?' active':''}" data-idx="${i}"><img src="${src}" loading="lazy"/>${cap?`<div class="slider-caption">${cap}</div>`:''}</div>`;
-      }).join('');
-      html += `<div class="modal-section-title">Figures</div>
-        <div class="slider-wrap" id="modal-slider">
-          <div class="slider-inner">${slides}</div>
-          <div class="slider-controls">
-            <button class="slider-btn" id="sl-prev">‹</button>
-            <span class="slider-counter" id="sl-counter">1 / ${gallery.length}</span>
-            <button class="slider-btn" id="sl-next">›</button>
-          </div>
-        </div>`;
-    } else {
-      // Auto slideshow for education & projects
-      const slides = gallery.map((g,i) => {
-        const src = typeof g==='string'?g:(g.src||g);
-        const cap = typeof g==='object'&&g.caption?g.caption:'';
-        return `<div class="slide${i===0?' active':''}" data-idx="${i}"><img src="${src}" loading="lazy"/>${cap?`<div class="slide-caption">${cap}</div>`:''}</div>`;
-      }).join('');
-      const dots = gallery.map((_,i)=>`<div class="slide-dot${i===0?' active':''}" data-dot="${i}"></div>`).join('');
-      html += `<div class="modal-section-title">Gallery</div>
-        <div class="slideshow-wrap" id="modal-slideshow">
-          <div class="slideshow-inner">${slides}</div>
-          <div class="slideshow-dots">${dots}</div>
-        </div>`;
+  // Gallery / Slideshow
+  if (show('showGallery')) {
+    if (gallery.length === 1) {
+      const src = typeof gallery[0]==='string' ? gallery[0] : (gallery[0].src||gallery[0]);
+      const cap = typeof gallery[0]==='object' && gallery[0].caption ? gallery[0].caption : '';
+      html += `<div class="modal-section-title">Image</div><div style="border-radius:12px;overflow:hidden;margin:.8rem 0"><img src="${src}" style="width:100%;max-height:260px;object-fit:cover;display:block" loading="lazy"/>${cap?`<p style="font-size:.8rem;color:var(--ink2);padding:.4rem 0">${cap}</p>`:''}</div>`;
+    } else if (gallery.length > 1) {
+      if (cfg.pageType === 'publication') {
+        const slides = gallery.map((g,i) => {
+          const src = typeof g==='string'?g:(g.src||g);
+          const cap = typeof g==='object'&&g.caption?g.caption:'';
+          return `<div class="slider-slide${i===0?' active':''}" data-idx="${i}"><img src="${src}" loading="lazy"/>${cap?`<div class="slider-caption">${cap}</div>`:''}</div>`;
+        }).join('');
+        html += `<div class="modal-section-title">Figures</div>
+          <div class="slider-wrap" id="modal-slider">
+            <div class="slider-inner">${slides}</div>
+            <div class="slider-controls">
+              <button class="slider-btn" id="sl-prev">‹</button>
+              <span class="slider-counter" id="sl-counter">1 / ${gallery.length}</span>
+              <button class="slider-btn" id="sl-next">›</button>
+            </div>
+          </div>`;
+      } else {
+        const slides = gallery.map((g,i) => {
+          const src = typeof g==='string'?g:(g.src||g);
+          const cap = typeof g==='object'&&g.caption?g.caption:'';
+          return `<div class="slide${i===0?' active':''}" data-idx="${i}"><img src="${src}" loading="lazy"/>${cap?`<div class="slide-caption">${cap}</div>`:''}</div>`;
+        }).join('');
+        const dots = gallery.map((_,i)=>`<div class="slide-dot${i===0?' active':''}" data-dot="${i}"></div>`).join('');
+        html += `<div class="modal-section-title">Gallery</div>
+          <div class="slideshow-wrap" id="modal-slideshow">
+            <div class="slideshow-inner">${slides}</div>
+            <div class="slideshow-dots">${dots}</div>
+          </div>`;
+      }
     }
   }
 
-  if (cfg.videoUrl) {
+  // Video
+  if (show('showVideo') && cfg.videoUrl) {
     const vid = cfg.videoUrl.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
     if (vid) html += `<div class="modal-section-title">Video</div><div class="modal-video"><div class="modal-video-wrap"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div></div>`;
   }
-  if (cfg.relatedPubs && cfg.relatedPubs.length) {
+
+  // Related Publications
+  if (show('showRelatedPubs') && cfg.relatedPubs && cfg.relatedPubs.length) {
     html += `<div class="modal-section-title">Related Publications</div>${cfg.relatedPubs.map(p=>`<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.88rem;color:var(--ink2)">📚 ${p}</div>`).join('')}`;
   }
   document.getElementById('modal-content').innerHTML = html;
@@ -616,7 +623,7 @@ function openModal(cfg) {
 
   // Actions
   let btns = '';
-  if (cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
+  if (show('showReport') && cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
   if (cfg.link) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
   if (cfg.displayMode==='fullpage' && cfg.slug) {
     const page = cfg.pageType==='education' ? `/education.html?slug=${cfg.slug}` : cfg.pageType==='publication' ? `/publication.html?slug=${cfg.slug}` : `/project.html?slug=${cfg.slug}`;
@@ -700,7 +707,7 @@ const observer = new IntersectionObserver(entries=>{
 },{threshold:0.1});
 
 // ── RENDER ───────────────────────────────────────────────────
-function renderSite(s, eduItems, skillGroups, projects, pubs) {
+function renderSite(s, eduItems, projects, pubs) {
   // Names & bio
   document.title = safe(s.name);
   ['nav-name','hero-name','footer-name'].forEach(id=>document.getElementById(id).textContent=safe(s.name));
@@ -752,16 +759,10 @@ function renderSite(s, eduItems, skillGroups, projects, pubs) {
       link: e.link||'',
       displayMode: e.displayMode||'popup',
       slug: e.slug,
-      pageType: 'education'
+      pageType: 'education',
+      vis: { showImage: e.showImage!==false, showGallery: e.showGallery!==false, showAbstract: e.showAbstract!==false, showDetail: e.showDetail!==false, showCoursework: e.showCoursework!==false, showVideo: e.showVideo!==false, showRelatedPubs: e.showRelatedPubs!==false }
     }));
     eduEl.appendChild(card);
-  });
-
-  // Skills
-  const sgEl = document.getElementById('skills-grid');
-  (skillGroups||[]).forEach(sg=>{
-    const tags=(sg.items||[]).map(i=>`<span class="skill-tag">${i}</span>`).join('');
-    sgEl.innerHTML+=`<div class="skill-card reveal"><div class="skill-group-name">${safe(sg.group)}</div><div class="skill-tags">${tags}</div></div>`;
   });
 
   // Projects filter bar — collect all unique tags
@@ -798,27 +799,54 @@ function renderSite(s, eduItems, skillGroups, projects, pubs) {
       meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>${p.organisation?`<span style="font-size:.82rem;color:var(--accent)">🏢 ${p.organisation}</span>`:''}`,
       tags, image:p.image||'', icon, detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[],
       videoUrl:p.videoUrl||'', report:p.report||null, relatedPubs:p.relatedPubs||[],
-      link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project'
+      link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project',
+      vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showAbstract: p.showAbstract!==false, showDetail: p.showDetail!==false, showCoursework: p.showCoursework!==false, showVideo: p.showVideo!==false, showReport: p.showReport!==false, showRelatedPubs: p.showRelatedPubs!==false }
     }));
     pgEl.appendChild(div);
   });
 
-  // Publications
+  // Publications — category filter bar
+  const pubCats = ['All', ...new Set(pubs.map(p=>p.category).filter(Boolean))];
+  const pubFB = document.getElementById('pub-filter-bar');
+  let currentPubCat = 'All';
+  if (pubCats.length > 1) {
+    pubCats.forEach((cat, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn' + (i===0?' active':'');
+      btn.textContent = cat;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#pub-filter-bar .filter-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPubCat = cat;
+        document.querySelectorAll('.pub-card').forEach(card=>{
+          card.classList.toggle('hidden', currentPubCat!=='All' && card.dataset.cat!==currentPubCat);
+        });
+      });
+      pubFB.appendChild(btn);
+    });
+  }
+
+  // Publications list
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    const sc=(p.status||'').replace(/\s+/g,'-');
     const doiHtml=p.doi?`<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>`:'';
-    const hasMore=(p.abstract||p.detail||p.image);
+    const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
     div.className='pub-card reveal';
-    div.innerHTML=`<span class="pub-status status-${sc}">${safe(p.status)}</span><div class="pub-body"><div class="pub-title">${safe(p.title)}</div><div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${safe(p.journal)}</div>${doiHtml}${hasMore?`<span class="pub-more">Read more →</span>`:''}</div>`;
+    div.dataset.cat = p.category||'';
+    const statusHtml = p.status ? `<span class="pub-status">${safe(p.status)}</span>` : '';
+    const catHtml = p.category ? `<span class="pub-category-badge">${safe(p.category)}</span>` : '';
+    div.innerHTML=`<div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">${statusHtml}${catHtml}</div><div class="pub-body"><div class="pub-title">${safe(p.title)}</div><div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${safe(p.journal)}</div>${doiHtml}${hasMore?`<span class="pub-more">Read more →</span>`:''}</div>`;
     if(hasMore){
       div.addEventListener('click',()=>openModal({
-        title:p.title, meta:`<span class="pub-status status-${sc}">${safe(p.status)}</span>`,
+        title:p.title,
+        meta:`${p.status?`<span class="pub-status">${safe(p.status)}</span>`:''}${p.category?`<span class="pub-category-badge">${safe(p.category)}</span>`:''}`,
         tags:[], image:p.image||'', icon:'📚',
         subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
         abstract:p.abstract||'', detail:p.detail||'',
-        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication'
+        gallery:Array.isArray(p.gallery)?p.gallery:[],
+        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
+        vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showAbstract: p.showAbstract!==false, showDetail: p.showDetail!==false, showCoursework: p.showCoursework!==false, showVideo: p.showVideo!==false, showRelatedPubs: p.showRelatedPubs!==false }
       }));
     }
     pubEl.appendChild(div);
@@ -864,9 +892,8 @@ function renderSite(s, eduItems, skillGroups, projects, pubs) {
 // ── BOOT ─────────────────────────────────────────────────────
 async function loadSite() {
   try {
-    const [settings, skillsData, eduItems, projects, pubs] = await Promise.all([
+    const [settings, eduItems, projects, pubs] = await Promise.all([
       fj('/content/settings.json'),
-      fj('/content/skills.json'),
       loadMDs('/content/education/'),
       loadMDs('/content/projects/'),
       loadMDs('/content/publications/')
@@ -874,7 +901,6 @@ async function loadSite() {
     renderSite(
       settings||{name:'Diwakar Adhikari'},
       eduItems,
-      (skillsData||{}).items||[],
       projects, pubs
     );
   } catch(e) {

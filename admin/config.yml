@@ -5,8 +5,8 @@ backend:
   base_url: https://dwaakar-github-io.pages.dev
   auth_endpoint: /api/auth
 
-media_folder: "public/images"
-public_folder: "/public/images"
+media_folder: "images"
+public_folder: "/images"
 
 collections:
 
@@ -90,6 +90,14 @@ collections:
           - { label: "Popup only", value: "popup" }
           - { label: "Popup + Full Page", value: "fullpage" }
         default: "popup"
+      - label: "── Popup Visibility ──"
+        name: "popupVisLabel"
+        widget: "hidden"
+        default: ""
+      - { label: "Show Cover Image", name: "showImage", widget: "boolean", default: true, required: false }
+      - { label: "Show Gallery", name: "showGallery", widget: "boolean", default: true, required: false }
+      - { label: "Show Description/Detail", name: "showDetail", widget: "boolean", default: true, required: false }
+      - { label: "Show Coursework", name: "showCoursework", widget: "boolean", default: true, required: false }
       - { label: "Sort Order", name: "order", widget: "number", default: 99 }
 
   - name: "skills"
@@ -162,6 +170,16 @@ collections:
           - { label: "Popup + Full Page", value: "fullpage" }
         default: "popup"
       - { label: "External Link", name: "link", widget: "string", required: false }
+      - label: "── Popup Visibility ──"
+        name: "popupVisLabel"
+        widget: "hidden"
+        default: ""
+      - { label: "Show Cover Image", name: "showImage", widget: "boolean", default: true, required: false }
+      - { label: "Show Gallery", name: "showGallery", widget: "boolean", default: true, required: false }
+      - { label: "Show Description/Detail", name: "showDetail", widget: "boolean", default: true, required: false }
+      - { label: "Show Video", name: "showVideo", widget: "boolean", default: true, required: false }
+      - { label: "Show Report Download", name: "showReport", widget: "boolean", default: true, required: false }
+      - { label: "Show Related Publications", name: "showRelatedPubs", widget: "boolean", default: true, required: false }
       - { label: "Sort Order", name: "order", widget: "number", default: 99 }
 
   - name: "publications"
@@ -174,11 +192,8 @@ collections:
       - { label: "Authors", name: "authors", widget: "string", required: false }
       - { label: "Year", name: "year", widget: "string", required: false }
       - { label: "Journal / Book", name: "journal", widget: "string", required: false }
-      - label: "Status"
-        name: "status"
-        widget: "select"
-        options: ["Published", "Accepted", "Submitted", "Revision Submitted"]
-        required: false
+      - { label: "Publication Status", name: "status", widget: "string", required: false, hint: "e.g. Published, Under Review, Accepted, Submitted" }
+      - { label: "Publication Type / Category", name: "category", widget: "string", required: false, hint: "e.g. Research Article, Book Chapter, Conference Paper, Policy Brief" }
       - { label: "DOI / URL", name: "doi", widget: "string", required: false }
       - { label: "Abstract", name: "abstract", widget: "text", required: false }
       - { label: "Detailed Overview", name: "body", widget: "markdown", required: false }
@@ -198,4 +213,12 @@ collections:
           - { label: "Popup only", value: "popup" }
           - { label: "Popup + Full Page", value: "fullpage" }
         default: "popup"
+      - label: "── Popup Visibility ──"
+        name: "popupVisLabel"
+        widget: "hidden"
+        default: ""
+      - { label: "Show Cover Image", name: "showImage", widget: "boolean", default: true, required: false }
+      - { label: "Show Gallery/Figures", name: "showGallery", widget: "boolean", default: true, required: false }
+      - { label: "Show Abstract", name: "showAbstract", widget: "boolean", default: true, required: false }
+      - { label: "Show Detail/Overview", name: "showDetail", widget: "boolean", default: true, required: false }
       - { label: "Sort Order", name: "order", widget: "number", default: 99 }

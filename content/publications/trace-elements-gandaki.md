@@ -4,6 +4,7 @@ authors: "Pant, R. R., Zhang, F., Qaiser, F. U. R., Varol, M., Adhikari, D., Wan
 year: "2025"
 journal: "Journal of Soils and Sediments"
 status: "Published"
+category: "Research Article"
 doi: "https://doi.org/10.1007/s11368-025-04091-x"
 abstract: ""
 displayMode: "popup"
