@@ -3,7 +3,8 @@ title: Nepal Waste Map — Digital Waste Management System
 shortDesc: City-scale digital waste management platform mapping 70,000+
   households across six municipalities in Nepal.
 year: 2018–2022
-status: Program Officer — Clean Up Nepal
+status: Program Officer
+organisation: CLEAN UP NEPAL
 category: community
 tags: []
 image: ""
