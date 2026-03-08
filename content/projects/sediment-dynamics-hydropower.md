@@ -5,10 +5,7 @@ shortDesc: MSc thesis examining sediment load, transport mechanisms, and
 year: "2024"
 status: MSc Thesis — Tribhuvan University
 category: research
-tags:
-  - Research
-  - Sediment
-  - Hydropower
+tags: []
 image: ""
 gallery:
   - src: /images/picture2.png
