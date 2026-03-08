@@ -7,23 +7,23 @@ status: MSc Thesis — Tribhuvan University
 organisation: Central Department of Environmental Science, Tribhuvan University
 category: research
 tags: []
-image: /images/defense-presentation-2024_dns.jpg
+image: /public/images/defense-presentation-2024_dns.jpg
 gallery:
   - src: /images/picture1.png
     caption: Study area map delineating the rivers, tributaries, administrative
       regions, and the basin
   - src: /images/picture2.png
     caption: Conceptual framework and research design of the study
-  - src: /images/picture3.png
-  - src: /images/picture4.png
+  - src: /public/images/picture3.png
     caption: Scatter Plot of SSC and Discharge
-  - src: /images/picture6.png
+  - src: /public/images/picture4.png
     caption: Variation in the Discharge and SSC at the sampling point
-  - src: /images/picture7.png
-    caption: 10-year average water yield (mm) in the MRB from 2013 to 2023
-  - src: /images/picture8.png
+  - src: /public/images/picture7.png
     caption: 10-year average suspended sediment load at inlet and outlet in the MRB
       from 2013 to 2023
+  - src: /public/images/picture8.png
+    caption: 10-year average suspended sediment concentration (mg/L) at the MRB from
+      2013-2023
 report:
   label: 10-year average suspended sediment concentration (mg/L) at the MRB from
     2013-2023
