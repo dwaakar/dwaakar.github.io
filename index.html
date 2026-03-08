@@ -468,10 +468,12 @@ const safe = v => v || '';
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
-  if (p.startsWith('/public/')) return p;
-  if (p.startsWith('public/')) return '/' + p;
-  if (p.startsWith('/images/')) return '/public' + p;
-  if (p.startsWith('images/')) return '/public/' + p;
+  // CMS saves to /images/ at root, Cloudflare serves it fine
+  if (p.startsWith('/images/')) return p;
+  if (p.startsWith('images/')) return '/' + p;
+  // Legacy: if somehow saved to public/images
+  if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
+  if (p.startsWith('public/images/')) return '/images/' + p.slice('public/images/'.length);
   return p;
 }
 const md = t => t && typeof marked !== 'undefined' ? marked.parse(t) : (t||'').replace(/\n/g,'<br>');
@@ -806,7 +808,8 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       displayMode: e.displayMode||'popup',
       slug: e.slug,
       pageType: 'education',
-      vis: { showImage: e.showImage!==false, showGallery: e.showGallery!==false, showAbstract: e.showAbstract!==false, showDetail: e.showDetail!==false, showCoursework: e.showCoursework!==false, showVideo: e.showVideo!==false, showRelatedPubs: e.showRelatedPubs!==false }
+      vis: { showImage: e.showImage!==false, showGallery: e.showGallery!==false, showDetail: e.showDetail!==false, showCoursework: e.showCoursework!==false },
+      fpVis: { showImage: e.fpShowImage!==false, showGallery: e.fpShowGallery!==false, showDetail: e.fpShowDetail!==false, showCoursework: e.fpShowCoursework!==false }
     }));
     eduEl.appendChild(card);
   });
@@ -846,7 +849,8 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       tags, image:imgPath(p.image)||'', icon, detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[],
       videoUrl:p.videoUrl||'', report:p.report||null, relatedPubs:p.relatedPubs||[],
       link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project',
-      vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showAbstract: p.showAbstract!==false, showDetail: p.showDetail!==false, showCoursework: p.showCoursework!==false, showVideo: p.showVideo!==false, showReport: p.showReport!==false, showRelatedPubs: p.showRelatedPubs!==false }
+      vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showDetail: p.showDetail!==false, showVideo: p.showVideo!==false, showReport: p.showReport!==false, showRelatedPubs: p.showRelatedPubs!==false },
+      fpVis: { showImage: p.fpShowImage!==false, showGallery: p.fpShowGallery!==false, showDetail: p.fpShowDetail!==false, showVideo: p.fpShowVideo!==false, showReport: p.fpShowReport!==false, showRelatedPubs: p.fpShowRelatedPubs!==false }
     }));
     pgEl.appendChild(div);
   });
@@ -892,7 +896,8 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
         abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
         link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
-        vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showAbstract: p.showAbstract!==false, showDetail: p.showDetail!==false, showCoursework: p.showCoursework!==false, showVideo: p.showVideo!==false, showRelatedPubs: p.showRelatedPubs!==false }
+        vis: { showImage: p.showImage!==false, showGallery: p.showGallery!==false, showAbstract: p.showAbstract!==false, showDetail: p.showDetail!==false },
+        fpVis: { showImage: p.fpShowImage!==false, showGallery: p.fpShowGallery!==false, showAbstract: p.fpShowAbstract!==false, showDetail: p.fpShowDetail!==false }
       }));
     }
     pubEl.appendChild(div);

@@ -188,10 +188,12 @@ function parseFM(text) {
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
-  if (p.startsWith('/public/')) return p;
-  if (p.startsWith('public/')) return '/' + p;
-  if (p.startsWith('/images/')) return '/public' + p;
-  if (p.startsWith('images/')) return '/public/' + p;
+  // CMS saves to /images/ at root, Cloudflare serves it fine
+  if (p.startsWith('/images/')) return p;
+  if (p.startsWith('images/')) return '/' + p;
+  // Legacy: if somehow saved to public/images
+  if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
+  if (p.startsWith('public/images/')) return '/images/' + p.slice('public/images/'.length);
   return p;
 }
 
@@ -253,16 +255,18 @@ async function load() {
     // Body
     if(content) document.getElementById('project-body').innerHTML=`<div class="project-detail">${marked.parse(content)}</div>`;
 
-    // Gallery — normalise all possible formats from CMS
+    // Full page visibility — use fpVis fields, default all true
+    const fp = key => p['fpShow' + key.charAt(0).toUpperCase() + key.slice(1)] !== false;
+
+    // Gallery
     const rawG=Array.isArray(p.gallery)?p.gallery:[];
     const gallery=rawG.map(g=>{
       if(typeof g==='string') return {src:imgPath(g),caption:''};
-      // Handle {src: "...", caption: "..."} objects
       if(g.src) return {src:imgPath(g.src),caption:g.caption||''};
       return null;
     }).filter(Boolean);
 
-    if(gallery.length>0){
+    if(fp('gallery') && gallery.length>0){
       const items=gallery.map((g,i)=>`
         <div class="gallery-item" data-i="${i}">
           <img src="${g.src}" alt="${g.caption||'Image '+(i+1)}" loading="lazy"/>
@@ -275,20 +279,26 @@ async function load() {
       });
     }
 
+    // Cover image (if no gallery)
+    if(fp('image') && p.image && gallery.length===0){
+      document.getElementById('project-gallery').innerHTML=
+        `<div style="border-radius:12px;overflow:hidden;margin:1rem 0"><img src="${imgPath(p.image)}" style="width:100%;max-height:400px;object-fit:cover;display:block"/></div>`;
+    }
+
     // Video
-    if(p.videoUrl){
+    if(fp('video') && p.videoUrl){
       const vid=p.videoUrl.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
       if(vid) document.getElementById('project-video').innerHTML=
         `<div class="section-label">Video</div><div class="video-wrap"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div>`;
     }
 
     // Report
-    if(p.report&&p.report.file) document.getElementById('project-report').innerHTML=
+    if(fp('report') && p.report&&p.report.file) document.getElementById('project-report').innerHTML=
       `<div class="section-label">Report</div><a class="report-btn" href="${p.report.file}" download target="_blank">📄 ${p.report.label||'Download Report'}</a>`;
 
     // Related pubs
     const rp=Array.isArray(p.relatedPubs)?p.relatedPubs:[];
-    if(rp.length) document.getElementById('project-related').innerHTML=
+    if(fp('relatedPubs') && rp.length) document.getElementById('project-related').innerHTML=
       `<div class="section-label">Related Publications</div>${rp.map(pub=>`<div class="related-pub">📚 ${pub}</div>`).join('')}`;
 
     // Links
