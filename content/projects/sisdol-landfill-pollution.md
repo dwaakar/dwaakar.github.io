@@ -3,7 +3,8 @@ title: Environmental Pollution Assessment — Sisdol Landfill
 shortDesc: Post-closure pollution assessment of the Sisdol Landfill site,
   covering water, soil, air, and leachate contamination.
 year: 2023–2024
-status: Research Assistant — RECAST
+status: ""
+organisation: Research Centre for Applied Science and Technology
 category: research
 tags: []
 image: ""
