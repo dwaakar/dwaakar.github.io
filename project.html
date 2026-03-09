@@ -243,12 +243,26 @@ function parseFM(text) {
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
-  // Cloudflare Pages strips /public/ prefix — normalise everything to /images/
+  // Normalise to /images/ canonical form
   if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
   if (p.startsWith('public/images/')) return p.replace('public/images/', '/images/');
   if (p.startsWith('/images/')) return p;
   if (p.startsWith('images/')) return '/' + p;
   return p;
+}
+
+// Smart image loader — tries /images/ first, falls back to /public/images/
+function loadImg(el, src) {
+  if (!src) return;
+  el.src = src;
+  el.onerror = () => {
+    if (src.startsWith('/images/')) {
+      el.src = src.replace('/images/', '/public/images/');
+    } else if (src.startsWith('/public/images/')) {
+      el.src = src.replace('/public/images/', '/images/');
+    }
+    el.onerror = null;
+  };
 }
 
 // ── LIGHTBOX ───────────────────────────────────────────────────────
@@ -293,7 +307,7 @@ function buildImagePanel(gallery, mode) {
 
   // All images stacked — first is active (relative), rest absolute
   const imgMarkup = gallery.map((g,i) =>
-    `<img src="${g.src}" alt="${g.caption||'Image '+(i+1)}"
+    `<img data-src="${g.src}" alt="${g.caption||'Image '+(i+1)}"
       class="${i===0?'active':''}"
       loading="${i===0?'eager':'lazy'}"/>`
   ).join('');
@@ -325,6 +339,8 @@ function buildImagePanel(gallery, mode) {
   const captionEl = document.getElementById('sl-caption');
   const wrap = document.getElementById('sl-wrap');
   const imgEls = wrap.querySelectorAll('img');
+  // Load images with fallback
+  imgEls.forEach(img => loadImg(img, imgPath(img.dataset.src)));
 
   function goTo(idx, fromUser) {
     imgEls[current].classList.remove('active');
@@ -381,15 +397,15 @@ async function load() {
 
     // ── COVER IMAGE (hero) ──
     const heroEl = document.getElementById('project-hero');
-    console.log('raw image field:', p.image);
     const coverSrc = p.image ? imgPath(p.image) : '';
-    console.log('coverSrc after imgPath:', coverSrc);
     if (coverSrc) {
-      heroEl.innerHTML = `<img src="${coverSrc}" alt="${p.title||''}"/><div class="project-hero-overlay"></div>`;
+      const coverImg = document.createElement('img');
+      loadImg(coverImg, coverSrc);
+      coverImg.alt = p.title||'';
+      heroEl.innerHTML = '<div class="project-hero-overlay"></div>';
+      heroEl.prepend(coverImg);
     } else {
-      const icons={Hydrology:'💧','Climate Change':'🌍',Sediment:'🪨',Hydropower:'⚡',Pollution:'⚠️','Water Quality':'🧪','Field Work':'🏔️','Food Systems':'🌾','Waste Management':'♻️'};
-      const tags = Array.isArray(p.tags)?p.tags:[];
-      heroEl.innerHTML = `<div class="project-hero-placeholder">${icons[tags[0]]||'📁'}</div>`;
+      heroEl.style.display = 'none';
     }
 
     // ── META BAR ──
