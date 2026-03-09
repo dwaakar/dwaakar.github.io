@@ -4,6 +4,16 @@ backend:
   branch: main
   base_url: https://dwaakar-github-io.pages.dev
   auth_endpoint: /api/auth
+  squash_merges: true
+  commit_messages:
+    create: 'Add {{collection}} "{{slug}}"'
+    update: 'Update {{collection}} "{{slug}}"'
+    delete: 'Delete {{collection}} "{{slug}}"'
+    uploadMedia: 'Upload "{{path}}"'
+    deleteMedia: 'Delete "{{path}}"'
+
+media_library:
+  name: default
 
 media_folder: "images"
 public_folder: "/images"
