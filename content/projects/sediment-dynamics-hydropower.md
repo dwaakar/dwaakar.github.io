@@ -7,7 +7,7 @@ status: MSc Thesis — Tribhuvan University
 organisation: Central Department of Environmental Science, Tribhuvan University
 category: research
 tags: []
-image: /public/images/defense-presentation-2024_dns.jpg
+image: ""
 gallery:
   - src: /images/picture1.png
     caption: Study area map delineating the rivers, tributaries, administrative
