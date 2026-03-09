@@ -8,7 +8,32 @@ status: ""
 category: research
 tags: []
 image: ""
-gallery: []
+gallery:
+  - src: /public/images/climate_envelopes_yearly.png
+    caption: Average annual precipitation sum (top) and average annual mean
+      temperature (bottom) for the MRB for the reference period (1985–2014) and
+      future periods (2015–2100). The colored bands represent the ensemble range
+      of four models, and the solid bold lines represent the ensemble mean.
+  - src: /public/images/discharge_mrb_yearly.png
+    caption: Average annual mean discharge for the MRB for the reference period
+      (1985–2014) and future periods (2015–2100). The colored bands represent
+      the ensemble range of four models, and the solid bold lines represent the
+      ensemble mean.
+  - src: /public/images/monthly-discharge.png
+    caption: Changes in future hydrology of the MRB for the reference period
+      (1985–2014) and future periods (2071–2100). The shadow bands represent the
+      ensemble range of four models, and the bold line represents the ensemble
+      mean for SSP245 and SSP585 scenarios.
+  - src: /public/images/245-wb.png
+    caption: "% Change in water balance components in the MRB for mid (2041 to 2070)
+      and far (2071-2100) compared to reference period across SSP 2-4.5 "
+  - src: /public/images/585-wb.png
+    caption: "% Change in water balance components in the MRB for mid (2041 to 2070)
+      and far (2071-2100) compared to reference period across SSP 5-8.5 (bottom)
+      emission scenarios"
+  - src: /public/images/snow.png
+    caption: "% Change in average monthly mean snowfall in the MRB under SSP2-4.5
+      and SSP5-8.5 scenarios"
 displayMode: fullpage
 link: ""
 showDetail: true
