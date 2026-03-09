@@ -4,7 +4,7 @@ authors: Pant, R. R., Koirala, M., Adhikari, D., & Gaire, N. P.
 year: "2024"
 journal: Sustainable Ecological Restoration and Conservation in the Hindu Kush
   Himalayan Region, CABI
-status: Published
+status: ""
 category: Book Chapter
 doi: https://doi.org/10.1079/9781800622579.0011
 abstract: This chapter presents a comprehensive description of Nepal’s
