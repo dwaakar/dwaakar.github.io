@@ -78,6 +78,40 @@
     .toggle-tab{padding:.5rem 1.2rem;border-radius:6px;font-size:.85rem;font-weight:500;color:var(--ink2);transition:all var(--t)}
     .toggle-tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
 
+    /* ── TOGGLE ANIMATIONS ── */
+    @keyframes fadeSlideIn {
+      from { opacity:0; transform:translateY(12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes fadeSlideOut {
+      from { opacity:1; transform:translateY(0); }
+      to   { opacity:0; transform:translateY(-8px); }
+    }
+    .toggle-anim-wrap {
+      position:relative;
+    }
+    .toggle-anim-wrap.animating > * {
+      animation: fadeSlideOut 0.18s ease forwards;
+    }
+    .toggle-enter {
+      animation: fadeSlideIn 0.25s ease forwards !important;
+    }
+    /* staggered children */
+    .toggle-enter:nth-child(1)  { animation-delay: 0.00s !important; }
+    .toggle-enter:nth-child(2)  { animation-delay: 0.04s !important; }
+    .toggle-enter:nth-child(3)  { animation-delay: 0.08s !important; }
+    .toggle-enter:nth-child(4)  { animation-delay: 0.12s !important; }
+    .toggle-enter:nth-child(5)  { animation-delay: 0.16s !important; }
+    .toggle-enter:nth-child(6)  { animation-delay: 0.20s !important; }
+    .toggle-enter:nth-child(7)  { animation-delay: 0.24s !important; }
+    .toggle-enter:nth-child(8)  { animation-delay: 0.28s !important; }
+    .toggle-enter:nth-child(9)  { animation-delay: 0.32s !important; }
+    .toggle-enter:nth-child(10) { animation-delay: 0.36s !important; }
+    /* project cards hidden state */
+    .project-card { transition: opacity 0.2s, transform 0.2s; }
+    .project-card.hidden { display:none; }
+    .project-card.hiding { opacity:0; transform:translateY(8px); pointer-events:none; }
+
     /* ABOUT */
     .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
     .about-panel{display:none}.about-panel.active{display:block}
@@ -562,12 +596,56 @@ cvBtn.addEventListener('click', e=>{ e.stopPropagation(); cvMenu.classList.toggl
 document.addEventListener('click',()=>cvMenu.classList.remove('open'));
 
 // ── ABOUT TABS ───────────────────────────────────────────────
+// ── TOGGLE ANIMATION HELPER ──────────────────────────────────
+function animateToggle(wrapEl, renderFn) {
+  // fade out existing children
+  const children = Array.from(wrapEl.children);
+  children.forEach(el => {
+    el.style.animation = 'fadeSlideOut 0.15s ease forwards';
+  });
+  setTimeout(() => {
+    renderFn();
+    // stagger fade in new children
+    Array.from(wrapEl.children).forEach((el, i) => {
+      el.style.animation = '';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(12px)';
+      setTimeout(() => {
+        el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, i * 45);
+    });
+  }, 150);
+}
+
 document.querySelectorAll('[data-tab]').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('[data-tab]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    document.querySelectorAll('.about-panel').forEach(p=>p.classList.remove('active'));
-    document.getElementById('about-'+btn.dataset.tab).classList.add('active');
+    const target = document.getElementById('about-'+btn.dataset.tab);
+    const current = document.querySelector('.about-panel.active');
+    if (current && current !== target) {
+      current.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+      current.style.opacity = '0';
+      current.style.transform = 'translateY(-8px)';
+      setTimeout(() => {
+        current.classList.remove('active');
+        current.style.opacity = '';
+        current.style.transform = '';
+        target.classList.add('active');
+        target.style.opacity = '0';
+        target.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          target.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+          target.style.opacity = '1';
+          target.style.transform = 'translateY(0)';
+        }, 20);
+      }, 150);
+    } else {
+      document.querySelectorAll('.about-panel').forEach(p=>p.classList.remove('active'));
+      target.classList.add('active');
+    }
   });
 });
 
@@ -586,7 +664,27 @@ document.querySelectorAll('[data-cat]').forEach(btn=>{
     document.querySelectorAll('[data-cat]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentCat = btn.dataset.cat;
-    applyProjectFilters();
+    // animate out then filter
+    const grid = document.getElementById('projects-grid');
+    const visible = Array.from(grid.querySelectorAll('.project-card:not(.hidden)'));
+    visible.forEach(card => {
+      card.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(8px)';
+    });
+    setTimeout(() => {
+      applyProjectFilters();
+      const nowVisible = Array.from(grid.querySelectorAll('.project-card:not(.hidden)'));
+      nowVisible.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(12px)';
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, i * 40);
+      });
+    }, 160);
   });
 });
 
@@ -1011,9 +1109,10 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
     btn.addEventListener('click', () => {
       document.querySelectorAll('[data-exp]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderExp(btn.dataset.exp);
-      // Re-observe any new reveal elements
-      expEl.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+      animateToggle(expEl, () => {
+        renderExp(btn.dataset.exp);
+        expEl.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+      });
     });
   });
   ['research','work','consultancy'].forEach(type => {
