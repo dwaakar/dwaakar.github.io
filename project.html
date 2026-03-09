@@ -243,7 +243,7 @@ function parseFM(text) {
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
-  // CMS saves to public/images/ — Cloudflare serves public/ as root so strip it
+  // Strip /public/ prefix — only /images/ works on Cloudflare
   if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
   if (p.startsWith('public/images/')) return '/images/' + p.slice('public/images/'.length);
   if (p.startsWith('/images/')) return p;
