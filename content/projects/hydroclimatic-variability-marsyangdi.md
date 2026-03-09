@@ -36,7 +36,7 @@ gallery:
       and SSP5-8.5 scenarios"
 displayMode: fullpage
 link: ""
-showGallery: true
+showGallery: false
 showDetail: true
 fpShowGallery: true
 fpShowDetail: true
