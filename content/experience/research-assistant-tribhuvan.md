@@ -1,13 +1,19 @@
 ---
-title: "Research Assistant"
-organisation: "Central Department of Environmental Science, Tribhuvan University"
-location: "Kathmandu, Nepal"
-startDate: "2022"
-endDate: "2024"
+title: "RESEARCH FELLOW "
+organisation: Central Department of Botany, Tribhuvan University
+location: Kirtipur, Nepal
+startDate: October 2023
+endDate: September 2023
 current: false
-type: "research"
-shortDesc: "Field research on sediment dynamics and hydropower impacts in the Marsyangdi River Basin."
+type: research
+shortDesc: ""
+displayMode: popup
 order: 1
 ---
+**Project**: Water-soil-food nexus and sustainable livelihoods through the mainstreaming of agrobiodiversity along the Marshyangdi River Basin, Gandaki Province, Nepal 
 
-Conducted field research on sediment dynamics and hydropower impacts in the Marsyangdi River Basin. Responsibilities included field sampling, GIS analysis, hydrological modelling, and preparation of peer-reviewed manuscripts.
+**Duties and Responsibilities:**
+
+* Supported evidence generation of climate change, water security, disaster risk reduction and livelihoods to inform local and provincial planning 
+* Conducted field-based assessments and community surveys engaging youth and marginalized households.
+* Translated research findings to briefs, presentations, and inputs for stakeholder discussions
