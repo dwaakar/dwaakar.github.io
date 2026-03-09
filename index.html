@@ -222,7 +222,12 @@
     .modal-overlay.open .modal{transform:none}
     .modal-cover{width:100%;height:240px;object-fit:cover;border-radius:16px 16px 0 0;display:block}
     .modal-cover-placeholder{width:100%;height:160px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem}
-    .modal-header{padding:1.8rem 2rem 1rem;display:flex;justify-content:space-between;align-items:flex-start;gap:1rem}
+    .modal-header{padding:1.2rem 1.5rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);border-radius:16px 16px 0 0}
+    .modal-header-left{display:flex;align-items:center;gap:.8rem;flex:1;min-width:0}
+    .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.25rem;line-height:1.3;color:var(--ink);flex:1;min-width:0}
+    .modal-header-right{display:flex;align-items:center;gap:.6rem;flex-shrink:0}
+    .modal-fullpage-btn{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .9rem;border-radius:6px;font-size:.82rem;font-weight:600;background:var(--accent);color:#fff;transition:all var(--t);white-space:nowrap}
+    .modal-fullpage-btn:hover{background:var(--accent2);transform:translateY(-1px)}
     .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;line-height:1.3;color:var(--ink)}
     .modal-close{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:1.1rem;transition:all var(--t)}
     .modal-close:hover{border-color:var(--accent);color:var(--accent)}
@@ -445,8 +450,13 @@
   <div class="modal" id="modal">
     <div id="modal-cover-wrap"></div>
     <div class="modal-header">
-      <h3 class="modal-title" id="modal-title"></h3>
-      <button class="modal-close" id="modal-close">✕</button>
+      <div class="modal-header-left">
+        <h3 class="modal-title" id="modal-title"></h3>
+      </div>
+      <div class="modal-header-right">
+        <span id="modal-fullpage-slot"></span>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
     </div>
     <div class="modal-body">
       <div class="modal-meta" id="modal-meta"></div>
@@ -711,8 +721,11 @@ function openModal(cfg) {
   const icon = cfg.icon||'📄';
   // Cover image — separate field, respects showImage toggle
   const vis0 = cfg.vis || {};
-  const coverSrc = cfg.image ? imgPath(cfg.image) : '';
-  const showCover = vis0.showImage === true;
+  // Use dedicated cover image, or fall back to first gallery image
+  const gallery0 = (cfg.gallery||[]);
+  const firstGalleryImg = gallery0.length > 0 ? imgPath(typeof gallery0[0]==='string' ? gallery0[0] : (gallery0[0].src||'')) : '';
+  const coverSrc = cfg.image ? imgPath(cfg.image) : firstGalleryImg;
+  const showCover = vis0.showImage === true || (vis0.showGallery === true && !!firstGalleryImg && !cfg.image);
   if (showCover && coverSrc) {
     const coverImg = document.createElement('img');
     coverImg.className = 'modal-cover';
@@ -721,7 +734,7 @@ function openModal(cfg) {
     document.getElementById('modal-cover-wrap').innerHTML = '';
     document.getElementById('modal-cover-wrap').appendChild(coverImg);
   } else {
-    document.getElementById('modal-cover-wrap').innerHTML = `<div class="modal-cover-placeholder">${icon}</div>`;
+    document.getElementById('modal-cover-wrap').innerHTML = '';
   }
   document.getElementById('modal-title').textContent = safe(cfg.title);
   document.getElementById('modal-meta').innerHTML = cfg.meta||'';
@@ -823,14 +836,18 @@ function openModal(cfg) {
     initManualSlider(gallery.length);
   }
 
-  // Actions
+  // Full page button — shown sticky in header
+  const fpSlot = document.getElementById('modal-fullpage-slot');
+  if (cfg.displayMode==='fullpage' && cfg.slug) {
+    const page = cfg.pageType==='education' ? `/education.html?slug=${cfg.slug}` : cfg.pageType==='publication' ? `/publication.html?slug=${cfg.slug}` : `/project.html?slug=${cfg.slug}`;
+    fpSlot.innerHTML = `<a class="modal-fullpage-btn" href="${page}">Full Page ↗</a>`;
+  } else {
+    fpSlot.innerHTML = '';
+  }
+  // Other actions at bottom
   let btns = '';
   if (show('showReport') && cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
   if (cfg.link) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
-  if (cfg.displayMode==='fullpage' && cfg.slug) {
-    const page = cfg.pageType==='education' ? `/education.html?slug=${cfg.slug}` : cfg.pageType==='publication' ? `/publication.html?slug=${cfg.slug}` : `/project.html?slug=${cfg.slug}`;
-    btns += `<a class="modal-btn modal-btn-dark" href="${page}">Open Full Page →</a>`;
-  }
   const actEl = document.getElementById('modal-actions');
   actEl.innerHTML = btns;
   actEl.style.display = btns ? 'flex' : 'none';
