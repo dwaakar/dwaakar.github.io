@@ -5,8 +5,8 @@ backend:
   base_url: https://dwaakar-github-io.pages.dev
   auth_endpoint: /api/auth
 
-media_folder: "public/images"
-public_folder: "/public/images"
+media_folder: "images"
+public_folder: "/images"
 
 collections:
 
@@ -74,13 +74,13 @@ collections:
         required: false
         field: { label: "Course", name: "course", widget: "string" }
       - { label: "Detail / Description", name: "body", widget: "markdown", required: false }
-      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "public/images", public_folder: "/public/images" }
+      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Detail Images (auto-slideshow every 3 seconds)"
         name: "gallery"
         widget: "list"
         required: false
         fields:
-          - { label: "Image", name: "src", widget: "image", media_folder: "public/images", public_folder: "/public/images" }
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
           - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
       - { label: "Link", name: "link", widget: "string", required: false }
       - label: "Display Mode"
@@ -147,13 +147,13 @@ collections:
         widget: "list"
         required: false
         field: { label: "Tag", name: "tag", widget: "string" }
-      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "public/images", public_folder: "/public/images" }
+      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Detail Images (auto-slide for community, manual slider for research)"
         name: "gallery"
         widget: "list"
         required: false
         fields:
-          - { label: "Image", name: "src", widget: "image", media_folder: "public/images", public_folder: "/public/images" }
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
           - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
       - { label: "YouTube Video URL", name: "videoUrl", widget: "string", required: false }
       - label: "Downloadable Report"
@@ -216,7 +216,7 @@ collections:
         widget: "list"
         required: false
         fields:
-          - { label: "Image", name: "src", widget: "image", media_folder: "public/images", public_folder: "/public/images" }
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
           - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
       - { label: "External Link", name: "link", widget: "string", required: false }
       - label: "Display Mode"
@@ -264,13 +264,13 @@ collections:
         default: "work"
       - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
       - { label: "Full Detail", name: "body", widget: "markdown", required: false }
-      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "public/images", public_folder: "/public/images" }
+      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Images (slideshow)"
         name: "gallery"
         widget: "list"
         required: false
         fields:
-          - { label: "Image", name: "src", widget: "image", media_folder: "public/images", public_folder: "/public/images" }
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
           - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
       - label: "Display Mode"
         name: "displayMode"
