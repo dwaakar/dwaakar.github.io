@@ -12,8 +12,6 @@ backend:
     uploadMedia: 'Upload "{{path}}"'
     deleteMedia: 'Delete "{{path}}"'
 
-media_library:
-  name: default
 
 media_folder: "images"
 public_folder: "/images"
