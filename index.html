@@ -490,9 +490,9 @@ const safe = v => v || '';
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
-  // Cloudflare Pages strips /public/ prefix — normalise everything to /images/
+  // CMS saves to public/images/ — Cloudflare serves public/ as root so strip it
   if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
-  if (p.startsWith('public/images/')) return p.replace('public/images/', '/images/');
+  if (p.startsWith('public/images/')) return '/images/' + p.slice('public/images/'.length);
   if (p.startsWith('/images/')) return p;
   if (p.startsWith('images/')) return '/' + p;
   return p;
@@ -500,12 +500,8 @@ function imgPath(p) {
 // Smart image loader — tries primary path, falls back to alternate
 function loadImg(el, src) {
   if (!src) return;
+  // imgPath already normalises to /images/ — just set directly
   el.src = src;
-  el.onerror = () => {
-    if (src.startsWith('/images/')) el.src = src.replace('/images/', '/public/images/');
-    else if (src.startsWith('/public/images/')) el.src = src.replace('/public/images/', '/images/');
-    el.onerror = null;
-  };
 }
 const md = t => t && typeof marked !== 'undefined' ? marked.parse(t) : (t||'').replace(/\n/g,'<br>');
 async function fj(u) { try { const r=await fetch(u); if(!r.ok) return null; return r.json(); } catch(e){ return null; } }
