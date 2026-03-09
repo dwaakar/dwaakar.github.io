@@ -7,7 +7,7 @@ endDate: July 2022
 current: false
 type: research
 displayMode: popup
-order: 1
+order: 4
 popupVisLabel: ""
 showImage: false
 showGallery: false
