@@ -973,7 +973,7 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       const typeLabel = (e.type || 'work').charAt(0).toUpperCase() + (e.type || 'work').slice(1);
       const hasMore = e.shortDesc || e.body || e.image || (e.gallery && e.gallery.length);
       const div = document.createElement('div');
-      div.className = 'exp-item reveal' + (hasMore ? ' exp-clickable' : '');
+      div.className = 'exp-item visible' + (hasMore ? ' exp-clickable' : '');
       div.innerHTML = `
         <div class="exp-left">
           <div class="exp-dates">${dateRange}</div>
@@ -1012,6 +1012,8 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       document.querySelectorAll('[data-exp]').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       renderExp(btn.dataset.exp);
+      // Re-observe any new reveal elements
+      expEl.querySelectorAll('.reveal').forEach(el => observer.observe(el));
     });
   });
   ['research','work','consultancy'].forEach(type => {
