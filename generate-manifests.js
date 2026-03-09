@@ -5,7 +5,8 @@ const dirs = [
   'content/projects',
   'content/publications',
   'content/awards',
-  'content/education'
+  'content/education',
+  'content/experience'
 ];
 
 dirs.forEach(dir => {
