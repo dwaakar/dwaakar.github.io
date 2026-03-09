@@ -7,7 +7,7 @@ endDate: February 2022
 current: false
 type: work
 displayMode: popup
-order: 0
+order: 5
 popupVisLabel: ""
 showImage: false
 showGallery: false
