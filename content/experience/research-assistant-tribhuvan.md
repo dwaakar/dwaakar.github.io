@@ -1,5 +1,5 @@
 ---
-title: "RESEARCH FELLOW "
+title: Research Fellow
 organisation: Central Department of Botany, Tribhuvan University
 location: Kirtipur, Nepal
 startDate: October 2023
