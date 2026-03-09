@@ -19,7 +19,7 @@ gallery:
     caption: F1 and CSI wet-day detection scores at 50% random missing
 displayMode: fullpage
 link: ""
-showGallery: true
+showGallery: false
 fpShowGallery: true
 fpShowDetail: true
 order: 4
