@@ -4,7 +4,7 @@ title: Hydroclimatic variability under climate change in the Marsyangdi River
 shortDesc: Assessing climate-driven changes in hydrology and their implications
   for water resource management in the Marsyangdi River Basin.
 year: "2025"
-status: Independent Project
+status: ""
 category: research
 tags: []
 image: ""
