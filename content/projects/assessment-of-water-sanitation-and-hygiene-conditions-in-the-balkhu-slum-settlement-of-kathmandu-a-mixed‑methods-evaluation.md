@@ -1,5 +1,5 @@
 ---
-title: Water Sanitation and Hygiene status in Balkhu Slum
+title: Water Sanitation and Hygiene Status in Balkhu Slum
 shortDesc: ""
 year: "2018"
 status: Bachelor's Project Work
