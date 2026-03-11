@@ -1,5 +1,5 @@
 ---
-title: Rainfall Imputation in High Relief Himalayan Terrain
+title: Rainfall Values Imputation in High Relief Himalayan Terrain
 shortDesc: ""
 year: "2025"
 status: Independent Project
@@ -20,7 +20,7 @@ gallery:
 displayMode: fullpage
 link: https://github.com/dwaakar/rainfall-imputation
 showGallery: false
-showDetail: false
+showDetail: true
 fpShowGallery: true
 fpShowDetail: true
 order: 4
