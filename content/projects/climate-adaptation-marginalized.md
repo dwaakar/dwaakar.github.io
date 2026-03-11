@@ -2,8 +2,8 @@
 title: Climate Change Adaptation for Marginalized Communities
 shortDesc: Policy and grassroots capacity-building programme for climate
   adaptation with marginalised communities in Nepal.
-year: 2024–2025
-status: ""
+year: "2025"
+status: Program Coordinator
 organisation: Nepal Peace Building Initiative
 category: community
 tags: []
@@ -17,7 +17,11 @@ gallery:
   - src: /images/pxl_20250429_092936709.jpg
 displayMode: fullpage
 link: ""
+showDetail: true
+fpShowGallery: true
+fpShowDetail: true
 order: 6
 ---
+This project aims to strengthen policy-level and grassroots capacity to enhance climate change adaptation for marginalized communities across Nepal. The process incorporates the bottom-up approach where phenomenological studies have been carried across several communities of 6 different rural municipalities and municipalities. The information collected is present to the local level stakeholders and through policy dialogues, attempts has been made incorporate into local level climate policies. 
 
-This project strengthened policy-level and grassroots capacity to enhance climate change adaptation for marginalised communities across Nepal. Key activities included participatory climate risk assessments, training 90+ youth leaders from 6 municipalities in climate advocacy, facilitating Policy Dialogue Consultations, and bridging governance gaps between communities and local government. The work resulted in community-identified priorities being integrated into district climate plans, and adaptive livelihood strategies being designed for vulnerable populations.
+The project is also currently training and sensitizing 90+ youths across these municipalities and using them as pivot attempting to ensure transparency and accountability from local bodies and ensure sustainability of the initiative that has been undertaken to ease the adaptation pathways of these marzinalized communities.
