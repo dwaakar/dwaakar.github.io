@@ -20,6 +20,7 @@ gallery:
 displayMode: fullpage
 link: ""
 showGallery: false
+showDetail: true
 fpShowGallery: true
 fpShowDetail: true
 order: 4
