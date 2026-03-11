@@ -18,7 +18,7 @@ gallery:
   - src: /images/fsicsi.png
     caption: F1 and CSI wet-day detection scores at 50% random missing
 displayMode: fullpage
-link: ""
+link: https://github.com/dwaakar/rainfall-imputation
 showGallery: false
 showDetail: true
 fpShowGallery: true
