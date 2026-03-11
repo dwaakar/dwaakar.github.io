@@ -1,5 +1,5 @@
 ---
-title: Suspended sediment load and hydropower impacts
+title: Suspended Sediment Load and Impacts due to Hydropower Plants
 shortDesc: ""
 year: "2024"
 status: MSc Thesis
