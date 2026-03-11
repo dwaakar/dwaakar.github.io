@@ -1,6 +1,5 @@
 ---
-title: Assessment of Sediment Load, Transport Mechanisms, and the Impacts Due to
-  Hydropower Plants in the Marsyangdi River Basin
+title: Suspended sediment load and hydropower impacts
 shortDesc: ""
 year: "2024"
 status: MSc Thesis — Tribhuvan University
