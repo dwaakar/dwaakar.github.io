@@ -20,8 +20,11 @@ gallery:
       department
   - src: /images/policy-dailogue.png
     caption: Policy Dailogue with stakeholders
-displayMode: popup
+displayMode: fullpage
 link: ""
+showDetail: true
+fpShowGallery: true
+fpShowDetail: true
 order: 7
 ---
 The project “Strengthening the Implementation of Vehicle Emission and Inspection System through Increased Roadside Monitoring and Sensitization” was implemented by Clean up Nepal from March to August 2019 under the Data for Development (D4D) Program, supported by The Asia Foundation and Development Initiatives. The initiative aimed to address the growing challenge of vehicular emissions in the Kathmandu Valley by improving collaboration among key government agencies, enhancing public awareness, and promoting data-driven advocacy.
