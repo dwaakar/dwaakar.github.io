@@ -20,14 +20,19 @@ organisation: Department of Environmental Science, Tri-chandra Campus
 category: research
 gallery:
   - src: /images/1.png
+    caption: Status of Water, Latrine and Hygiene on the basis of observation
   - src: /images/2.png
-  - src: /images/3.jpg
+    caption: Total, Calcium and Magnesium Hardness of Water Sampled
   - src: /images/img_20180421_130352.jpg
+    caption: Status of toilet in the home of one of the respondents
   - src: /images/img_20180421_130659.jpg
+    caption: Water tanks and availability of water across the slum settlement
+  - src: /images/3.jpg
+    caption: Dumping site near the settlement area
   - src: /images/img_20180421_130908.jpg
 report:
   label: Download Report
-displayMode: popup
+displayMode: fullpage
 popupVisLabel: ""
 showGallery: false
 showDetail: false
