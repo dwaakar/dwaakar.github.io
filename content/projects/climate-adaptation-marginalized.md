@@ -8,7 +8,9 @@ organisation: Nepal Peace Building Initiative
 category: community
 tags: []
 image: ""
-displayMode: popup
+gallery:
+  - src: /images/pxl_20250327_153435096.jpg
+displayMode: fullpage
 link: ""
 order: 6
 ---
