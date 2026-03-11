@@ -22,7 +22,7 @@ report:
 displayMode: fullpage
 popupVisLabel: ""
 showGallery: false
-showDetail: false
+showDetail: true
 showVideo: false
 showReport: false
 showRelatedPubs: false
