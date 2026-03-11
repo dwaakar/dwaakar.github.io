@@ -1,11 +1,6 @@
 ---
-title: Implications for water resources management in Marsyagndi Basin under
-  climate change
-shortDesc: >-
-  Title: Hydroclimatic variability under climate change in the Marsyangdi River
-  Basin and Implications for water resources management
-
-  This project explores how future climate conditions may reshape water availability, river flows, and seasonal patterns in a Himalayan river basin. By using a hydrological model and a range of possible climate futures, the study investigates how shifts in temperature, rainfall, snow processes, and extreme events could influence water resources and their connections to energy production, agriculture, and ecosystems. The work highlights emerging challenges and the growing imbalance between when water is available and when different sectors need it, emphasizing the importance of integrated, forward‑looking planning across the entire system.
+title: Marsyangdi River Basin, Climate Change and Water Resource Managemnet
+shortDesc: ""
 year: "2025"
 status: ""
 category: research
@@ -40,7 +35,7 @@ gallery:
 displayMode: fullpage
 link: https://github.com/dwaakar/climate-change-impacts-using-Era5-land-datasets
 showGallery: false
-showDetail: false
+showDetail: true
 fpShowGallery: true
 fpShowDetail: true
 order: 0
