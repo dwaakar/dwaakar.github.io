@@ -2,7 +2,7 @@
 title: Suspended sediment load and hydropower impacts
 shortDesc: ""
 year: "2024"
-status: MSc Thesis — Tribhuvan University
+status: MSc Thesis
 organisation: Central Department of Environmental Science, Tribhuvan University
 category: research
 tags: []
