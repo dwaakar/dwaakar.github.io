@@ -35,7 +35,7 @@ gallery:
     caption: "% Change in average monthly mean snowfall in the MRB under SSP2-4.5
       and SSP5-8.5 scenarios"
 displayMode: fullpage
-link: ""
+link: https://github.com/dwaakar/climate-change-impacts-using-Era5-land-datasets
 showGallery: false
 showDetail: true
 fpShowGallery: true
