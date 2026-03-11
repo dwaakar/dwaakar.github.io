@@ -20,8 +20,11 @@ gallery:
   - src: /images/img_20230401_192223.jpg
   - src: /images/img_3665-1-.jpg
   - src: /images/img_3628_1646727907357.jpg
-displayMode: popup
+displayMode: fullpage
 link: ""
+showDetail: true
+fpShowGallery: true
+fpShowDetail: true
 order: 5
 ---
 **About Nepal Waste Map**  
