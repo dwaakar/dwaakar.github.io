@@ -114,10 +114,10 @@ collections:
       - { label: "[Popup] Show Description/Detail", name: "showDetail", widget: "boolean", default: false, required: false }
       - { label: "[Popup] Show Coursework", name: "showCoursework", widget: "boolean", default: false, required: false }
       - label: "── What to show on Full Page (turn all off = blank page) ──"
-      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
         name: "fullpageVisLabel"
         widget: "hidden"
         default: ""
+      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Description/Detail", name: "fpShowDetail", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Coursework", name: "fpShowCoursework", widget: "boolean", default: false, required: false }
@@ -207,10 +207,10 @@ collections:
       - { label: "[Popup] Show Report Download", name: "showReport", widget: "boolean", default: false, required: false }
       - { label: "[Popup] Show Related Publications", name: "showRelatedPubs", widget: "boolean", default: false, required: false }
       - label: "── What to show on Full Page (turn all off = blank page) ──"
-      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
         name: "fullpageVisLabel"
         widget: "hidden"
         default: ""
+      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Description/Detail", name: "fpShowDetail", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Video", name: "fpShowVideo", widget: "boolean", default: false, required: false }
@@ -256,10 +256,10 @@ collections:
       - { label: "[Popup] Show Abstract", name: "showAbstract", widget: "boolean", default: false, required: false }
       - { label: "[Popup] Show Detail/Overview", name: "showDetail", widget: "boolean", default: false, required: false }
       - label: "── What to show on Full Page (turn all off = blank page) ──"
-      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
         name: "fullpageVisLabel"
         widget: "hidden"
         default: ""
+      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Abstract", name: "fpShowAbstract", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Detail/Overview", name: "fpShowDetail", widget: "boolean", default: false, required: false }
@@ -315,10 +315,10 @@ collections:
       - { label: "[Popup] Show Images / Slideshow", name: "showGallery", widget: "boolean", default: false, required: false }
       - { label: "[Popup] Show Description", name: "showDetail", widget: "boolean", default: false, required: false }
       - label: "── What to show on Full Page ──"
-      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
         name: "fullpageVisLabel"
         widget: "hidden"
         default: ""
+      - { label: "[Full Page] Show Short Description", name: "fpShowShortDesc", widget: "boolean", default: true, required: false }
       - { label: "[Full Page] Show Cover Image", name: "fpShowImage", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Description", name: "fpShowDetail", widget: "boolean", default: false, required: false }
