@@ -33,5 +33,6 @@
   "cvProfessional": "/images/diwakar-adhikari.pdf",
   "cvAcademic": "/images/diwakar-adhikari-cv.pdf",
   "email": "thisisdwakr@gmail.com",
-  "linkedin": "https://www.linkedin.com/in/diwakaradhikari/"
+  "linkedin": "https://www.linkedin.com/in/diwakaradhikari/",
+  "showSkills": false
 }
