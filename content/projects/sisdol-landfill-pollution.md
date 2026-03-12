@@ -1,6 +1,11 @@
 ---
 title: Rainfall Values Imputation in High Relief Himalayan Terrain
-shortDesc: ""
+shortDesc: >-
+  **Project**: *Rainfall Imputation in High Relief Himalayan Terrain A Multi
+  Method Evaluation in the Marsyangdi River Basin*
+
+
+  This project examines how missing rainfall data in complex mountain regions can be reliably reconstructed when monitoring stations are sparse and difficult to compare. Focusing on a Himalayan river basin, the study evaluates a wide range of gap‑filling techniques to understand which approaches work best when surrounding stations differ greatly in terrain and climate. Rather than emphasizing method complexity, the work highlights practical limits of data availability, identifying when reconstruction is feasible and when missing information reflects deeper gaps in monitoring networks. The study provides guidance for choosing suitable methods and improving station design in challenging mountain environments.
 year: "2025"
 status: Independent Project
 organisation: ""
@@ -20,7 +25,7 @@ gallery:
 displayMode: fullpage
 link: https://github.com/dwaakar/rainfall-imputation
 showGallery: false
-showDetail: true
+showDetail: false
 fpShowGallery: true
 fpShowDetail: true
 order: 4
