@@ -55,6 +55,14 @@ collections:
           - { label: "Facebook URL", name: "facebook", widget: "string", required: false }
           - { label: "Instagram URL", name: "instagram", widget: "string", required: false }
           - { label: "Storygraph URL", name: "storygraph", widget: "string", required: false }
+          - label: "── Section Visibility (toggle to show/hide entire sections) ──"
+            name: "secVisLabel"
+            widget: "hidden"
+            default: ""
+          - { label: "Show About Section", name: "showAbout", widget: "boolean", default: true, required: false }
+          - { label: "Show Projects Section", name: "showProjects", widget: "boolean", default: true, required: false }
+          - { label: "Show Publications Section", name: "showPublications", widget: "boolean", default: true, required: false }
+          - { label: "Show Experience Section", name: "showExperience", widget: "boolean", default: true, required: false }
           - label: "Custom Social Links"
             name: "customSocials"
             widget: "list"
@@ -81,7 +89,9 @@ collections:
         widget: "list"
         required: false
         field: { label: "Course", name: "course", widget: "string" }
-      - { label: "Detail / Description", name: "body", widget: "markdown", required: false }
+      - { label: "Detail / Description", name: "body", widget: "markdown"
+        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
+        editor_components: [], required: false }
       - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Detail Images (auto-slideshow every 3 seconds)"
         name: "gallery"
@@ -139,7 +149,9 @@ collections:
     fields:
       - { label: "Title", name: "title", widget: "string" }
       - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
-      - { label: "Full Detail", name: "body", widget: "markdown", required: false }
+      - { label: "Full Detail", name: "body", widget: "markdown"
+        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
+        editor_components: [], required: false }
       - { label: "Year", name: "year", widget: "string", required: false }
       - { label: "Status / Role", name: "status", widget: "string", required: false }
       - { label: "Organisation / Institution", name: "organisation", widget: "string", required: false }
@@ -218,7 +230,9 @@ collections:
       - { label: "Publication Type / Category", name: "category", widget: "string", required: false, hint: "e.g. Research Article, Book Chapter, Conference Paper, Policy Brief" }
       - { label: "DOI / URL", name: "doi", widget: "string", required: false }
       - { label: "Abstract", name: "abstract", widget: "text", required: false }
-      - { label: "Detailed Overview", name: "body", widget: "markdown", required: false }
+      - { label: "Detailed Overview", name: "body", widget: "markdown"
+        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
+        editor_components: [], required: false }
       - label: "Images (slideshow if multiple, static if one)"
         name: "gallery"
         widget: "list"
@@ -271,7 +285,9 @@ collections:
           - { label: "Consultancy", value: "consultancy" }
         default: "work"
       - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
-      - { label: "Full Detail", name: "body", widget: "markdown", required: false }
+      - { label: "Full Detail", name: "body", widget: "markdown"
+        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
+        editor_components: [], required: false }
       - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Images (slideshow)"
         name: "gallery"
@@ -302,3 +318,65 @@ collections:
       - { label: "[Full Page] Show Cover Image", name: "fpShowImage", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Description", name: "fpShowDetail", widget: "boolean", default: false, required: false }
+
+  - name: "sections"
+    label: "📂 Custom Sections"
+    files:
+      - name: "sections"
+        label: "Manage Custom Sections"
+        file: "content/sections.json"
+        description: "Add a new section here, then add items to it via Custom Section Items below."
+        fields:
+          - label: "Custom Sections"
+            name: "root"
+            widget: "list"
+            fields:
+              - { label: "Section ID (no spaces, lowercase, e.g. fieldwork)", name: "id", widget: "string" }
+              - { label: "Section Title (shown on site)", name: "title", widget: "string" }
+              - { label: "Icon (emoji)", name: "icon", widget: "string", default: "📌", required: false }
+              - label: "Display Style"
+                name: "display"
+                widget: "select"
+                options:
+                  - { label: "Cards (like Projects)", value: "cards" }
+                  - { label: "Timeline (like Experience)", value: "timeline" }
+                default: "cards"
+              - { label: "Visible on Site", name: "visible", widget: "boolean", default: true }
+
+  - name: "custom_items"
+    label: "📝 Custom Section Items"
+    folder: "content/custom"
+    create: true
+    slug: "{{sectionId}}-{{slug}}"
+    fields:
+      - label: "Section"
+        name: "sectionId"
+        widget: "string"
+        hint: "Must match the Section ID exactly (e.g. fieldwork)"
+      - { label: "Title", name: "title", widget: "string" }
+      - { label: "Organisation / Institution", name: "organisation", widget: "string", required: false }
+      - { label: "Location", name: "location", widget: "string", required: false }
+      - { label: "Year / Start Date", name: "year", widget: "string", required: false }
+      - { label: "Start Date", name: "startDate", widget: "string", required: false, hint: "e.g. Jan 2022 (for timeline display)" }
+      - { label: "End Date", name: "endDate", widget: "string", required: false }
+      - { label: "Currently Active", name: "current", widget: "boolean", default: false, required: false }
+      - { label: "Type / Role Label", name: "type", widget: "string", required: false, hint: "e.g. Lead Researcher, Participant" }
+      - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
+      - { label: "Full Detail", name: "body", widget: "markdown", required: false }
+      - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
+      - label: "Gallery Images"
+        name: "gallery"
+        widget: "list"
+        required: false
+        fields:
+          - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
+          - { label: "Caption", name: "caption", widget: "string", required: false }
+      - { label: "External Link", name: "link", widget: "string", required: false }
+      - label: "Display Mode"
+        name: "displayMode"
+        widget: "select"
+        options:
+          - { label: "Popup only", value: "popup" }
+          - { label: "Popup + Full Page", value: "fullpage" }
+        default: "popup"
+      - { label: "Sort Order", name: "order", widget: "number", default: 99 }
