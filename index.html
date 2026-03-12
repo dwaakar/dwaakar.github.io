@@ -508,8 +508,19 @@ function parseFM(text) {
     const ci = line.indexOf(':');
     if (ci === -1) { i++; continue; }
     const key = line.slice(0, ci).trim();
-    const val = line.slice(ci + 1).trim();
+    let val = line.slice(ci + 1).trim();
     i++;
+    // YAML block scalars (Decap CMS writes markdown fields as >- or |-)
+    if (val === '>' || val === '>-' || val === '>+' || val === '|' || val === '|-' || val === '|+') {
+      const isLiteral = val.startsWith('|');
+      const parts = [];
+      while (i < lines.length && (lines[i].startsWith('  ') || lines[i] === '')) {
+        parts.push(lines[i].startsWith('  ') ? lines[i].slice(2) : '');
+        i++;
+      }
+      data[key] = isLiteral ? parts.join('\n').trimEnd() : parts.join(' ').trim();
+      continue;
+    }
     if (val === '' || val === '[]') {
       // Indented list follows
       const items = [];
