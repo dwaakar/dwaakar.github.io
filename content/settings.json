@@ -5,6 +5,7 @@
     "Waste Management and Circular Economy"
   ],
   "github": "",
+  "showPublications": true,
   "aboutProfessionalObjective": "A professional with 3+ years of experience supporting youth engagement, civic participation, and community-driven development initiatives in Nepal. Proven ability to work with local governments, civil society organizations, and youth networks to design and implement inclusive programmes, facilitate policy dialogue, and translate community voices into actionable governance outcomes. Strong background in results-based management (RBM), monitoring and evaluation, and the use of data and digital tools to support evidence-based decision-making. Experienced in working with marginalized communities, youth leaders, and municipal institutions across multiple provinces",
   "taglines": [
     "Researcher",
@@ -12,6 +13,7 @@
     "Just Another Environmentalist"
   ],
   "facebook": "https://www.facebook.com/mahaapooroosh",
+  "showExperience": true,
   "bio": "I bring over four years of experience in environmental research and action, specializing in water resources, waste management, climate resilience, ecosystem health, and WASH. I’ve analyzed thousands of water samples, facilitated the mapping and analysis of waste-related data from 70,000+ households across several municipalities, studied the hydrological regime of Himalayan rivers, and trained youth in environmental advocacy. In between, I’ve managed projects, raised funds, and built partnerships across local governments, communities, and other sectors.",
   "name": "Diwakar Adhikari",
   "phone": "+977-984-3247059",
@@ -20,11 +22,13 @@
     "Modelling Water Systems for Climate-Resilient Infrastructure and Adaptation",
     "Contaminant Fate, Transport, and Treatment"
   ],
+  "showAbout": true,
   "aboutResearchObjective": "An environmental science graduate student seeking to leverage experience in hydrological modeling, climate data analysis, and watershed‑scale environmental assessment to investigate hydroclimatic variability, human–environment interactions, and their interconnectedness within the Water–Energy–Food–Ecosystem (WEFE) nexus. Dedicated to generating science‑based insights that support sustainable water resources management, strengthen climate adaptation strategies, and enhance ecological and community resilience in data‑scarce mountain river basins.",
   "photo": "/images/profile.jpg",
   "instagram": "",
   "customSocials": [],
   "location": "Kathmandu, Nepal",
+  "showProjects": true,
   "storygraph": "https://app.thestorygraph.com/profile/dwakar",
   "cvProfessional": "/images/diwakar-adhikari.pdf",
   "cvAcademic": "/images/diwakar-adhikari-cv.pdf",
