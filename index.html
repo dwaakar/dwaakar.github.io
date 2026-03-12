@@ -1121,7 +1121,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       topHtml = `<div class="card-slide-wrap" data-cs-count="${allImgs.length}">${imgTags}<div class="card-slide-dots">${dotTags}</div></div>`;
     }
 
-    div.innerHTML=`${topHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}</div></div>${p.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${p.organisation}</p>`:''}<p class="project-desc">${safe(p.shortDesc)}</p><div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
+    div.innerHTML=`${topHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}</div></div>${p.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${p.organisation}</p>`:''}<div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
     div.addEventListener('click',()=>openModal({
       title:p.title,
       meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>${p.organisation?`<span style="font-size:.82rem;color:var(--accent)">🏢 ${p.organisation}</span>`:''}`,
@@ -1222,7 +1222,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         <div class="exp-right">
           <div class="exp-title">${safe(e.title)}</div>
           <div class="exp-org">${safe(e.organisation)}</div>
-          ${e.shortDesc ? `<div class="exp-desc">${safe(e.shortDesc)}</div>` : ''}
+          ${e.shortDesc ? `<div class="exp-desc">${e.shortDesc.replace(/\*\*|__|\*|_|`/g,'').split('\n')[0].slice(0,120)}${e.shortDesc.length>120?'…':''}</div>` : ''}
           ${hasMore ? `<span class="pub-more">Read more →</span>` : ''}
         </div>`;
       if (hasMore) {
@@ -1295,7 +1295,6 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
             <div class="exp-right">
               <div class="exp-title">${safe(e.title)}</div>
               <div class="exp-org">${safe(e.organisation)}</div>
-              ${e.shortDesc?`<div class="exp-desc">${safe(e.shortDesc)}</div>`:''}
               ${hasMore?`<span class="pub-more">Read more →</span>`:''}
             </div>
           </div>`;
@@ -1329,7 +1328,6 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
               <div class="project-title">${safe(e.title)}</div>
             </div>
             ${e.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${e.organisation}</p>`:''}
-            <p class="project-desc">${safe(e.shortDesc)}</p>
             <div class="project-card-bottom"><div></div>${hasMore?`<span class="read-more-link">More →</span>`:''}</div>
           </div>`;
         });
