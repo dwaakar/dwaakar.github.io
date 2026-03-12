@@ -5,6 +5,8 @@ shortDesc: >-
   Climate Change Adaptation for Marginalized Communities*
 
 
+
+
   This project aims to strengthen policy-level and grassroots capacity to enhance climate change adaptation for marginalized communities across Nepal. The process incorporates the bottom-up approach where phenomenological studies have been carried across several communities of 6 different rural municipalities and municipalities. The information collected is present to the local level stakeholders and through policy dialogues, attempts has been made incorporate into local level climate policies. 
 
 
