@@ -5,6 +5,8 @@ shortDesc: >-
   due to Hydropower Plants in the Marsyangdi River Basin, Nepal*
 
 
+
+
   This project examines how a series of hydropower dams influences the natural movement and character of sediment within a major Himalayan river basin. Through field sampling, surveys, and modelling, the study explores how cascade dam development alters sediment flow, grain size patterns, and river processes. It highlights how these changes affect river health, aquatic habitats, and hydropower operations, emphasizing the importance of integrated sediment management. The work provides insights for balancing energy production with long‑term environmental stability in river systems undergoing rapid hydropower expansion.
 year: "2024"
 status: MSc Thesis
