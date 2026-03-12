@@ -64,6 +64,16 @@ collections:
           - { label: "Show Publications Section", name: "showPublications", widget: "boolean", default: true, required: false }
           - { label: "Show Experience Section", name: "showExperience", widget: "boolean", default: true, required: false }
           - { label: "Show Skills Section", name: "showSkills", widget: "boolean", default: true, required: false }
+          - label: "── Section Order (drag to reorder) ──"
+            name: "sectionOrderLabel"
+            widget: "hidden"
+            default: ""
+          - label: "Section Order"
+            name: "sectionOrder"
+            widget: "list"
+            required: false
+            hint: "Drag to reorder sections. Use exact IDs: about, projects, publications, experience, skills. Leave empty for default order."
+            field: { label: "Section ID", name: "item", widget: "select", options: ["about","projects","publications","experience","skills"] }
           - label: "Custom Social Links"
             name: "customSocials"
             widget: "list"
