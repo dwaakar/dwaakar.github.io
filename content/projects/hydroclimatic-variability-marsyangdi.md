@@ -5,6 +5,8 @@ shortDesc: >-
   River Basin and Implications for water resources management*
 
 
+
+
   This project examines how future climate conditions may reshape the seasonal water cycle of a major Himalayan river basin and how these shifts influence water, energy, food production, and ecosystems. Using a hydrological model informed by multiple climate futures, the study explores how warming, changing rainfall patterns, snow dynamics, and more frequent extremes could alter river flows throughout the year. It highlights growing mismatches between when water is available and when different sectors need it, emphasizing the importance of integrated planning that considers a wide range of possible climate states.
 year: "2025"
 status: ""
