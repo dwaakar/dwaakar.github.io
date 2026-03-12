@@ -1077,7 +1077,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     div.addEventListener('click',()=>openModal({
       title:p.title,
       meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>${p.organisation?`<span style="font-size:.82rem;color:var(--accent)">🏢 ${p.organisation}</span>`:''}`,
-      tags, image:imgPath(p.image)||'', icon, detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[],
+      shortDesc:p.shortDesc||'', tags, image:imgPath(p.image)||'', icon, detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[],
       videoUrl:p.videoUrl||'', report:p.report||null, relatedPubs:p.relatedPubs||[],
       link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project',
       vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showDetail: p.showDetail===true||p.showDetail==='true', showVideo: p.showVideo===true||p.showVideo==='true', showReport: p.showReport===true||p.showReport==='true', showRelatedPubs: p.showRelatedPubs===true||p.showRelatedPubs==='true' },
@@ -1185,8 +1185,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
           image: imgPath(e.image)||'',
           icon: '💼',
           subtitle: `${safe(e.organisation)}${e.location?' · '+e.location:''}`,
+          shortDesc: e.shortDesc||'',
           detail: e.body||'',
-          abstract: e.shortDesc||'',
           gallery: Array.isArray(e.gallery) ? e.gallery : [],
           displayMode: e.displayMode||'popup',
           slug: e.slug, pageType: 'experience',
