@@ -242,6 +242,13 @@
     .modal-meta{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1rem}
     .modal-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
     .modal-section-title{font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:.8rem 0 .4rem;padding-top:.8rem;border-top:1px solid var(--border)}
+    .modal-short-desc{font-size:.97rem;color:var(--ink2);line-height:1.85;margin-bottom:1.2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+    .modal-short-desc p{margin-bottom:.7rem}
+    .modal-short-desc p:last-child{margin-bottom:0}
+    .modal-short-desc strong{color:var(--ink);font-weight:600}
+    .modal-short-desc h1,.modal-short-desc h2,.modal-short-desc h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:.8rem 0 .4rem;font-size:1.1rem}
+    .modal-short-desc ul,.modal-short-desc ol{padding-left:1.3rem;margin-bottom:.7rem}
+    .modal-short-desc li{margin-bottom:.25rem}
     .modal-detail{font-size:.97rem;color:var(--ink2);line-height:1.85}
     .modal-detail p{margin-bottom:.9rem}
     .modal-detail h2,.modal-detail h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:1.2rem 0 .5rem}
@@ -757,11 +764,17 @@ function openModal(cfg) {
   const show = (key) => vis[key] === true;
 
   let html = '';
-  if (cfg.subtitle) html += `<p style="font-size:1rem;color:var(--ink2);margin-bottom:1rem">${cfg.subtitle}</p>`;
+  // subtitle shown as small plain text (e.g. institution · year for education, authors for pubs)
+  if (cfg.subtitle) html += `<p style="font-size:.9rem;color:var(--ink2);margin-bottom:1rem;opacity:.8">${cfg.subtitle}</p>`;
 
   const gallery = (cfg.gallery||[]).slice(0,10);
 
-  // Abstract
+  // Short Description — always shown first in popup, rendered as rich text
+  if (cfg.shortDesc) {
+    html += `<div class="modal-short-desc">${md(cfg.shortDesc)}</div>`;
+  }
+
+  // Abstract (publications) — toggle controlled
   if (show('showAbstract') && cfg.abstract) {
     html += `<div class="modal-section-title">Abstract</div><p style="font-size:.95rem;color:var(--ink2);line-height:1.8">${cfg.abstract}</p>`;
   }
@@ -824,9 +837,11 @@ function openModal(cfg) {
   if (show('showRelatedPubs') && cfg.relatedPubs && cfg.relatedPubs.length) {
     html += `<div class="modal-section-title">Related Publications</div>${cfg.relatedPubs.map(p=>`<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.88rem;color:var(--ink2)">📚 ${p}</div>`).join('')}`;
   }
-  // If nothing to show, display a minimal message
-  if (!html.trim()) {
-    html = '<p style="color:var(--ink2);font-size:.9rem;padding:1rem 0;text-align:center;opacity:.6">No additional information.</p>';
+  // If nothing to show beyond shortDesc/subtitle, show minimal message
+  // (shortDesc alone is enough — no message needed)
+  const hasRealContent = cfg.shortDesc || html.includes('modal-section-title') || html.includes('modal-detail');
+  if (!hasRealContent) {
+    html += '<p style="color:var(--ink2);font-size:.9rem;padding:1rem 0;text-align:center;opacity:.6">No additional information.</p>';
   }
   document.getElementById('modal-content').innerHTML = html;
 
@@ -999,6 +1014,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       meta: `${e.grade?`<span class="project-status-badge">${e.grade}</span>`:''}`,
       image: imgPath(e.image)||'',
       icon: '🎓',
+      shortDesc: e.shortDesc||'',
       detail: e.detail,
       coursework: Array.isArray(e.coursework)?e.coursework:[],
       gallery: Array.isArray(e.gallery)?e.gallery:[],
@@ -1125,7 +1141,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         meta:`${p.status?`<span class="pub-status">${safe(p.status)}</span>`:''}${p.category?`<span class="pub-category-badge">${safe(p.category)}</span>`:''}`,
         tags:[], image:imgPath(p.image)||'', icon:'📚',
         subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
-        abstract:p.abstract||'', detail:p.detail||'',
+        shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
         link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
         vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
@@ -1288,13 +1304,13 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
           meta: e.type ? `<span class="project-status-badge">${e.type}</span>` : '',
           image: imgPath(e.image)||'',
           gallery: Array.isArray(e.gallery)?e.gallery:[],
-          abstract: e.shortDesc||'',
+          shortDesc: e.shortDesc||'',
           detail: e.body||'',
           link: e.link||'',
           displayMode: e.displayMode||'popup',
           slug: e.slug,
           pageType: 'custom',
-          vis: { showGallery: true, showAbstract: !!e.shortDesc, showDetail: !!e.body }
+          vis: { showGallery: !!e.gallery&&e.gallery.length>0, showDetail: !!e.body }
         }));
       });
 
