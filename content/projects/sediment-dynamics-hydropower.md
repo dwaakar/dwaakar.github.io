@@ -13,14 +13,14 @@ gallery:
       regions, and the basin
   - src: /images/picture2.png
     caption: Conceptual framework and research design of the study
-  - src: /public/images/picture3.png
+  - src: /images/picture3.png
     caption: Scatter Plot of SSC and Discharge
-  - src: /public/images/picture4.png
+  - src: /images/picture4.png
     caption: Variation in the Discharge and SSC at the sampling point
-  - src: /public/images/picture7.png
+  - src: /images/picture7.png
     caption: 10-year average suspended sediment load at inlet and outlet in the MRB
       from 2013 to 2023
-  - src: /public/images/picture8.png
+  - src: /images/picture8.png
     caption: 10-year average suspended sediment concentration (mg/L) at the MRB from
       2013-2023
 report:
