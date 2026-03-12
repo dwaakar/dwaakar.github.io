@@ -1,8 +1,19 @@
 ---
 title: Nepal Waste Map (Safa Nepal)
-shortDesc: A digital waste management tool for Integrated Solid Waste Management
-  Systems and Circular Economy developed by CLEAN UP NEPAL in partnership with
-  The Asia Foundation and UKAid
+shortDesc: >-
+  Nepal Waste Map is a digital system designed to improve and promote Integrated
+  Solid Waste Management Systems and Circular Economy by making information
+  accessible to municipalities, service providers, and citizens. Through a web
+  dashboard and mobile app, the platform supports reporting of waste issues,
+  mapping of waste infrastructure, and monitoring of collection services. It
+  organizes waste‑related information into functional components that cover
+  neighbourhood conditions, infrastructure, collection systems, building
+  categories, and sustainable practices. The project also involves stakeholder
+  mapping, data collection, capacity building, and community training, creating
+  a collaborative framework that connects government, private waste companies,
+  and the public. 
+
+  It was developed by CLEAN UP NEPAL in partnership with The Asia Foundation and UKAid
 year: 2018–2022
 status: Program Officer
 organisation: CLEAN UP NEPAL
@@ -22,7 +33,7 @@ gallery:
   - src: /images/img_3628_1646727907357.jpg
 displayMode: fullpage
 link: ""
-showDetail: true
+showDetail: false
 fpShowGallery: true
 fpShowDetail: true
 order: 5
