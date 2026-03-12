@@ -1,0 +1,4 @@
+[
+  {"id":"fieldwork","title":"Field Work","icon":"🏔️","display":"cards","visible":false},
+  {"id":"workshops","title":"Workshops & Training","icon":"🎓","display":"timeline","visible":false}
+]
