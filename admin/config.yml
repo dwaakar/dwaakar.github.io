@@ -146,7 +146,11 @@ collections:
     slug: "{{slug}}"
     fields:
       - { label: "Title", name: "title", widget: "string" }
-      - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
+      - label: "Short Description"
+        name: "shortDesc"
+        widget: "markdown"
+        required: false
+        hint: "Always shown first in the popup — keep it under 250 words. Supports bold, italic, headings, and bullet points."
       - { label: "Full Detail", name: "body", widget: "markdown", required: false }
       - { label: "Year", name: "year", widget: "string", required: false }
       - { label: "Status / Role", name: "status", widget: "string", required: false }
@@ -278,7 +282,11 @@ collections:
           - { label: "Work", value: "work" }
           - { label: "Consultancy", value: "consultancy" }
         default: "work"
-      - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
+      - label: "Short Description"
+        name: "shortDesc"
+        widget: "markdown"
+        required: false
+        hint: "Always shown first in the popup — keep it under 250 words. Supports bold, italic, headings, and bullet points."
       - { label: "Full Detail", name: "body", widget: "markdown", required: false }
       - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Images (slideshow)"
@@ -353,7 +361,11 @@ collections:
       - { label: "End Date", name: "endDate", widget: "string", required: false }
       - { label: "Currently Active", name: "current", widget: "boolean", default: false, required: false }
       - { label: "Type / Role Label", name: "type", widget: "string", required: false, hint: "e.g. Lead Researcher, Participant" }
-      - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
+      - label: "Short Description"
+        name: "shortDesc"
+        widget: "markdown"
+        required: false
+        hint: "Always shown first in the popup — keep it under 250 words. Supports bold, italic, headings, and bullet points."
       - { label: "Full Detail", name: "body", widget: "markdown", required: false }
       - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Gallery Images"
