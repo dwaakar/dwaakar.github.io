@@ -29,7 +29,7 @@ link: ""
 showDetail: false
 fpShowGallery: true
 fpShowDetail: true
-order: 6
+order: 2
 ---
 This project "*Strengthening Policy-level and Grassroot Capacity to Enhance Climate Change Adaptation for Marginalized Communities*" aims to strengthen policy-level and grassroots capacity to enhance climate change adaptation for marginalized communities across Nepal. The process incorporates the bottom-up approach where phenomenological studies have been carried across several communities of 6 different rural municipalities and municipalities. The information collected is present to the local level stakeholders and through policy dialogues, attempts has been made incorporate into local level climate policies. 
 
