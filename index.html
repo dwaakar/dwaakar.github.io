@@ -143,8 +143,15 @@
     .project-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg)}
     .project-card.hidden{display:none}
     .pub-card.hidden{display:none}
-    .project-img{width:100%;height:160px;object-fit:cover}
-    .project-img-placeholder{width:100%;height:160px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));display:flex;align-items:center;justify-content:center;font-size:2rem}
+    .project-img{width:100%;height:190px;object-fit:cover}
+    .project-img-placeholder{width:100%;height:190px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));display:flex;align-items:center;justify-content:center;font-size:2rem}
+    /* card slideshow */
+    .card-slide-wrap{position:relative;width:100%;height:190px;overflow:hidden;background:var(--bg2)}
+    .card-slide-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.7s ease}
+    .card-slide-wrap img.cs-active{opacity:1}
+    .card-slide-dots{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);display:flex;gap:4px;z-index:2}
+    .card-slide-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.5);transition:background .3s}
+    .card-slide-dot.cs-active{background:#fff}
     .project-card-top{padding:1.5rem 1.5rem 0}
     .project-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem}
     .project-year{font-family:'JetBrains Mono',monospace;font-size:.78rem;color:var(--ink2);letter-spacing:.08em}
@@ -438,6 +445,9 @@
     <div class="contact-links reveal" id="contact-links"></div>
   </div>
 </section>
+
+<!-- CUSTOM SECTIONS -->
+<div id="custom-sections-wrap"></div>
 
 <footer>
   <span class="footer-logo" id="footer-name">Diwakar Adhikari</span>
@@ -926,8 +936,25 @@ const observer = new IntersectionObserver(entries=>{
 },{threshold:0.1});
 
 // ── RENDER ───────────────────────────────────────────────────
-function renderSite(s, eduItems, projects, pubs, expItems) {
-  // Names & bio
+function renderSite(s, eduItems, projects, pubs, expItems, customSections, customItems) {
+  // ── SECTION VISIBILITY HELPER ──
+  // Reads show* flags from settings; default true if not set
+  function secVisible(key) {
+    if (s[key] === false || s[key] === 'false') return false;
+    return true; // default ON
+  }
+  // Apply section visibility
+  ['about','projects','publications','experience'].forEach(sec => {
+    const el = document.getElementById(sec);
+    if (!el) return;
+    const visible = secVisible('show'+sec.charAt(0).toUpperCase()+sec.slice(1));
+    el.style.display = visible ? '' : 'none';
+    // Also update nav link
+    const navLink = document.querySelector(`.nav-links a[href="#${sec}"]`);
+    if (navLink) navLink.parentElement.style.display = visible ? '' : 'none';
+  });
+
+  // ── NAMES & BIO ──
   document.title = safe(s.name);
   ['nav-name','hero-name','footer-name'].forEach(id=>document.getElementById(id).textContent=safe(s.name));
   document.getElementById('hero-bio').textContent = safe(s.bio);
@@ -1008,13 +1035,29 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
     const tags=Array.isArray(p.tags)?p.tags:[];
     const tagHtml=tags.map(t=>`<span class="project-tag">${t}</span>`).join('');
     const icon=tagIcons[tags[0]]||'📁';
-    const thumb = p.gallery&&p.gallery.length>0 ? imgPath(p.gallery[0].src||p.gallery[0]) : (p.image?imgPath(p.image):'');
-    const imgHtml=thumb?`<img class="project-img" data-src="${thumb}" alt="${safe(p.title)}" loading="lazy"/>`:`<div class="project-img-placeholder">${icon}</div>`;
+    // Build image list: gallery first, then cover image, deduplicated
+    const rawGallery = Array.isArray(p.gallery) ? p.gallery : [];
+    const allImgs = rawGallery.map(g => imgPath(typeof g==='string'?g:(g.src||g))).filter(Boolean);
+    if (p.image && !allImgs.includes(imgPath(p.image))) allImgs.unshift(imgPath(p.image));
+
     const div=document.createElement('div');
     div.className='project-card reveal';
     div.dataset.tags=tags.join(',');
     div.dataset.cat=p.category||'research';
-    div.innerHTML=`${imgHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}</div></div>${p.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${p.organisation}</p>`:''}<p class="project-desc">${safe(p.shortDesc)}</p><div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
+
+    // Build top image area
+    let topHtml = '';
+    if (allImgs.length === 0) {
+      topHtml = `<div class="project-img-placeholder">${icon}</div>`;
+    } else if (allImgs.length === 1) {
+      topHtml = `<div class="card-slide-wrap"><img class="cs-active" src="${allImgs[0]}" alt="${safe(p.title)}"/></div>`;
+    } else {
+      const imgTags = allImgs.map((src,i) => `<img class="${i===0?'cs-active':''}" src="${src}" alt="${safe(p.title)} ${i+1}"/>`).join('');
+      const dotTags = allImgs.map((_,i) => `<span class="card-slide-dot${i===0?' cs-active':''}"></span>`).join('');
+      topHtml = `<div class="card-slide-wrap" data-cs-count="${allImgs.length}">${imgTags}<div class="card-slide-dots">${dotTags}</div></div>`;
+    }
+
+    div.innerHTML=`${topHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}</div></div>${p.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${p.organisation}</p>`:''}<p class="project-desc">${safe(p.shortDesc)}</p><div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
     div.addEventListener('click',()=>openModal({
       title:p.title,
       meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>${p.organisation?`<span style="font-size:.82rem;color:var(--accent)">🏢 ${p.organisation}</span>`:''}`,
@@ -1025,6 +1068,23 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
       fpVis: { showImage: p.fpShowImage!==false, showGallery: p.fpShowGallery!==false, showDetail: p.fpShowDetail!==false, showVideo: p.fpShowVideo!==false, showReport: p.fpShowReport!==false, showRelatedPubs: p.fpShowRelatedPubs!==false }
     }));
     pgEl.appendChild(div);
+
+    // Start card slideshow if multiple images
+    if (allImgs.length > 1) {
+      const wrap = div.querySelector('.card-slide-wrap');
+      const slides = wrap.querySelectorAll('img');
+      const dots = wrap.querySelectorAll('.card-slide-dot');
+      let cur = 0;
+      // stagger start so all cards don't flip at same time
+      const delay = 2800 + Math.random() * 1200;
+      setInterval(() => {
+        slides[cur].classList.remove('cs-active');
+        dots[cur].classList.remove('cs-active');
+        cur = (cur + 1) % slides.length;
+        slides[cur].classList.add('cs-active');
+        dots[cur].classList.add('cs-active');
+      }, delay);
+    }
   });
 
   // Publications — category filter bar
@@ -1138,6 +1198,127 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
     if (btn && !hasItems) btn.style.display = 'none';
   });
 
+  // ── CUSTOM SECTIONS ──────────────────────────────────────
+  const customSectionsEl = document.getElementById('custom-sections-wrap');
+  if (customSectionsEl && customSections && customSections.length) {
+    customSections.filter(sec => sec.visible !== false && sec.visible !== 'false').forEach(sec => {
+      const items = (customItems || []).filter(it => it.sectionId === sec.id)
+                      .sort((a,b) => (+a.order||99)-(+b.order||99));
+      if (!items.length) return;
+
+      const secEl = document.createElement('section');
+      secEl.className = 'custom-section';
+      secEl.id = 'custom-'+sec.id;
+
+      let innerHtml = `<div class="section-header reveal">
+        <h2 class="section-title">${sec.icon||'📌'} ${safe(sec.title)}</h2>
+        <div class="section-line"></div>
+      </div>`;
+
+      if (sec.display === 'timeline') {
+        // Timeline display — like Experience
+        innerHtml += `<div class="exp-list">`;
+        items.forEach(e => {
+          const endLabel = (e.current===true||e.current==='true') ? '<span class="exp-current-dot"></span>Present' : (e.endDate||'');
+          const dateRange = e.startDate ? `${e.startDate}${endLabel?' — '+endLabel:''}` : endLabel;
+          const hasMore = e.shortDesc || e.body || (e.gallery&&e.gallery.length);
+          innerHtml += `<div class="exp-item${hasMore?' exp-clickable':''}" data-cs-id="${sec.id}" data-cs-item='${JSON.stringify({...e,_sec:sec})}'>
+            <div class="exp-left">
+              <div class="exp-dates">${dateRange}</div>
+              ${e.location?`<div class="exp-location">📍 ${e.location}</div>`:''}
+              ${e.type?`<span class="exp-type-badge exp-type-work">${e.type}</span>`:''}
+            </div>
+            <div class="exp-right">
+              <div class="exp-title">${safe(e.title)}</div>
+              <div class="exp-org">${safe(e.organisation)}</div>
+              ${e.shortDesc?`<div class="exp-desc">${safe(e.shortDesc)}</div>`:''}
+              ${hasMore?`<span class="pub-more">Read more →</span>`:''}
+            </div>
+          </div>`;
+        });
+        innerHtml += `</div>`;
+      } else {
+        // Cards display — like Projects
+        innerHtml += `<div class="projects-grid">`;
+        items.forEach(e => {
+          const rawGallery = Array.isArray(e.gallery) ? e.gallery : [];
+          const allImgs = rawGallery.map(g => imgPath(typeof g==='string'?g:(g.src||g))).filter(Boolean);
+          if (e.image && !allImgs.includes(imgPath(e.image))) allImgs.unshift(imgPath(e.image));
+          let topHtml = '';
+          if (!allImgs.length) {
+            topHtml = `<div class="project-img-placeholder">${sec.icon||'📌'}</div>`;
+          } else if (allImgs.length === 1) {
+            topHtml = `<div class="card-slide-wrap"><img class="cs-active" src="${allImgs[0]}" alt="${safe(e.title)}"/></div>`;
+          } else {
+            const imgTags = allImgs.map((src,i)=>`<img class="${i===0?'cs-active':''}" src="${src}" alt="${safe(e.title)}"/>`).join('');
+            const dotTags = allImgs.map((_,i)=>`<span class="card-slide-dot${i===0?' cs-active':''}"></span>`).join('');
+            topHtml = `<div class="card-slide-wrap" data-multi="1">${imgTags}<div class="card-slide-dots">${dotTags}</div></div>`;
+          }
+          const hasMore = e.shortDesc || e.body || (e.gallery&&e.gallery.length);
+          innerHtml += `<div class="project-card${hasMore?' exp-clickable':''}" data-cs-id="${sec.id}" data-cs-item='${JSON.stringify({...e,_sec:sec})}'>
+            ${topHtml}
+            <div class="project-card-top">
+              <div class="project-meta">
+                <span class="project-year">${safe(e.year)}</span>
+                <span class="project-status-badge">${safe(e.type||'')}</span>
+              </div>
+              <div class="project-title">${safe(e.title)}</div>
+            </div>
+            ${e.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${e.organisation}</p>`:''}
+            <p class="project-desc">${safe(e.shortDesc)}</p>
+            <div class="project-card-bottom"><div></div>${hasMore?`<span class="read-more-link">More →</span>`:''}</div>
+          </div>`;
+        });
+        innerHtml += `</div>`;
+      }
+
+      secEl.innerHTML = innerHtml;
+      customSectionsEl.appendChild(secEl);
+
+      // Wire click events for items with more info
+      secEl.querySelectorAll('[data-cs-item]').forEach(el => {
+        const e = JSON.parse(el.dataset.csItem);
+        const sec2 = e._sec;
+        const hasMore = e.shortDesc || e.body || (e.gallery&&e.gallery.length);
+        if (!hasMore) return;
+        el.addEventListener('click', () => openModal({
+          title: e.title,
+          icon: sec2.icon||'📌',
+          subtitle: `${safe(e.organisation)}${e.location?' · '+e.location:''}`,
+          meta: e.type ? `<span class="project-status-badge">${e.type}</span>` : '',
+          image: imgPath(e.image)||'',
+          gallery: Array.isArray(e.gallery)?e.gallery:[],
+          abstract: e.shortDesc||'',
+          detail: e.body||'',
+          link: e.link||'',
+          displayMode: e.displayMode||'popup',
+          slug: e.slug,
+          pageType: 'custom',
+          vis: { showGallery: true, showAbstract: !!e.shortDesc, showDetail: !!e.body }
+        }));
+      });
+
+      // Start card slideshows
+      secEl.querySelectorAll('[data-multi]').forEach(wrap => {
+        const slides = wrap.querySelectorAll('img');
+        const dots = wrap.querySelectorAll('.card-slide-dot');
+        let cur = 0;
+        setInterval(() => {
+          slides[cur].classList.remove('cs-active'); dots[cur].classList.remove('cs-active');
+          cur = (cur+1)%slides.length;
+          slides[cur].classList.add('cs-active'); dots[cur].classList.add('cs-active');
+        }, 2800 + Math.random()*1200);
+      });
+
+      // Nav link for custom section
+      const navLinks = document.getElementById('nav-links');
+      const contactLi = navLinks.querySelector('li:has(#cv-dropdown)');
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="#custom-${sec.id}">${sec.title}</a>`;
+      navLinks.insertBefore(li, contactLi);
+    });
+  }
+
   // Contact
   const clEl=document.getElementById('contact-links');
   const cItems=[
@@ -1183,18 +1364,32 @@ function renderSite(s, eduItems, projects, pubs, expItems) {
 // ── BOOT ─────────────────────────────────────────────────────
 async function loadSite() {
   try {
-    const [settings, eduItems, projects, pubs, expItems] = await Promise.all([
+    const [settings, eduItems, projects, pubs, expItems, customSections] = await Promise.all([
       fj('/content/settings.json'),
       loadMDs('/content/education/'),
       loadMDs('/content/projects/'),
       loadMDs('/content/publications/'),
-      loadMDs('/content/experience/')
+      loadMDs('/content/experience/'),
+      fj('/content/sections.json').then(r => r||[])
     ]);
+
+    // Load all custom section items in parallel
+    let customItems = [];
+    if (customSections && customSections.length) {
+      const visible = customSections.filter(s => s.visible !== false && s.visible !== 'false');
+      const allItems = await Promise.all(
+        visible.map(sec => loadMDs('/content/custom/'+sec.id+'/').catch(()=>[]))
+      );
+      allItems.forEach((items, i) => {
+        const sec = visible[i];
+        customItems = customItems.concat(items.map(it => ({...it, sectionId: sec.id})));
+      });
+    }
+
     renderSite(
       settings||{name:'Diwakar Adhikari'},
-      eduItems,
-      projects, pubs,
-      expItems||[]
+      eduItems, projects, pubs, expItems||[],
+      customSections||[], customItems
     );
   } catch(e) {
     console.error('Load error:',e);
