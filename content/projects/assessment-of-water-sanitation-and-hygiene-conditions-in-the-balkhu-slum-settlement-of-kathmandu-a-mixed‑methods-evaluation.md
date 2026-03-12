@@ -5,6 +5,8 @@ shortDesc: >-
   Areas of Balkhu*
 
 
+
+
   This project work presents a comprehensive evaluation of water supply, sanitation infrastructure, and hygiene practices within the Balkhu slum settlement of Kathmandu. The study employed household surveys, field observations, and laboratory analysis of drinking water samples to assess WASH conditions among approximately 373 households. Key issues identified include irregular waste management, high iron concentration in drinking water, persistent open defecation among a minority of residents, and frequent water‑borne illnesses despite strong hygiene awareness. The findings highlight both improvements in household‑level sanitation and continuing environmental health risks that require targeted interventions for sustainable community well‑being.
 year: "2018"
 status: Bachelor's Project Work
