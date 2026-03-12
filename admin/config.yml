@@ -89,9 +89,7 @@ collections:
         widget: "list"
         required: false
         field: { label: "Course", name: "course", widget: "string" }
-      - { label: "Detail / Description", name: "body", widget: "markdown"
-        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
-        editor_components: [], required: false }
+      - { label: "Detail / Description", name: "body", widget: "markdown", required: false }
       - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Detail Images (auto-slideshow every 3 seconds)"
         name: "gallery"
@@ -149,9 +147,7 @@ collections:
     fields:
       - { label: "Title", name: "title", widget: "string" }
       - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
-      - { label: "Full Detail", name: "body", widget: "markdown"
-        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
-        editor_components: [], required: false }
+      - { label: "Full Detail", name: "body", widget: "markdown", required: false }
       - { label: "Year", name: "year", widget: "string", required: false }
       - { label: "Status / Role", name: "status", widget: "string", required: false }
       - { label: "Organisation / Institution", name: "organisation", widget: "string", required: false }
@@ -230,9 +226,7 @@ collections:
       - { label: "Publication Type / Category", name: "category", widget: "string", required: false, hint: "e.g. Research Article, Book Chapter, Conference Paper, Policy Brief" }
       - { label: "DOI / URL", name: "doi", widget: "string", required: false }
       - { label: "Abstract", name: "abstract", widget: "text", required: false }
-      - { label: "Detailed Overview", name: "body", widget: "markdown"
-        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
-        editor_components: [], required: false }
+      - { label: "Detailed Overview", name: "body", widget: "markdown", required: false }
       - label: "Images (slideshow if multiple, static if one)"
         name: "gallery"
         widget: "list"
@@ -285,9 +279,7 @@ collections:
           - { label: "Consultancy", value: "consultancy" }
         default: "work"
       - { label: "Short Description", name: "shortDesc", widget: "text", required: false }
-      - { label: "Full Detail", name: "body", widget: "markdown"
-        buttons: ["bold","italic","title","bulleted-list","numbered-list","link","quote"]
-        editor_components: [], required: false }
+      - { label: "Full Detail", name: "body", widget: "markdown", required: false }
       - { label: "Cover Image", name: "image", widget: "image", required: false, media_folder: "images", public_folder: "/images" }
       - label: "Images (slideshow)"
         name: "gallery"
