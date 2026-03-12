@@ -534,7 +534,19 @@ function parseFM(text) {
         parts.push(lines[i].startsWith('  ') ? lines[i].slice(2) : '');
         i++;
       }
-      data[key] = isLiteral ? parts.join('\n').trimEnd() : parts.join(' ').trim();
+      if (isLiteral) {
+        // Literal (|-): preserve all newlines exactly
+        data[key] = parts.join('\n').trimEnd();
+      } else {
+        // Folded (>-): blank lines = paragraph break, non-blank lines join with space
+        const paras = []; let cur = [];
+        parts.forEach(line => {
+          if (line === '') { if (cur.length) { paras.push(cur.join(' ')); cur = []; } }
+          else cur.push(line);
+        });
+        if (cur.length) paras.push(cur.join(' '));
+        data[key] = paras.join('\n\n').trim();
+      }
       continue;
     }
     if (val === '' || val === '[]') {
@@ -1012,9 +1024,35 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     if (!el) return;
     const visible = secVisible('show'+sec.charAt(0).toUpperCase()+sec.slice(1));
     el.style.display = visible ? '' : 'none';
-    // Also update nav link
     const navLink = document.querySelector(`.nav-links a[href="#${sec}"]`);
     if (navLink) navLink.parentElement.style.display = visible ? '' : 'none';
+  });
+
+  // ── SECTION ORDER ──────────────────────────────────────────
+  // sectionOrder in settings: array of section ids in desired order
+  // e.g. ["about","experience","projects","publications","skills","contact"]
+  const defaultOrder = ['about','projects','publications','experience','skills','custom-sections-wrap','contact'];
+  const order = Array.isArray(s.sectionOrder) && s.sectionOrder.length
+    ? [...s.sectionOrder, 'custom-sections-wrap', 'contact'].filter((v,i,a)=>a.indexOf(v)===i)
+    : defaultOrder;
+  const body = document.body;
+  // Collect all reorderable section elements
+  order.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Move to end of body (before footer and modal/lightbox)
+    const footer = document.querySelector('footer');
+    body.insertBefore(el, footer);
+  });
+  // Re-build nav links in same order (excluding contact which stays last)
+  const navLinksList = document.getElementById('nav-links');
+  const cvLi = navLinksList.querySelector('li:has(#cv-dropdown)');
+  const themeLi = navLinksList.querySelector('li:has(.theme-btn)');
+  order.filter(id => !['custom-sections-wrap','contact'].includes(id)).forEach(id => {
+    const a = navLinksList.querySelector(`a[href="#${id}"]`);
+    if (!a) return;
+    const li = a.parentElement;
+    navLinksList.insertBefore(li, cvLi);
   });
 
   // ── NAMES & BIO ──
