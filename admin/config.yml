@@ -63,6 +63,7 @@ collections:
           - { label: "Show Projects Section", name: "showProjects", widget: "boolean", default: true, required: false }
           - { label: "Show Publications Section", name: "showPublications", widget: "boolean", default: true, required: false }
           - { label: "Show Experience Section", name: "showExperience", widget: "boolean", default: true, required: false }
+          - { label: "Show Skills Section", name: "showSkills", widget: "boolean", default: true, required: false }
           - label: "Custom Social Links"
             name: "customSocials"
             widget: "list"
