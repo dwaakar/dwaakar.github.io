@@ -44,6 +44,13 @@
     .project-org{font-size:.85rem;color:var(--accent);font-weight:500}
     .project-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.15;color:var(--ink);margin-bottom:1rem;letter-spacing:-.01em}
     .project-short{font-size:1rem;color:var(--ink2);line-height:1.8;margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+    .project-short p{margin-bottom:.8rem}.project-short p:last-child{margin-bottom:0}
+    .project-short strong{color:var(--ink);font-weight:600}
+    .project-short em{font-style:italic}
+    .project-short h2,.project-short h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:.9rem 0 .4rem}
+    .project-short h2{font-size:1.3rem}.project-short h3{font-size:1.1rem}
+    .project-short ul,.project-short ol{padding-left:1.4rem;margin-bottom:.8rem}
+    .project-short li{margin-bottom:.3rem}
     .project-detail{font-size:.97rem;color:var(--ink2);line-height:1.9}
     .project-detail p{margin-bottom:1.1rem}
     .project-detail h2,.project-detail h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:1.8rem 0 .7rem;line-height:1.2}
@@ -418,7 +425,13 @@ async function load() {
 
     document.getElementById('project-title').textContent = p.title||'';
     const se = document.getElementById('project-short');
-    if (p.shortDesc) { se.textContent = p.shortDesc; } else { se.style.display='none'; }
+    // fpShowShortDesc: if explicitly false, hide. Default is true (show).
+    const showShortDescFP = p.fpShowShortDesc !== false && p.fpShowShortDesc !== 'false';
+    if (p.shortDesc && showShortDescFP) {
+      se.innerHTML = marked.parse(p.shortDesc);
+    } else {
+      se.style.display = 'none';
+    }
 
     // ── BODY TEXT ──
     if (content) document.getElementById('project-body').innerHTML =
