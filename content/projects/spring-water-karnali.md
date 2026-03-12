@@ -5,6 +5,8 @@ shortDesc: >-
   Inspecting System through Increased Roadside Monitoring and Sensitization
 
 
+
+
   This project focuses on improving how vehicle emissions are monitored and managed in the Kathmandu Valley by strengthening coordination among government agencies, raising public awareness, and promoting data‑driven action. Through stakeholder engagement, roadside campaigns, and targeted training, the initiative worked to address gaps in the existing inspection system and encourage better maintenance practices among vehicle owners. The project also developed communication materials, gathered field data, and facilitated policy discussions to support long‑term collaboration and more effective emission control. Overall, it helped build momentum toward cleaner transport and improved urban air quality.
 year: "2019"
 status: Program Officer
