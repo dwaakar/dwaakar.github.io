@@ -1,6 +1,5 @@
 ---
-title: " Local Level Assessment of Temperature and Precipitation Indices for
-  Water Resource Management, Nepal"
+title: " Local Level Assessment of Climate Indices, Nepal"
 shortDesc: >-
   **Title**: Climate Extremes in Nepal: A 30-Year Local Level Assessment of
   Temperature and Precipitation Indices for Water Resource Management
