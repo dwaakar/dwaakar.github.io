@@ -1,17 +1,25 @@
 ---
-title: "Climate Extremes in Nepal: A 30-Year Local Level Assessment of
-  Temperature and Precipitation Indices for Water Resource Management"
-shortDesc: "Nepal’s climate is changing noticeably, and this study shows how
-  these changes differ across all 753 local governments. Temperatures are rising
-  everywhere, especially in high mountain areas, where warming is happening
-  fastest. Hot days and nights are becoming more frequent, while cold spells are
-  declining. Rainfall patterns are also shifting: the mid-hills are seeing more
-  intense rain and floods, while parts of the Terai are getting drier with
-  longer dry spells. By mapping these changes at the local level, this study
-  provides clear, practical information to help communities plan for floods,
-  droughts, water shortages, and other climate-related challenges."
+title: " Local Level Assessment of Temperature and Precipitation Indices for
+  Water Resource Management"
+shortDesc: >-
+  **Title**: Climate Extremes in Nepal: A 30-Year Local Level Assessment of
+  Temperature and Precipitation Indices for Water Resource Management
+
+
+  Nepal’s climate is changing noticeably, and this study shows how these changes differ across all 753 local governments. Temperatures are rising everywhere, especially in high mountain areas, where warming is happening fastest. Hot days and nights are becoming more frequent, while cold spells are declining. Rainfall patterns are also shifting: the mid-hills are seeing more intense rain and floods, while parts of the Terai are getting drier with longer dry spells. By mapping these changes at the local level, this study provides clear, practical information to help communities plan for floods, droughts, water shortages, and other climate-related challenges.
 year: "2026"
 category: research
+gallery:
+  - src: /images/cluster_bar_profiles_hierarchical.png
+  - src: /images/cluster_map_kmeans.png
+  - src: /images/cluster_bar_profiles_kmeans.png
+  - src: /images/heatmap_sdii_top20.png
+  - src: /images/heatmap_txm_top20.png
+  - src: /images/trend_multipanel_r20mm_cdd_prcptot_sdii.png
+  - src: /images/trend_multipanel_rx7day_r95ptot_r99ptot.png
+  - src: /images/trend_multipanel_txm_tmm_txgt50p_tx3tn3.png
+  - src: /images/heatmap_cdd_top20.png
+  - src: /images/heatmap_rx7day_top20.png
 report:
   label: Download Report
 displayMode: popup
