@@ -7,6 +7,7 @@ shortDesc: >-
 
   Nepal’s climate is changing noticeably, and this study shows how these changes differ across all 753 local governments. Temperatures are rising everywhere, especially in high mountain areas, where warming is happening fastest. Hot days and nights are becoming more frequent, while cold spells are declining. Rainfall patterns are also shifting: the mid-hills are seeing more intense rain and floods, while parts of the Terai are getting drier with longer dry spells. By mapping these changes at the local level, this study provides clear, practical information to help communities plan for floods, droughts, water shortages, and other climate-related challenges.
 year: "2026"
+status: Independent Project
 category: research
 gallery:
   - src: /images/cluster_bar_profiles_hierarchical.png
