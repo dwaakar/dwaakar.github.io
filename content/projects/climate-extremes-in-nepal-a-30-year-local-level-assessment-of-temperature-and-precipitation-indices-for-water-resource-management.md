@@ -22,7 +22,7 @@ gallery:
   - src: /images/heatmap_rx7day_top20.png
 report:
   label: Download Report
-displayMode: popup
+displayMode: fullpage
 popupVisLabel: ""
 showGallery: false
 showDetail: false
@@ -30,9 +30,9 @@ showVideo: false
 showReport: false
 showRelatedPubs: false
 fullpageVisLabel: ""
-fpShowShortDesc: true
-fpShowGallery: false
-fpShowDetail: false
+fpShowShortDesc: false
+fpShowGallery: true
+fpShowDetail: true
 fpShowVideo: false
 fpShowReport: false
 fpShowRelatedPubs: false
