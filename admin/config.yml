@@ -241,7 +241,16 @@ collections:
       - { label: "Journal / Book", name: "journal", widget: "string", required: false }
       - { label: "Publication Status", name: "status", widget: "string", required: false, hint: "e.g. Published, Under Review, Accepted, Submitted" }
       - { label: "Publication Type / Category", name: "category", widget: "string", required: false, hint: "e.g. Research Article, Book Chapter, Conference Paper, Policy Brief" }
-      - { label: "DOI / URL", name: "doi", widget: "string", required: false }
+      - label: "Link Type"
+        name: "linkType"
+        widget: "select"
+        required: false
+        default: "doi"
+        hint: "Choose DOI for journal articles; Link for feature articles, news pieces, or anything without a DOI."
+        options:
+          - { label: "DOI (default — for journal articles & papers)", value: "doi" }
+          - { label: "Link (for feature articles, news, reports, etc.)", value: "link" }
+      - { label: "DOI / URL", name: "doi", widget: "string", required: false, hint: "Paste the full DOI URL (e.g. https://doi.org/10.xxxx/xxxxx) or plain link depending on type selected above." }
       - { label: "Abstract", name: "abstract", widget: "text", required: false }
       - { label: "Detailed Overview", name: "body", widget: "markdown", required: false }
       - label: "Images (slideshow if multiple, static if one)"
