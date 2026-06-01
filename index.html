@@ -932,7 +932,11 @@ function openModal(cfg) {
   // Other actions at bottom
   let btns = '';
   if (show('showReport') && cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
-  if (cfg.link) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
+  if (cfg.link) {
+    let linkLabel = 'GitHub';
+    if (cfg.pageType === 'publication') linkLabel = cfg.linkType === 'link' ? 'View Link' : 'View DOI';
+    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${linkLabel}</a>`;
+  }
   const actEl = document.getElementById('modal-actions');
   actEl.innerHTML = btns;
   actEl.style.display = btns ? 'flex' : 'none';
@@ -1213,7 +1217,11 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // Publications list
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    const doiHtml=p.doi?`<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>`:'';
+    // Support both DOI (default) and a plain link — DOI takes priority if both are set
+    const pubLinkUrl = p.doi || p.link || '';
+    const pubLinkType = p.doi ? 'doi' : (p.linkType || (p.link ? 'link' : ''));
+    const pubLinkLabel = pubLinkType === 'doi' ? '↗ DOI' : (pubLinkType === 'link' ? '↗ Link' : '');
+    const doiHtml = pubLinkUrl ? `<a class="pub-doi" href="${pubLinkUrl}" target="_blank">${pubLinkLabel}</a>` : '';
     const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
     div.className='pub-card reveal';
@@ -1229,7 +1237,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
         shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
-        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
+        link:pubLinkUrl, linkType:pubLinkType, displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
         vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
         fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
       }));
