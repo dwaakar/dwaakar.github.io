@@ -1217,10 +1217,10 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // Publications list
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    // Support both DOI (default) and a plain link — DOI takes priority if both are set
+    // linkType is set explicitly in admin (doi or link); doi field holds the URL regardless of type
     const pubLinkUrl = p.doi || p.link || '';
-    const pubLinkType = p.doi ? 'doi' : (p.linkType || (p.link ? 'link' : ''));
-    const pubLinkLabel = pubLinkType === 'doi' ? '↗ DOI' : (pubLinkType === 'link' ? '↗ Link' : '');
+    const pubLinkType = p.linkType || (p.doi ? 'doi' : (p.link ? 'link' : ''));
+    const pubLinkLabel = pubLinkType === 'link' ? '↗ Link' : (pubLinkUrl ? '↗ DOI' : '');
     const doiHtml = pubLinkUrl ? `<a class="pub-doi" href="${pubLinkUrl}" target="_blank">${pubLinkLabel}</a>` : '';
     const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
