@@ -2,8 +2,8 @@
 title: Majestic Upper Mustang and Its Water Troubles
 journal: ""
 category: Feature Article
-doi: ""
-link: https://farsightnepal.com/news/the-majestic-upper-mustang-and-its-water-troubles/
+doi: https://farsightnepal.com/news/the-majestic-upper-mustang-and-its-water-troubles/
+link: ""
 displayMode: popup
 popupVisLabel: ""
 showGallery: false
