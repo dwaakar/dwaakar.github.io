@@ -1,6 +1,5 @@
 ---
-title: Trace elements in fluvial sediments of the Gandaki River Basin, Central
-  Himalaya, Nepal
+title: Trace elements in fluvial sediments of the Gandaki River Basin, Nepal
 authors: Pant, R. R., Zhang, F., Qaiser, F. U. R., Varol, M., Adhikari, D.,
   Wang, G., Saqr, A. M., & Bishwakarma, K.
 year: "2025"
