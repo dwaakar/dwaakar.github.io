@@ -36,7 +36,7 @@ link: ""
 showDetail: false
 fpShowGallery: true
 fpShowDetail: true
-order: 7
+order: 10
 ---
 **About Nepal Waste Map**  
 
