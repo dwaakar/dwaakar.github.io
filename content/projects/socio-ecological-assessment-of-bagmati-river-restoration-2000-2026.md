@@ -12,9 +12,9 @@ shortDesc: >-
   This project presents a comprehensive socio-ecological assessment of the Bagmati River restoration trajectory from 2000 to 2026. It examines how ecological conditions, governance initiatives, and community participation have interacted to influence restoration outcomes. The study reviews major interventions including the Bagmati Action Plan, Bagmati River Basin Improvement Project, Dhap Dam, riverfront development, wastewater management programs, and citizen-led cleanup campaigns.
 year: "2026"
 category: research
-image: ""
+image: /images/image_4354ca03.png
 gallery:
-  - src: /images/1.png
+  - src: /images/analytical-framework-bagmati.png
     caption: "Analytical framework: restoration outcomes as an interaction of
       ecological, governance, and social dimensions"
   - src: /images/chatgpt-image-jul-28-2026-08_02_00-pm.png
