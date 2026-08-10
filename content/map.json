@@ -2,66 +2,270 @@
   "districts": [
     {
       "name": "KATHMANDU",
-      "type": "research",
-      "year": "2021–2024",
-      "project": "MSc Research & Institutional Base",
-      "note": "Central Department of Environmental Science, Tribhuvan University"
+      "type": "community",
+      "year": "",
+      "project": "Nepal Waste Map",
+      "note": ""
     },
     {
       "name": "LAMJUNG",
       "type": "research",
-      "year": "2021–2024",
-      "project": "Hydroclimatic Variability & Sediment Dynamics",
-      "note": "Marsyangdi River Basin field sampling"
+      "year": "",
+      "project": "Water-Soil-Food nexus in the Marsyangdi River Basin",
+      "note": ""
     },
     {
       "name": "MANANG",
       "type": "research",
-      "year": "2021–2024",
-      "project": "Hydroclimatic Variability & Sediment Dynamics",
-      "note": "Upper Marsyangdi Basin"
+      "year": "",
+      "project": "Water-Soil-Food nexus in the Marsyangdi River Basin",
+      "note": ""
     },
     {
       "name": "GORKHA",
-      "type": "research",
+      "type": "community",
       "year": "2022",
-      "project": "Water–Soil–Food Nexus",
-      "note": "Field data collection"
+      "project": "Climate Change Adaptation Project",
+      "note": ""
     },
     {
       "name": "KAVRE",
       "type": "community",
-      "year": "2019–2022",
-      "project": "Nepal Waste Map",
-      "note": "Household waste infrastructure mapping"
+      "year": "",
+      "project": "",
+      "note": ""
     },
     {
       "name": "LALITPUR",
       "type": "community",
-      "year": "2019–2022",
-      "project": "Nepal Waste Map",
-      "note": "Solid waste management systems"
+      "year": "",
+      "project": "",
+      "note": ""
     },
     {
-      "name": "SINDHULPALCHOK",
-      "type": "eia",
-      "year": "2020",
-      "project": "Environmental Impact Assessment",
-      "note": "Infrastructure project review"
+      "name": "ACHHAM",
+      "type": "research",
+      "year": "",
+      "project": "Spring Water Assessment",
+      "note": ""
     },
     {
       "name": "CHITWAN",
-      "type": "visited",
-      "year": "2019",
-      "project": "Field Visit",
+      "type": "community",
+      "year": "",
+      "project": "Nepal Waste Map",
       "note": ""
     },
     {
       "name": "KASKI",
-      "type": "visited",
-      "year": "2022",
-      "project": "Field Visit",
-      "note": "Pokhara research coordination"
+      "type": "community",
+      "year": "",
+      "project": "Climate Change Adaptationn",
+      "note": ""
+    },
+    {
+      "name": "PANCHTHAR",
+      "type": "community",
+      "project": "Climate Vulnerability Assessment"
+    },
+    {
+      "name": "PALPA",
+      "type": "community",
+      "project": "Training of Trainers on Waste Management"
+    },
+    {
+      "name": "NUWAKOT",
+      "type": "community",
+      "project": "Enhancing Water Sanitation and Hygiene"
+    },
+    {
+      "name": "NAWALPARASI",
+      "type": "eia",
+      "project": "Initial Environmental Examination of Bridge"
+    },
+    {
+      "name": "MYAGDI",
+      "type": "research",
+      "project": "Water Scarcity and Management Status"
+    },
+    {
+      "name": "MUSTANG",
+      "type": "research",
+      "project": "Water Scarcity and Management Status"
+    },
+    {
+      "name": "MUGU",
+      "type": "research",
+      "project": "Spring Water Assessment"
+    },
+    {
+      "name": "MORANG",
+      "type": "community",
+      "project": "School Environment Improvement"
+    },
+    {
+      "name": "MAKWANPUR",
+      "type": "research",
+      "project": "Soil Assessment of Dry and Moist Region"
+    },
+    {
+      "name": "MAHOTTARI",
+      "type": "community",
+      "project": "Climate Change Adaptation Project"
+    },
+    {
+      "name": "KAPILBASTU",
+      "type": "community",
+      "project": "Making Art from Waste"
+    },
+    {
+      "name": "KANCHANPUR",
+      "type": "research",
+      "project": "Climate Vulnerability Assessment"
+    },
+    {
+      "name": "KAILALI",
+      "type": "community",
+      "project": "Enhancing Water Sanitation and Hygiene (WASH)"
+    },
+    {
+      "name": "JAJARKOT",
+      "type": "community",
+      "project": "School Environment Improvement"
+    },
+    {
+      "name": "ILAM",
+      "type": "community",
+      "project": "Nepal Waste Map"
+    },
+    {
+      "name": "BAJHANG",
+      "type": "research",
+      "project": "Waste Management Baseline Survey"
+    },
+    {
+      "name": "BAJURA",
+      "type": "research",
+      "project": "Waste Management Baseline Survey"
+    },
+    {
+      "name": "GULMI",
+      "type": "community",
+      "project": "Climate Change Vulnerability Mapping"
+    },
+    {
+      "name": "DOLPA",
+      "type": "eia",
+      "project": "Initial Environment Examination of Road"
+    },
+    {
+      "name": "DOLAKHA",
+      "type": "community",
+      "project": "School Environment Improvement"
+    },
+    {
+      "name": "DHANUSA",
+      "type": "community",
+      "project": "Climate Change Adaptaton"
+    },
+    {
+      "name": "DHANKUTA",
+      "type": "community",
+      "project": "School Environment Improvement"
+    },
+    {
+      "name": "DHADING",
+      "type": "community",
+      "project": "Making art from Waste and Training of Trainers"
+    },
+    {
+      "name": "DANG",
+      "type": "community",
+      "project": "Nepal Waste Map"
+    },
+    {
+      "name": "DAILEKH",
+      "type": "research",
+      "project": "Spring Water Assessment"
+    },
+    {
+      "name": "DADELDHURA",
+      "type": "community",
+      "project": "Strengthening Water Sanitation and Hygiene (WASH)"
+    },
+    {
+      "name": "BHAKTAPUR",
+      "type": "community",
+      "project": "Integrated Waste Management"
+    },
+    {
+      "name": "BARDIYA",
+      "type": "community",
+      "project": "Climate Vulnerability Survey"
+    },
+    {
+      "name": "BARA",
+      "type": "community",
+      "project": "School Environment Improvement"
+    },
+    {
+      "name": "BANKE",
+      "type": "community",
+      "project": "Strengthening Water, Sanitation and Hyegine (WASH)"
+    },
+    {
+      "name": "BAGLUNG",
+      "type": "community",
+      "project": "Climate Vulnerabilty Survey"
+    },
+    {
+      "name": "TEHRATHUM",
+      "type": "community",
+      "project": "Climate Vulnerability Assessment"
+    },
+    {
+      "name": "SYANGJA",
+      "type": "community",
+      "project": "Nepal Waste Map"
+    },
+    {
+      "name": "TANAHU",
+      "type": "research",
+      "project": "Water-Soil-Food Nexus in Marsyangdi River Basin"
+    },
+    {
+      "name": "SIRAHA",
+      "type": "community",
+      "project": "Climate Change Adaptation Project"
+    },
+    {
+      "name": "SARLAHI",
+      "type": "community",
+      "project": "Climate Change Adaptation Project"
+    },
+    {
+      "name": "SAPTARI",
+      "type": "community",
+      "project": "Climate Change Adaptation Project"
+    },
+    {
+      "name": "RAUTAHAT",
+      "type": "community",
+      "project": "Enhancing Water Sanitation and Hygiene (WASH)"
+    },
+    {
+      "name": "RASUWA",
+      "type": "visited"
+    },
+    {
+      "name": "PARSA",
+      "type": "community",
+      "project": "Nepal Waste Map"
+    },
+    {
+      "name": "PARBAT",
+      "type": "research",
+      "project": "Indigenous Knowledge Assessment"
     }
   ]
 }
