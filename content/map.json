@@ -1,0 +1,67 @@
+{
+  "districts": [
+    {
+      "name": "KATHMANDU",
+      "type": "research",
+      "year": "2021–2024",
+      "project": "MSc Research & Institutional Base",
+      "note": "Central Department of Environmental Science, Tribhuvan University"
+    },
+    {
+      "name": "LAMJUNG",
+      "type": "research",
+      "year": "2021–2024",
+      "project": "Hydroclimatic Variability & Sediment Dynamics",
+      "note": "Marsyangdi River Basin field sampling"
+    },
+    {
+      "name": "MANANG",
+      "type": "research",
+      "year": "2021–2024",
+      "project": "Hydroclimatic Variability & Sediment Dynamics",
+      "note": "Upper Marsyangdi Basin"
+    },
+    {
+      "name": "GORKHA",
+      "type": "research",
+      "year": "2022",
+      "project": "Water–Soil–Food Nexus",
+      "note": "Field data collection"
+    },
+    {
+      "name": "KAVRE",
+      "type": "community",
+      "year": "2019–2022",
+      "project": "Nepal Waste Map",
+      "note": "Household waste infrastructure mapping"
+    },
+    {
+      "name": "LALITPUR",
+      "type": "community",
+      "year": "2019–2022",
+      "project": "Nepal Waste Map",
+      "note": "Solid waste management systems"
+    },
+    {
+      "name": "SINDHULPALCHOK",
+      "type": "eia",
+      "year": "2020",
+      "project": "Environmental Impact Assessment",
+      "note": "Infrastructure project review"
+    },
+    {
+      "name": "CHITWAN",
+      "type": "visited",
+      "year": "2019",
+      "project": "Field Visit",
+      "note": ""
+    },
+    {
+      "name": "KASKI",
+      "type": "visited",
+      "year": "2022",
+      "project": "Field Visit",
+      "note": "Pokhara research coordination"
+    }
+  ]
+}
