@@ -6,6 +6,7 @@
   <title>Diwakar Adhikari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
   <style>
     :root{--bg:#f7f5f0;--bg2:#eeeae2;--surface:#fff;--border:#ddd9d0;--ink:#1a1814;--ink2:#5a5650;--accent:#2d6a4f;--accent2:#40916c;--gold:#b7832a;--tag-bg:#e8f5ee;--tag-ink:#1b4332;--radius:10px;--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 40px rgba(0,0,0,.12);--nav-h:64px;--t:0.3s cubic-bezier(.4,0,.2,1)}
     [data-theme="dark"]{--bg:#111410;--bg2:#1a1d17;--surface:#20241e;--border:#2e332b;--ink:#e8e4dc;--ink2:#9a9890;--accent:#52b788;--accent2:#74c69d;--gold:#d4a94a;--tag-bg:#1b3a2e;--tag-ink:#95d5b2}
@@ -217,12 +218,12 @@
     .skill-tag{font-size:.78rem;padding:.25rem .65rem;border-radius:12px;background:var(--tag-bg);color:var(--tag-ink)}
 
     /* STATS */
-    #stats{background:var(--accent);padding:4rem clamp(1.5rem,8vw,8rem)}
+    #stats{background:var(--bg);padding:4rem clamp(1.5rem,8vw,8rem)}
     .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2rem;text-align:center}
-    .stat-item{color:#fff}
-    .stat-number{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:700;line-height:1;display:block}
+    .stat-item{color:var(--ink)}
+    .stat-number{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:700;line-height:1;display:block;color:var(--accent)}
     .stat-suffix{font-size:1.5rem;vertical-align:super;font-size:1.2rem}
-    .stat-label{font-size:.82rem;opacity:.85;margin-top:.4rem;letter-spacing:.06em;text-transform:uppercase}
+    .stat-label{font-size:.82rem;opacity:.85;margin-top:.4rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 
     /* WINDING ROAD JOURNEY */
     #timeline{padding:4rem clamp(1.5rem,8vw,8rem) 2rem}
@@ -1165,9 +1166,9 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       sub:    m.sub    || '',
       detail: m.detail || ''
     }));
-    }));
     // Rebuild winding road with CMS milestones
     if (window._buildRoad) window._buildRoad();
+  }
 
   // ── STATS ──────────────────────────────────────────────
   const statsGrid = document.getElementById('stats-grid');
