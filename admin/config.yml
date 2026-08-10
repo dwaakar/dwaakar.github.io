@@ -68,6 +68,35 @@ collections:
             name: "sectionOrderLabel"
             widget: "hidden"
             default: ""
+          - label: "── Journey Timeline ──"
+            name: "timelineLabel"
+            widget: "hidden"
+            default: ""
+          - label: "Timeline Milestones"
+            name: "milestones"
+            widget: "list"
+            required: false
+            hint: "Each milestone appears as a card on the horizontal timeline. Drag to reorder."
+            fields:
+              - { label: "Year", name: "year", widget: "string", hint: "e.g. 2024" }
+              - { label: "Icon (emoji)", name: "icon", widget: "string", default: "📌" }
+              - { label: "Title", name: "title", widget: "string" }
+              - { label: "Subtitle", name: "sub", widget: "string", hint: "e.g. Tribhuvan University" }
+              - { label: "Detail (shown when clicked)", name: "detail", widget: "text", required: false }
+          - label: "── Statistics Counter Bar ──"
+            name: "statsLabel"
+            widget: "hidden"
+            default: ""
+          - label: "Stats"
+            name: "stats"
+            widget: "list"
+            required: false
+            hint: "Each stat appears as an animated counter. Leave empty to use defaults."
+            fields:
+              - { label: "Number (digits only)", name: "value", widget: "string", hint: "e.g. 100" }
+              - { label: "Label", name: "label", widget: "string", hint: "e.g. Districts Visited" }
+              - { label: "Prefix (optional)", name: "prefix", widget: "string", required: false, hint: "e.g. $" }
+              - { label: "Suffix (optional)", name: "suffix", widget: "string", required: false, hint: "e.g. K+ or +" }
           - label: "Section Order"
             name: "sectionOrder"
             widget: "list"
@@ -241,16 +270,7 @@ collections:
       - { label: "Journal / Book", name: "journal", widget: "string", required: false }
       - { label: "Publication Status", name: "status", widget: "string", required: false, hint: "e.g. Published, Under Review, Accepted, Submitted" }
       - { label: "Publication Type / Category", name: "category", widget: "string", required: false, hint: "e.g. Research Article, Book Chapter, Conference Paper, Policy Brief" }
-      - label: "Link Type"
-        name: "linkType"
-        widget: "select"
-        required: false
-        default: "doi"
-        hint: "Choose DOI for journal articles; Link for feature articles, news pieces, or anything without a DOI."
-        options:
-          - { label: "DOI (default — for journal articles & papers)", value: "doi" }
-          - { label: "Link (for feature articles, news, reports, etc.)", value: "link" }
-      - { label: "DOI / URL", name: "doi", widget: "string", required: false, hint: "Paste the full DOI URL (e.g. https://doi.org/10.xxxx/xxxxx) or plain link depending on type selected above." }
+      - { label: "DOI / URL", name: "doi", widget: "string", required: false }
       - { label: "Abstract", name: "abstract", widget: "text", required: false }
       - { label: "Detailed Overview", name: "body", widget: "markdown", required: false }
       - label: "Images (slideshow if multiple, static if one)"
@@ -342,6 +362,35 @@ collections:
       - { label: "[Full Page] Show Cover Image", name: "fpShowImage", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Images / Slideshow", name: "fpShowGallery", widget: "boolean", default: false, required: false }
       - { label: "[Full Page] Show Description", name: "fpShowDetail", widget: "boolean", default: false, required: false }
+
+  - name: "map"
+    label: "🗺️ Nepal District Map"
+    files:
+      - name: "map"
+        label: "Field Presence Map"
+        file: "content/map.json"
+        description: "Add districts where you have worked. Each district is colour-coded by activity type."
+        fields:
+          - label: "Districts"
+            name: "districts"
+            widget: "list"
+            fields:
+              - label: "District Name"
+                name: "name"
+                widget: "select"
+                options: ["ACHHAM","ARGHAKHANCHI","BAGLUNG","BAITADI","BAJHANG","BAJURA","BANKE","BARA","BARDIYA","BHAKTAPUR","BHOJPUR","CHITWAN","DADELDHURA","DAILEKH","DANG","DARCHULA","DHADING","DHANKUTA","DHANUSA","DOLAKHA","DOLPA","DOTI","GORKHA","GULMI","HUMLA","ILAM","JAJARKOT","JHAPA","JUMLA","KAILALI","KALIKOT","KANCHANPUR","KAPILBASTU","KASKI","KATHMANDU","KAVRE","KHOTANG","LALITPUR","LAMJUNG","MAHOTTARI","MAKWANPUR","MANANG","MORANG","MUGU","MUSTANG","MYAGDI","NAWALPARASI","NUWAKOT","OKHALDHUNGA","PALPA","PANCHTHAR","PARBAT","PARSA","PYUTHAN","RAMECHHAP","RASUWA","RAUTAHAT","ROLPA","RUKUM","RUPANDEHI","SALYAN","SANKHUWASABHA","SAPTARI","SARLAHI","SINDHULI","SINDHUPALCHOK","SIRAHA","SOLUKHUMBU","SUNSARI","SURKHET","SYANGJA","TANAHU","TAPLEJUNG","TEHRATHUM","UDAYAPUR"]
+              - label: "Activity Type"
+                name: "type"
+                widget: "select"
+                options:
+                  - { label: "Research", value: "research" }
+                  - { label: "Community Project", value: "community" }
+                  - { label: "Environmental Impact Assessment", value: "eia" }
+                  - { label: "District Visited", value: "visited" }
+                  - { label: "Other", value: "other" }
+              - { label: "Project Name", name: "project", widget: "string", required: false }
+              - { label: "Year", name: "year", widget: "string", required: false, hint: "e.g. 2023 or 2021–2024" }
+              - { label: "Note", name: "note", widget: "text", required: false, hint: "Short description shown in popup" }
 
   - name: "sections"
     label: "📂 Custom Sections"
