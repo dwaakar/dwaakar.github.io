@@ -224,50 +224,51 @@
     .stat-suffix{font-size:1.5rem;vertical-align:super;font-size:1.2rem}
     .stat-label{font-size:.82rem;opacity:.85;margin-top:.4rem;letter-spacing:.06em;text-transform:uppercase}
 
-    /* TIMELINE */
-    #timeline{padding:6rem clamp(1.5rem,8vw,8rem)}
-    .timeline-scroll{overflow-x:auto;padding-bottom:2rem;cursor:grab;user-select:none}
-    .timeline-scroll:active{cursor:grabbing}
-    .timeline-track{position:relative;display:flex;align-items:flex-start;min-width:max-content;padding:3rem 2rem 1rem}
-    .timeline-line{position:absolute;top:3.7rem;left:0;right:0;height:2px;background:linear-gradient(to right,transparent,var(--accent),var(--accent),transparent)}
-    .timeline-item{position:relative;display:flex;flex-direction:column;align-items:center;width:160px;flex-shrink:0;cursor:pointer}
-    .timeline-item:hover .timeline-dot{transform:scale(1.4);background:var(--accent)}
-    .timeline-dot{width:14px;height:14px;border-radius:50%;background:var(--border);border:2px solid var(--accent);transition:.2s;z-index:1;margin-top:0}
-    .timeline-year-label{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:var(--accent);margin-bottom:.5rem;font-weight:600}
-    .timeline-card{margin-top:.8rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.7rem .9rem;width:140px;text-align:center;transition:.2s;opacity:.7}
-    .timeline-item:hover .timeline-card{opacity:1;border-color:var(--accent);transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
-    .timeline-card-icon{font-size:1.2rem;margin-bottom:.3rem}
-    .timeline-card-title{font-size:.75rem;font-weight:600;color:var(--ink);line-height:1.3}
-    .timeline-card-sub{font-size:.68rem;color:var(--ink2);margin-top:.2rem}
-    .timeline-popup{position:fixed;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.2rem;max-width:280px;box-shadow:0 16px 48px rgba(0,0,0,.15);z-index:200;pointer-events:none;transition:opacity .15s;opacity:0}
-    .timeline-popup.show{opacity:1;pointer-events:auto}
-    .timeline-popup-title{font-weight:700;font-size:.95rem;margin-bottom:.3rem;color:var(--ink)}
-    .timeline-popup-body{font-size:.82rem;color:var(--ink2);line-height:1.5}
+    /* WINDING ROAD JOURNEY */
+    #timeline{padding:4rem clamp(1.5rem,8vw,8rem) 2rem}
+    .road-wrap{position:relative;width:100%;max-width:700px;margin:0 auto}
+    #road-canvas{position:absolute;inset:0;width:100%;pointer-events:none;z-index:0}
+    #road-milestones{position:relative;z-index:1;padding:2rem 0 0}
 
-    /* NEPAL MAP */
+    /* Each milestone row */
+    .rm-row{display:flex;align-items:flex-start;margin-bottom:5rem;position:relative}
+    .rm-row.left {flex-direction:row;        padding-left:10%}
+    .rm-row.right{flex-direction:row-reverse;padding-right:10%}
+    .rm-dot{width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent);flex-shrink:0;margin-top:.35rem;transition:transform .2s}
+    .rm-row:hover .rm-dot{transform:scale(1.4)}
+    .rm-connector{width:2.5rem;height:2px;background:var(--accent);opacity:.35;align-self:center;flex-shrink:0}
+    .rm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.2rem;max-width:280px;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s}
+    .rm-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.10);transform:translateY(-3px);border-color:var(--accent)}
+    .rm-year{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--accent);font-weight:700;letter-spacing:.06em;margin-bottom:.3rem}
+    .rm-icon{font-size:1.4rem;margin-bottom:.3rem}
+    .rm-title{font-size:.9rem;font-weight:700;color:var(--ink);line-height:1.35}
+    .rm-sub{font-size:.78rem;color:var(--ink2);margin-top:.2rem}
+    .rm-detail{font-size:.8rem;color:var(--ink2);margin-top:.55rem;line-height:1.55;display:none}
+    .rm-card.open .rm-detail{display:block}
+    .rm-card.open{border-color:var(--accent);box-shadow:0 8px 28px rgba(0,0,0,.10)}
+
+    /* Road end — dotted trail + question */
+    .road-end{display:flex;flex-direction:column;align-items:center;padding:1rem 0 4rem;position:relative;z-index:1}
+    .road-dotted-tail{width:2px;height:80px;background:repeating-linear-gradient(to bottom,var(--accent) 0,var(--accent) 8px,transparent 8px,transparent 16px);opacity:.4;margin-bottom:1.2rem}
+    .road-question{display:flex;flex-direction:column;align-items:center;gap:.5rem;animation:floatQ 3s ease-in-out infinite}
+    .road-q-mark{font-family:'Cormorant Garamond',serif;font-size:5rem;font-weight:700;color:var(--accent);opacity:.25;line-height:1}
+    .road-q-label{font-size:.78rem;color:var(--ink2);letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+    @keyframes floatQ{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+    /* NEPAL MAP — Leaflet */
     #nepal-map{padding:6rem clamp(1.5rem,8vw,8rem)}
     .section-sub{color:var(--ink2);font-size:.95rem;margin-top:.5rem;max-width:600px}
-    #map-container{position:relative;margin-top:1.5rem;border-radius:var(--radius);overflow:hidden;background:var(--surface);border:1px solid var(--border);padding:1rem}
-    #nepal-svg{width:100%;height:auto;display:block}
-    .district-path{fill:var(--surface);stroke:var(--border);stroke-width:0.5;cursor:default;transition:opacity .15s}
-    .district-path.has-data{cursor:pointer;stroke-width:0.8}
-    .district-path.has-data:hover{opacity:.75;stroke-width:1.2}
-    /* Activity type colours */
-    .dtype-research  { fill:#2D6A4F }
-    .dtype-community { fill:#1E6091 }
-    .dtype-eia       { fill:#B7832A }
-    .dtype-visited   { fill:#6B4C9A }
-    .dtype-other     { fill:#7B4B3A }
+    #leaflet-map{height:520px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-top:1.5rem;z-index:1}
     /* Legend */
     .map-legend{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;margin-bottom:1rem}
     .legend-item{display:flex;align-items:center;gap:.45rem;font-size:.82rem;color:var(--ink2)}
     .legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-    /* Popup */
-    .map-popup{position:absolute;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:.9rem 1.1rem;max-width:240px;box-shadow:0 8px 32px rgba(0,0,0,.12);pointer-events:none;opacity:0;transition:opacity .15s;z-index:10;font-size:.85rem}
-    .map-popup.show{opacity:1}
-    .map-popup-title{font-weight:700;color:var(--ink);margin-bottom:.3rem;font-size:.9rem}
-    .map-popup-type{display:inline-block;padding:.15rem .5rem;border-radius:8px;font-size:.72rem;font-weight:600;color:#fff;margin-bottom:.4rem}
-    .map-popup-row{color:var(--ink2);line-height:1.5}
+    /* Leaflet popup override */
+    .leaflet-popup-content-wrapper{border-radius:var(--radius)!important;box-shadow:0 8px 32px rgba(0,0,0,.12)!important;border:1px solid #e0ddd6!important}
+    .leaflet-popup-content{margin:.9rem 1.1rem!important;font-family:'Inter',sans-serif!important}
+    .lp-title{font-weight:700;font-size:.92rem;color:#1a1814;margin-bottom:.3rem}
+    .lp-badge{display:inline-block;padding:.15rem .55rem;border-radius:8px;font-size:.72rem;font-weight:600;color:#fff;margin-bottom:.4rem}
+    .lp-row{font-size:.82rem;color:#5a5650;line-height:1.5}
 
     /* CONTACT */
     .contact-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
@@ -446,35 +447,36 @@
   <div class="stats-grid" id="stats-grid"></div>
 </section>
 
-<!-- INTERACTIVE TIMELINE -->
+<!-- WINDING ROAD JOURNEY -->
 <section id="timeline">
   <div class="section-header reveal">
     <h2 class="section-title">Journey</h2>
     <div class="section-line"></div>
   </div>
-  <div class="timeline-scroll" id="timeline-scroll">
-    <div class="timeline-track" id="timeline-track">
-      <div class="timeline-line"></div>
+  <div class="road-wrap">
+    <canvas id="road-canvas"></canvas>
+    <div id="road-milestones"></div>
+    <div class="road-end">
+      <div class="road-dotted-tail"></div>
+      <div class="road-question">
+        <span class="road-q-mark">?</span>
+        <span class="road-q-label">What comes next</span>
+      </div>
     </div>
-  </div>
-  <div class="timeline-popup" id="timeline-popup">
-    <div class="timeline-popup-title" id="tp-title"></div>
-    <div class="timeline-popup-body" id="tp-body"></div>
   </div>
 </section>
 
-<!-- NEPAL MAP -->
+<!-- NEPAL MAP (Leaflet + OpenStreetMap) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <section id="nepal-map">
   <div class="section-header reveal">
     <h2 class="section-title">Field Presence</h2>
     <div class="section-line"></div>
-    <p class="section-sub">Districts across Nepal where I have conducted research, community projects, assessments, and fieldwork.</p>
+    <p class="section-sub">Districts across Nepal where I have conducted research, community projects, assessments, and fieldwork. Click any highlighted district to learn more.</p>
   </div>
   <div class="map-legend" id="map-legend"></div>
-  <div id="map-container">
-    <svg id="nepal-svg" viewBox="0 0 960 320" preserveAspectRatio="xMidYMid meet"></svg>
-    <div id="map-popup" class="map-popup"></div>
-  </div>
+  <div id="leaflet-map"></div>
 </section>
 
 <section id="about">
@@ -555,7 +557,7 @@
   <div class="contact-inner">
     <div class="contact-text reveal">
       <h3>Let's connect.</h3>
-      <p>I welcome opportunities for global research collaboration, consulting engagements, and knowledge exchange in the areas of water resources, climate change adaptation, environmental governance, ecosystem restoration, and sustainability transitions. I am particularly interested in projects that connect science, policy, and practice to address complex environmental challenges worldwide.</p>
+      <p>I'm open to research collaborations, consultancy opportunities, and discussions on water resource management, climate adaptation, and environmental policy in Nepal and the broader Himalayan region.</p>
       <div class="social-links" id="social-links"></div>
     </div>
     <div class="contact-links reveal" id="contact-links"></div>
@@ -1150,8 +1152,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   // ── NEPAL MAP ────────────────────────────────────────────
   window._mapData = s.mapData || null;
-  if (window._mapData && window._renderNepalMap) {
-    window._renderNepalMap(window._mapData);
+  if (window._mapData && window._renderLeafletMap) {
+    window._renderLeafletMap(window._mapData);
   }
 
   // ── TIMELINE ─────────────────────────────────────────────
@@ -1163,43 +1165,9 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       sub:    m.sub    || '',
       detail: m.detail || ''
     }));
-    // Rebuild track if timeline script already ran
-    const track = document.getElementById('timeline-track');
-    if (track) {
-      // Clear existing items (keep the timeline-line div)
-      Array.from(track.children).forEach(ch => {
-        if (!ch.classList.contains('timeline-line')) ch.remove();
-      });
-      const popup   = document.getElementById('timeline-popup');
-      const tpTitle = document.getElementById('tp-title');
-      const tpBody  = document.getElementById('tp-body');
-      window._timelineMilestones.forEach(m => {
-        const item = document.createElement('div');
-        item.className = 'timeline-item';
-        item.innerHTML = `
-          <div class="timeline-year-label">${m.year}</div>
-          <div class="timeline-dot"></div>
-          <div class="timeline-card">
-            <div class="timeline-card-icon">${m.icon}</div>
-            <div class="timeline-card-title">${safe(m.title)}</div>
-            <div class="timeline-card-sub">${safe(m.sub)}</div>
-          </div>`;
-        track.appendChild(item);
-        item.addEventListener('click', e => {
-          tpTitle.textContent = m.icon + ' ' + m.title;
-          tpBody.textContent  = m.detail;
-          const rect = item.getBoundingClientRect();
-          const pw = 290;
-          let left = rect.left + rect.width/2 - pw/2;
-          left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
-          popup.style.left = left + 'px';
-          popup.style.top  = (rect.bottom + window.scrollY + 12) + 'px';
-          popup.classList.add('show');
-          e.stopPropagation();
-        });
-      });
-    }
-  }
+    }));
+    // Rebuild winding road with CMS milestones
+    if (window._buildRoad) window._buildRoad();
 
   // ── STATS ──────────────────────────────────────────────
   const statsGrid = document.getElementById('stats-grid');
@@ -1795,8 +1763,9 @@ loadSite();
 })();
 </script>
 
+
 <!-- ═══════════════════════════════════════════════════
-     INTERACTIVE TIMELINE
+     WINDING ROAD JOURNEY
 ═══════════════════════════════════════════════════ -->
 <script>
 (function() {
@@ -1811,57 +1780,103 @@ loadSite();
     {year:'2024', icon:'🏅', title:'MSc Thesis', sub:'Distinction', detail:'Assessed suspended sediment load and hydropower impacts in the Marsyangdi River Basin.'},
     {year:'2025', icon:'🤖', title:'ML & Remote Sensing', sub:'Independent Research', detail:'Applying machine learning to rainfall imputation in high-relief Himalayan terrain.'},
   ];
-  const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
-    ? window._timelineMilestones
-    : DEFAULT_MILESTONES;
 
-  const track = document.getElementById('timeline-track');
-  const popup = document.getElementById('timeline-popup');
-  const tpTitle = document.getElementById('tp-title');
-  const tpBody = document.getElementById('tp-body');
-  if (!track) return;
+  function buildRoad() {
+    const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
+      ? window._timelineMilestones : DEFAULT_MILESTONES;
 
-  MILESTONES.forEach((m, i) => {
-    const item = document.createElement('div');
-    item.className = 'timeline-item';
-    item.innerHTML = `
-      <div class="timeline-year-label">${m.year}</div>
-      <div class="timeline-dot"></div>
-      <div class="timeline-card">
-        <div class="timeline-card-icon">${m.icon}</div>
-        <div class="timeline-card-title">${m.title}</div>
-        <div class="timeline-card-sub">${m.sub}</div>
-      </div>`;
-    track.appendChild(item);
+    const wrap     = document.querySelector('.road-wrap');
+    const canvas   = document.getElementById('road-canvas');
+    const container= document.getElementById('road-milestones');
+    if (!wrap || !canvas || !container) return;
 
-    item.addEventListener('click', e => {
-      tpTitle.textContent = m.icon + ' ' + m.title;
-      tpBody.textContent = m.detail;
-      const rect = item.getBoundingClientRect();
-      const pw = 290;
-      let left = rect.left + rect.width/2 - pw/2;
-      left = Math.max(8, Math.min(left, window.innerWidth - pw - 8));
-      popup.style.left = left + 'px';
-      popup.style.top = (rect.bottom + window.scrollY + 12) + 'px';
-      popup.classList.add('show');
-      e.stopPropagation();
+    container.innerHTML = '';
+
+    // ── Build milestone cards ──────────────────────────
+    MILESTONES.forEach((m, i) => {
+      const side = i % 2 === 0 ? 'left' : 'right';
+      const row  = document.createElement('div');
+      row.className = `rm-row ${side} reveal`;
+      row.innerHTML = `
+        <div class="rm-dot"></div>
+        <div class="rm-connector"></div>
+        <div class="rm-card" tabindex="0" role="button" aria-expanded="false">
+          <div class="rm-year">${m.year}</div>
+          <div class="rm-icon">${m.icon}</div>
+          <div class="rm-title">${m.title}</div>
+          <div class="rm-sub">${m.sub}</div>
+          ${m.detail ? `<div class="rm-detail">${m.detail}</div>` : ''}
+        </div>`;
+      container.appendChild(row);
+
+      // Toggle detail on click
+      const card = row.querySelector('.rm-card');
+      if (m.detail) {
+        card.addEventListener('click', () => {
+          const isOpen = card.classList.toggle('open');
+          card.setAttribute('aria-expanded', isOpen);
+        });
+      }
     });
-  });
 
-  document.addEventListener('click', () => popup.classList.remove('show'));
+    // ── Draw winding road on canvas ────────────────────
+    // Road follows a sine wave along the vertical centre of .road-wrap
+    function drawRoad() {
+      const W = wrap.offsetWidth;
+      const H = wrap.offsetHeight;
+      canvas.width  = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
 
-  // Drag scroll
-  const scroll = document.getElementById('timeline-scroll');
-  let isDragging = false, startX, scrollLeft;
-  scroll.addEventListener('mousedown', e => { isDragging=true; startX=e.pageX-scroll.offsetLeft; scrollLeft=scroll.scrollLeft; });
-  scroll.addEventListener('mouseleave', () => isDragging=false);
-  scroll.addEventListener('mouseup', () => isDragging=false);
-  scroll.addEventListener('mousemove', e => {
-    if (!isDragging) return;
-    e.preventDefault();
-    const x = e.pageX - scroll.offsetLeft;
-    scroll.scrollLeft = scrollLeft - (x - startX);
-  });
+      const dark   = document.documentElement.getAttribute('data-theme') === 'dark';
+      const roadC  = dark  ? 'rgba(82,183,136,0.18)' : 'rgba(45,106,79,0.15)';
+      const centerX = W / 2;
+      const amp     = W * 0.18;   // how far road swings left/right
+      const freq    = 1 / (H * 0.28); // one full S per ~28% of height
+
+      // Path: sine wave from top to ~85% of height
+      ctx.beginPath();
+      const steps = 200;
+      const roadH = H * 0.88;
+      for (let s = 0; s <= steps; s++) {
+        const y = (s / steps) * roadH;
+        const x = centerX + Math.sin(y * freq * Math.PI * 2) * amp;
+        s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = roadC;
+      ctx.lineWidth   = 3;
+      ctx.setLineDash([]);
+      ctx.stroke();
+
+      // Centre dashed line (lane marking)
+      ctx.beginPath();
+      for (let s = 0; s <= steps; s++) {
+        const y = (s / steps) * roadH;
+        const x = centerX + Math.sin(y * freq * Math.PI * 2) * amp;
+        s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = dark ? 'rgba(82,183,136,0.30)' : 'rgba(45,106,79,0.22)';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([8, 10]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw immediately + on resize
+    drawRoad();
+    window.addEventListener('resize', drawRoad);
+
+    // Re-observe new reveal elements
+    document.querySelectorAll('.rm-row.reveal').forEach(el => {
+      if (window._revealObserver) window._revealObserver.observe(el);
+      else el.classList.add('visible');
+    });
+  }
+
+  // Run after DOM is ready; re-run if milestones updated via CMS
+  window._buildRoad = buildRoad;
+  buildRoad();
 })();
 </script>
 
@@ -1869,50 +1884,24 @@ loadSite();
 
 
 <!-- ═══════════════════════════════════════════════════
-     NEPAL DISTRICT MAP
+     NEPAL MAP — LEAFLET + OPENSTREETMAP
 ═══════════════════════════════════════════════════ -->
 <script>
 (function() {
   const TYPE_CONFIG = {
-    research:  { color: '#2D6A4F', label: 'Research'                    },
-    community: { color: '#1E6091', label: 'Community Project'           },
-    eia:       { color: '#B7832A', label: 'Environmental Impact Assessment' },
-    visited:   { color: '#6B4C9A', label: 'District Visited'            },
-    other:     { color: '#7B4B3A', label: 'Other'                       },
+    research:  { color:'#2D6A4F', label:'Research'                       },
+    community: { color:'#1E6091', label:'Community Project'              },
+    eia:       { color:'#B7832A', label:'Environmental Impact Assessment' },
+    visited:   { color:'#6B4C9A', label:'District Visited'               },
+    other:     { color:'#7B4B3A', label:'Other'                          },
   };
 
-  // ── Minimal GeoJSON → SVG projection ──────────────────
-  // We project Nepal's lon/lat bbox into a fixed viewBox
-  // Nepal roughly: lon 80.06–88.2, lat 26.35–30.45
-  const LON0=80.0, LON1=88.25, LAT0=26.3, LAT1=30.5;
-  const VW=960, VH=320;
+  let leafletMap = null;
 
-  function project(lon, lat) {
-    const x = ((lon - LON0) / (LON1 - LON0)) * VW;
-    const y = VH - ((lat - LAT0) / (LAT1 - LAT0)) * VH;
-    return [x, y];
-  }
-
-  function coordsToPath(coords) {
-    return coords.map((ring, ri) =>
-      ring.map(([lon, lat], i) => {
-        const [x, y] = project(lon, lat);
-        return (i === 0 ? 'M' : 'L') + x.toFixed(2) + ',' + y.toFixed(2);
-      }).join(' ') + 'Z'
-    ).join(' ');
-  }
-
-  function geomToPath(geom) {
-    if (geom.type === 'Polygon')      return coordsToPath(geom.coordinates);
-    if (geom.type === 'MultiPolygon') return geom.coordinates.map(coordsToPath).join(' ');
-    return '';
-  }
-
-  // ── Build legend ───────────────────────────────────────
   function buildLegend(usedTypes) {
     const el = document.getElementById('map-legend');
-    if (!el) return;
-    el.innerHTML = usedTypes.map(t => {
+    if (!el || !usedTypes.size) return;
+    el.innerHTML = [...usedTypes].map(t => {
       const cfg = TYPE_CONFIG[t] || TYPE_CONFIG.other;
       return `<div class="legend-item">
         <div class="legend-dot" style="background:${cfg.color}"></div>
@@ -1921,78 +1910,84 @@ loadSite();
     }).join('');
   }
 
-  // ── Popup ──────────────────────────────────────────────
-  const popup = document.getElementById('map-popup');
-  function showPopup(d, evt) {
-    if (!popup) return;
-    const cfg = TYPE_CONFIG[d.type] || TYPE_CONFIG.other;
-    popup.innerHTML = `
-      <div class="map-popup-title">📍 ${d.name}</div>
-      <span class="map-popup-type" style="background:${cfg.color}">${cfg.label}</span>
-      <div class="map-popup-row">${d.project || ''}</div>
-      ${d.year  ? `<div class="map-popup-row">📅 ${d.year}</div>`  : ''}
-      ${d.note  ? `<div class="map-popup-row" style="margin-top:.3rem;opacity:.75">${d.note}</div>` : ''}`;
+  window._renderLeafletMap = function(mapData) {
+    if (!window.L) { setTimeout(() => window._renderLeafletMap(mapData), 200); return; }
 
-    const container = document.getElementById('map-container');
-    const cr = container.getBoundingClientRect();
-    const mx = evt.clientX - cr.left;
-    const my = evt.clientY - cr.top;
-    const pw = 250, ph = 120;
-    popup.style.left = Math.min(mx + 12, cr.width  - pw - 8) + 'px';
-    popup.style.top  = Math.min(my + 12, cr.height - ph - 8) + 'px';
-    popup.classList.add('show');
-  }
-  function hidePopup() { popup && popup.classList.remove('show'); }
+    // Destroy existing map if re-rendering
+    if (leafletMap) { leafletMap.remove(); leafletMap = null; }
 
-  // ── Main render function ───────────────────────────────
-  window._renderNepalMap = function(mapData) {
-    const svg = document.getElementById('nepal-svg');
-    if (!svg) return;
-    svg.innerHTML = '';
-
-    // Index district data by name (uppercase)
+    // Index district data
     const districtIndex = {};
     const usedTypes = new Set();
     (mapData.districts || []).forEach(d => {
-      const key = (d.name || '').toUpperCase().trim();
-      districtIndex[key] = d;
-      usedTypes.add(d.type || 'other');
+      districtIndex[(d.name||'').toUpperCase().trim()] = d;
+      if (d.type) usedTypes.add(d.type);
     });
 
-    buildLegend([...usedTypes]);
+    buildLegend(usedTypes);
 
-    // Fetch GeoJSON and draw
+    // Init Leaflet — centred on Nepal, showing India + China context
+    leafletMap = L.map('leaflet-map', {
+      center:  [28.3, 84.0],
+      zoom:    7,
+      minZoom: 5,
+      maxZoom: 14,
+      // Restrict panning loosely around the region
+      maxBounds: [[22, 75], [36, 95]],
+    });
+
+    // OpenStreetMap tiles — free, no API key needed
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(leafletMap);
+
+    // Load district GeoJSON and colour by type
     fetch('/nepal-districts.geojson')
       .then(r => r.json())
       .then(geo => {
-        geo.features.forEach(feature => {
-          const name = (feature.properties.DISTRICT || '').toUpperCase().trim();
-          const data = districtIndex[name];
-          const pathD = geomToPath(feature.geometry);
-          if (!pathD) return;
-
-          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          path.setAttribute('d', pathD);
-          path.classList.add('district-path');
-
-          if (data) {
+        L.geoJSON(geo, {
+          style: feature => {
+            const name = (feature.properties.DISTRICT || '').toUpperCase().trim();
+            const data = districtIndex[name];
+            if (!data) return {
+              fillColor: 'transparent',
+              fillOpacity: 0,
+              color: '#ccc',
+              weight: 0.6,
+              opacity: 0.4
+            };
             const cfg = TYPE_CONFIG[data.type] || TYPE_CONFIG.other;
-            path.style.fill = cfg.color;
-            path.classList.add('has-data', `dtype-${data.type || 'other'}`);
-            path.addEventListener('mouseenter', e => showPopup(data, e));
-            path.addEventListener('mousemove',  e => showPopup(data, e));
-            path.addEventListener('mouseleave', hidePopup);
-            path.addEventListener('click',      e => showPopup(data, e));
+            return {
+              fillColor:   cfg.color,
+              fillOpacity: 0.55,
+              color:       cfg.color,
+              weight:      1.5,
+              opacity:     0.8
+            };
+          },
+          onEachFeature: (feature, layer) => {
+            const name = (feature.properties.DISTRICT || '').toUpperCase().trim();
+            const data = districtIndex[name];
+            if (!data) return;
+            const cfg = TYPE_CONFIG[data.type] || TYPE_CONFIG.other;
+            layer.bindPopup(`
+              <div class="lp-title">📍 ${data.name}</div>
+              <span class="lp-badge" style="background:${cfg.color}">${cfg.label}</span><br>
+              ${data.project ? `<div class="lp-row"><b>${data.project}</b></div>` : ''}
+              ${data.year    ? `<div class="lp-row">📅 ${data.year}</div>` : ''}
+              ${data.note    ? `<div class="lp-row" style="opacity:.75;margin-top:.3rem">${data.note}</div>` : ''}
+            `, { maxWidth: 240 });
+            layer.on('mouseover', function() { this.setStyle({ fillOpacity: 0.8 }); });
+            layer.on('mouseout',  function() { this.setStyle({ fillOpacity: 0.55 }); });
           }
-
-          svg.appendChild(path);
-        });
+        }).addTo(leafletMap);
       })
-      .catch(e => console.warn('Map load error:', e));
+      .catch(e => console.warn('Map GeoJSON error:', e));
   };
 
-  // Run if data already available (renderSite ran before this script)
-  if (window._mapData) window._renderNepalMap(window._mapData);
+  // Run if data already set
+  if (window._mapData) window._renderLeafletMap(window._mapData);
 })();
 </script>
 
