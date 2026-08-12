@@ -2080,101 +2080,130 @@ function sampleNoise(nx, ny) {
   return v00*(1-cf)*(1-rf) + v10*cf*(1-rf) + v01*(1-cf)*rf + v11*cf*rf;
 }
 
-// ── Option B: route tributary path by descending the noise gradient ─────────
-// Starting from a headwater point above the confluence, we perform gradient
-// descent on the noise field — stepping each point toward the steepest downhill
-// neighbour. This naturally follows valleys in the noise terrain, giving
-// contour-aligned paths without requiring explicit valley extraction.
-//
-// The descent is seeded with the confluence side (left/right) and the
-// milestone index so each tributary is deterministically unique.
-function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major) {
-  // How far upstream the headwater sits (inside canvas bounds).
-  const reachY  = (major ? 0.24 : 0.14) * H * (isMobile() ? 0.65 : 1);
-  // Lateral offset of headwater from confluence — tributaries come from the side.
-  const reachX  = (major ? 0.18 : 0.10) * W * side;
+// ── Mainstem-aware tributary routing ─────────────────────────────────────────
+// Tributaries are generated from the local geometry of the mainstem rather
+// than from screen-space X/Y offsets. This keeps confluences visually attached
+// to the river even when the river is in a strong meander.
+function mainstemTangent(norm) {
+  const n = Math.max(0.02, Math.min(0.98, norm));
+  const e = 0.0035;
+  const x0 = getRiverXFrac(n - e);
+  const x1 = getRiverXFrac(n + e);
+  const dx = (x1 - x0) / (2 * e);
+  const tx = dx;
+  const ty = 1;
+  const len = Math.hypot(tx, ty) || 1;
+  return { x: tx / len, y: ty / len };
+}
 
-  // Headwater start — clamped well inside canvas
-  const hwX = Math.max(W * 0.04, Math.min(W * 0.96, confluenceX + reachX));
-  const hwY = Math.max(H * 0.02, confluenceY - reachY);
+function sampleMainstemPoint(norm, W, H) {
+  const n = Math.max(0, Math.min(1, norm));
+  return { x: getRiverXFrac(n) * W, y: n * H };
+}
 
-  // Number of control points along the path (more = smoother gradient descent)
-  const NPTS = major ? 28 : 18;
-  const pts  = [{ x: hwX, y: hwY }];
+function buildGuidedTributary(start, end, tangent, side, idx, major, W, H) {
+  const normal = { x: -tangent.y * side, y: tangent.x * side };
+  const dx = end.x - start.x, dy = end.y - start.y;
+  const total = Math.hypot(dx, dy) || 1;
 
-  // Gradient descent step size in normalised coordinates
-  const STEP = 1.0 / NOISE_ROWS;
+  // Control points keep the tributary broadly aligned with the river's local
+  // flow direction. The final quarter is deliberately almost tangent to the
+  // mainstem, producing a soft, natural confluence rather than a sharp join.
+  const c1 = {
+    x: start.x + tangent.x * total * 0.34 + normal.x * total * 0.06,
+    y: start.y + tangent.y * total * 0.34 + normal.y * total * 0.06
+  };
+  const c2 = {
+    x: end.x - tangent.x * total * 0.26 + normal.x * total * side * 0.035,
+    y: end.y - tangent.y * total * 0.26 + normal.y * total * side * 0.035
+  };
 
-  // We move from headwater → confluence in NPTS steps.
-  // Each step blends gradient descent (follow valley) with a straight pull
-  // toward the confluence, so the path always arrives correctly.
-  const targetNX = confluenceX / W;
-  const targetNY = confluenceY / H;
+  const N = major ? 42 : 30;
+  const pts = [];
+  for (let i = 0; i <= N; i++) {
+    const t = i / N;
+    const mt = 1 - t;
+    const b0 = mt * mt * mt;
+    const b1 = 3 * mt * mt * t;
+    const b2 = 3 * mt * t * t;
+    const b3 = t * t * t;
+    let x = b0 * start.x + b1 * c1.x + b2 * c2.x + b3 * end.x;
+    let y = b0 * start.y + b1 * c1.y + b2 * c2.y + b3 * end.y;
 
-  let cx = hwX / W, cy = hwY / H;
+    // Very restrained terrain-aware wobble. We sample the shared noise field,
+    // but use it only as a gentle lateral perturbation rather than letting
+    // gradient descent override the mainstem geometry.
+    const nnx = Math.max(0.02, Math.min(0.98, x / W));
+    const nny = Math.max(0.02, Math.min(0.98, y / H));
+    const valleySignal = sampleNoise(nnx, nny) - 0.5;
+    const taper = Math.sin(Math.PI * t) * (1 - 0.45 * t);
+    const wobble = valleySignal * total * (major ? 0.045 : 0.035) * taper;
+    x += normal.x * wobble;
+    y += normal.y * wobble;
 
-  for (let s = 1; s < NPTS; s++) {
-    const progress = s / (NPTS - 1); // 0→1 (headwater→confluence)
-
-    // Gradient descent: find steepest downhill direction
-    const eps  = STEP * 0.9;
-    const here = sampleNoise(cx, cy);
-    const gx   = (sampleNoise(cx + eps, cy) - sampleNoise(cx - eps, cy)) / (2 * eps);
-    const gy   = (sampleNoise(cx, cy + eps) - sampleNoise(cx, cy - eps)) / (2 * eps);
-    const gLen = Math.hypot(gx, gy) || 1;
-
-    // Descent direction (downhill = negative gradient)
-    const descX = -gx / gLen;
-    const descY = -gy / gLen;
-
-    // Pull direction toward confluence
-    const pullX = targetNX - cx;
-    const pullY = targetNY - cy;
-    const pLen  = Math.hypot(pullX, pullY) || 1;
-
-    // Blend: early = more descent (follow valley), late = more pull (arrive at confluence)
-    // This prevents the path overshooting the confluence on the noise field.
-    const pullStrength = 0.25 + progress * 0.65;
-    const descStrength = 1 - pullStrength;
-
-    const moveX = descX * descStrength + (pullX / pLen) * pullStrength;
-    const moveY = descY * descStrength + (pullY / pLen) * pullStrength;
-    const mLen  = Math.hypot(moveX, moveY) || 1;
-
-    // Step size: larger early (exploring the valley), smaller near confluence
-    const stepScale = STEP * 2.8 * (1 - progress * 0.5);
-
-    cx = Math.max(0.03, Math.min(0.97, cx + (moveX / mLen) * stepScale));
-    cy = Math.max(0.02, Math.min(0.97, cy + (moveY / mLen) * stepScale));
-
-    // Small seeded organic wobble on top of the gradient — same as mainstem
-    const wobble = seededRand(idx * 13.7 + s * 4.3) - 0.5;
-    const wAmp   = 0.008 * (1 - progress) * (major ? 1.4 : 0.9);
-    cx = Math.max(0.03, Math.min(0.97, cx + wobble * wAmp));
-
-    pts.push({ x: cx * W, y: cy * H });
+    // Keep the path inside a comfortable map margin.
+    x = Math.max(W * 0.025, Math.min(W * 0.975, x));
+    y = Math.max(H * 0.018, Math.min(H * 0.94, y));
+    pts.push({ x, y });
   }
 
-  // Final point = exact confluence
-  pts.push({ x: confluenceX, y: confluenceY });
+  // The last several points are explicitly eased onto the exact mainstem
+  // location. This removes tiny gaps/residue at the confluence.
+  const blendStart = Math.floor(N * 0.82);
+  for (let i = blendStart; i <= N; i++) {
+    const t = (i - blendStart) / Math.max(1, N - blendStart);
+    const ease = t * t * (3 - 2 * t);
+    const localNorm = end.y / H;
+    const tangentPoint = sampleMainstemPoint(localNorm, W, H);
+    pts[i].x = pts[i].x * (1 - ease) + tangentPoint.x * ease;
+    pts[i].y = pts[i].y * (1 - ease) + tangentPoint.y * ease;
+  }
+
+  pts[N] = { x: end.x, y: end.y };
   return pts;
+}
+
+function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major, confluenceFrac) {
+  const tangent = mainstemTangent(confluenceFrac);
+  const normal = { x: -tangent.y * side, y: tangent.x * side };
+
+  // Keep tributaries substantial enough to read as real channels, but avoid
+  // the very long screen-spanning paths that previously crossed unrelated terrain.
+  const reachAlong = (major ? 0.15 : 0.095) * H;
+  const reachSide  = (major ? 0.14 : 0.085) * W;
+  const start = {
+    x: confluenceX - tangent.x * reachAlong + normal.x * reachSide,
+    y: confluenceY - tangent.y * reachAlong + normal.y * reachSide
+  };
+
+  start.x = Math.max(W * 0.035, Math.min(W * 0.965, start.x));
+  start.y = Math.max(H * 0.025, Math.min(H * 0.90, start.y));
+
+  return buildGuidedTributary(
+    start,
+    { x: confluenceX, y: confluenceY },
+    tangent,
+    side,
+    idx,
+    major,
+    W,
+    H
+  );
 }
 
 // ── buildLayout ──────────────────────────────────────────────────────────────
 function buildLayout(W, H, milestones) {
-  // Rebuild the shared noise grid for this canvas size.
-  // drawTopo will reuse it (no double computation).
   buildNoiseGrid(W, H);
 
   const confluences = [];
-  const n = milestones.length;
-
   const AUTO_START = 0.08, AUTO_END = 0.86;
-  let autoCount  = 0;
+  let autoCount = 0;
   const autoTotal = milestones.filter(m => !m.elevation).length;
 
-  milestones.forEach((m, i) => {
-    // ── Vertical position ──────────────────────────────────────
+  // First resolve every milestone's nominal elevation position. Grouping is
+  // then used only for visual spacing when multiple milestones share an
+  // elevation; their CMS elevation remains unchanged.
+  const pending = milestones.map((m, i) => {
     let frac;
     if (m.elevation) {
       frac = elevToFrac(m.elevation);
@@ -2184,28 +2213,56 @@ function buildLayout(W, H, milestones) {
         : 0.48;
       autoCount++;
     }
+    return { m, i, frac, major: m.type === 'major' };
+  });
 
-    const y = Math.min(H * 0.92, frac * H);
-    const x = getRiverXFrac(frac) * W;
-    const major = m.type === 'major';
-    const side  = i % 2 === 0 ? 1 : -1;
+  // Group positions that are effectively the same elevation. We spread the
+  // actual confluence points a small distance along the mainstem so multiple
+  // tributaries don't collapse into one geometric knot.
+  const groups = [];
+  pending.forEach(item => {
+    let group = groups.find(g => Math.abs(g.frac - item.frac) < 0.0045);
+    if (!group) {
+      group = { frac: item.frac, items: [] };
+      groups.push(group);
+    }
+    group.items.push(item);
+  });
 
-    // ── Width multiplier ───────────────────────────────────────
-    // major: 60–70% of mainstem; minor: 40–60%
-    const tribWidthMult = major
-      ? (0.60 + seededRand(i * 2.3) * 0.10)
-      : (0.40 + seededRand(i * 2.3) * 0.20);
+  groups.forEach(group => {
+    const count = group.items.length;
+    group.items.forEach((item, rank) => {
+      const centered = rank - (count - 1) / 2;
+      // About 12–18 px of visual separation per member, capped so a large
+      // group still reads as one elevation/confluence zone.
+      const visualOffset = centered * Math.min(0.0075, 0.0038 + count * 0.0008);
+      const frac = Math.max(0.055, Math.min(0.90, group.frac + visualOffset));
+      const y = Math.min(H * 0.92, frac * H);
+      const x = getRiverXFrac(frac) * W;
+      const side = centered === 0
+        ? (item.i % 2 === 0 ? 1 : -1)
+        : (centered < 0 ? -1 : 1);
+      const major = item.major;
 
-    // ── Route path through noise valley (Option B) ─────────────
-    const tribPath = routeTributaryByValley(W, H, x, y, side, i, major);
+      const tribWidthMult = major
+        ? (0.60 + seededRand(item.i * 2.3) * 0.10)
+        : (0.40 + seededRand(item.i * 2.3) * 0.20);
 
-    confluences.push({
-      frac, x, y, major,
-      type:         major ? 'major' : 'minor',
-      side, milestone: m,
-      tribPath,
-      tribWidthMult,
-      increment: major ? 0.9 : 0.4,
+      const tribPath = routeTributaryByValley(
+        W, H, x, y, side, item.i, major, frac
+      );
+
+      confluences.push({
+        frac, x, y, major,
+        type: major ? 'major' : 'minor',
+        side,
+        milestone: item.m,
+        tribPath,
+        tribWidthMult,
+        increment: major ? 0.75 : 0.32,
+        elevationGroupSize: count,
+        elevationGroupRank: rank
+      });
     });
   });
 
@@ -2213,21 +2270,28 @@ function buildLayout(W, H, milestones) {
 }
 
 function widthAtY(y, confluences) {
-  // Two additive sources of growth, matching how a real watershed widens:
-  // (1) a gradual baseline increase from countless small, unmapped feeder
-  //     streams along the whole length, and (2) a stepped jump at each
-  //     named milestone's confluence. Even with zero milestones the river
-  //     still visibly matures from headwater trickle to a broad channel.
   const norm = baseH ? Math.min(1, Math.max(0, y / baseH)) : 0;
-  const BASE_MIN = 2.2, BASE_MAX = 5.4;
-  let w = BASE_MIN + (BASE_MAX - BASE_MIN) * Math.pow(norm, 0.6);
+
+  // Gradual downstream maturation, with a soft saturation curve. The previous
+  // linear/additive treatment allowed every milestone to keep widening the
+  // channel indefinitely, which made the lower Journey read as an oversized
+  // blue belt. We retain growth while making the downstream width asymptote.
+  const BASE_MIN = 2.2, BASE_MAX = 4.6;
+  const base = BASE_MIN + (BASE_MAX - BASE_MIN) * Math.pow(norm, 0.62);
+
+  let additions = 0;
   for (const c of confluences) {
     if (y <= c.y - 12) continue;
     const t = Math.min(1, Math.max(0, (y - (c.y - 12)) / 90));
-    const s = t * t * (3 - 2 * t); // smoothstep
-    w += c.increment * s;
+    const s = t * t * (3 - 2 * t);
+    additions += c.increment * s;
   }
-  return w;
+
+  // Diminishing returns: each successive contribution matters less. This is
+  // visual rather than hydraulic, but preserves the feeling of accumulated
+  // discharge without allowing width to explode downstream.
+  const saturated = 2.15 * (1 - Math.exp(-additions / 2.15));
+  return Math.min(6.2, base + saturated);
 }
 
 // Build an offset polygon for a variable-width open path and fill it —
@@ -2762,6 +2826,9 @@ function drawRiverBase() {
     // Their separation is expressed by centreline geometry, not by
     // shrinking their water-body width.
     const full = beltWidth(y);
+    // Keep the braid exactly in the mainstem's visual width class. The
+    // downstream width problem is handled by the mainstem width saturation,
+    // not by making the separated channel thinner.
     return full;
   }
 
