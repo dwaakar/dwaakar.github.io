@@ -273,41 +273,30 @@
 
     /* Milestone anchor + card layer */
     #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none}
-    .jrn-anchor{position:absolute;transform:translate(-50%,-50%);pointer-events:auto}
-    .jrn-anchor-dot{width:9px;height:9px;border-radius:50%;
-      background:var(--accent);opacity:.55;
-      box-shadow:0 0 0 3px rgba(45,106,79,.15);
-      transition:opacity .4s,box-shadow .4s,transform .4s}
-    .jrn-anchor.jrn-major .jrn-anchor-dot{width:12px;height:12px}
-    .jrn-anchor:hover .jrn-anchor-dot,.jrn-anchor.jrn-in-view .jrn-anchor-dot{opacity:1;box-shadow:0 0 0 6px rgba(45,106,79,.18),0 0 14px rgba(45,106,79,.35)}
-    .jrn-anchor.jrn-pulse .jrn-anchor-dot{animation:jrnPulse 1.1s cubic-bezier(.4,0,.2,1)}
-    @keyframes jrnPulse{
-      0%{box-shadow:0 0 0 3px rgba(45,106,79,.15)}
-      40%{box-shadow:0 0 0 12px rgba(45,106,79,.22),0 0 22px rgba(45,106,79,.5)}
-      100%{box-shadow:0 0 0 6px rgba(45,106,79,.18),0 0 14px rgba(45,106,79,.35)}
-    }
-    @media(prefers-reduced-motion:reduce){.jrn-anchor.jrn-pulse .jrn-anchor-dot{animation:none}}
-
-    /* Milestone card — sits beside its confluence, alternating left/right */
-    .jrn-card{position:absolute;top:50%;width:min(230px,38vw);
-      transform:translateY(-50%) translateX(0);opacity:0;
-      transition:opacity .6s cubic-bezier(.4,0,.2,1),transform .6s cubic-bezier(.4,0,.2,1)}
-    .jrn-card.jrn-side-r{left:20px}
-    .jrn-card.jrn-side-l{right:20px;text-align:right}
-    .jrn-card.jrn-side-r{transform:translateY(-50%) translateX(-8px)}
-    .jrn-card.jrn-side-l{transform:translateY(-50%) translateX(8px)}
-    .jrn-anchor.jrn-in-view .jrn-card{opacity:1;transform:translateY(-50%) translateX(0)}
-    .jrn-card-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
-      color:var(--accent);opacity:.7;letter-spacing:.08em;margin-bottom:.18rem}
-    .jrn-card-date{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.08em;color:var(--accent);opacity:.9;margin-bottom:.2rem}
-    .jrn-card-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1rem;color:var(--ink);line-height:1.3;margin-bottom:.25rem}
-    .jrn-anchor.jrn-major .jrn-card-title{font-size:1.14rem}
-    .jrn-card-desc{font-size:.78rem;color:var(--ink2);line-height:1.55;opacity:.9}
-    @media(prefers-reduced-motion:reduce){.jrn-card,.jrn-anchor-dot{transition:opacity .25s linear}}
-
-    @media(max-width:640px){
-      .jrn-card{width:min(160px,42vw)}
-      .jrn-card-desc{display:none}
+    /* ── Tributary hover popup ── */
+    .jrn-trib-hint{position:absolute;bottom:1.8rem;left:50%;transform:translateX(-50%);
+      font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
+      color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
+    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:10px;padding:.75rem .95rem;width:200px;
+      box-shadow:0 8px 32px rgba(0,0,0,.14);
+      opacity:0;transition:opacity .15s;font-size:.8rem}
+    .jrn-popup.show{opacity:1}
+    .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
+      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
+    .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
+    .jrn-popup-title{font-weight:700;font-size:.85rem;color:var(--ink);
+      line-height:1.3;margin-bottom:.25rem}
+    .jrn-popup-desc{font-size:.75rem;color:var(--ink2);line-height:1.5}
+    .jrn-popup-badge{display:inline-block;margin-top:.4rem;padding:.12rem .5rem;
+      border-radius:6px;font-size:.62rem;font-weight:600;letter-spacing:.06em;
+      background:var(--accent);color:#fff;opacity:.85}
+    .jrn-popup-badge.jrn-minor-badge{background:var(--ink2);opacity:.55}
+    @media(prefers-reduced-motion:reduce){
+      .jrn-body{transition:none}
+      .jrn-toggle-icon{transition:none}
+      #jrn-topo{transition:none!important}
     }
     @media(prefers-reduced-motion:reduce){
       .jrn-body{transition:none}
@@ -2034,84 +2023,189 @@ function getRiverXFrac(norm) {
 // ═══════════════════════════════════════
 let layout = null; // { total, confluences:[{frac,x,type,side,milestone,tribPath,increment}] }
 
-// Elevation → vertical fraction conversion.
-// ELEV_TOP (6500 m) = top of canvas (frac 0.0), ELEV_BOTTOM (60 m) = bottom (frac 1.0).
-// Uses a slight power curve (0.82) so mid-elevations aren't bunched — matches
-// how real Himalayan hypsometry distributes terrain.
+// ── Elevation → vertical fraction ──────────────────────────────────────────
+// ELEV_TOP=6500m → frac 0.06 (near top), ELEV_BOTTOM=60m → frac 0.86 (near mouth).
+// Power curve 0.82 distributes mid-elevations naturally (Himalayan hypsometry).
 function elevToFrac(elev) {
   const e = Math.max(ELEV_BOTTOM, Math.min(ELEV_TOP, +elev));
-  const norm = (ELEV_TOP - e) / (ELEV_TOP - ELEV_BOTTOM); // 0=top, 1=bottom
-  return Math.pow(norm, 0.82) * 0.80 + 0.06; // map to canvas range 0.06–0.86
+  const norm = (ELEV_TOP - e) / (ELEV_TOP - ELEV_BOTTOM);
+  return Math.pow(norm, 0.82) * 0.80 + 0.06;
 }
 
+// ── Noise field cache — shared between topo and tributary routing ───────────
+// We build this once per layout call and reuse it in drawTopo.
+// Grid samples octave noise across the canvas in normalised [0,1] coordinates.
+let _noiseGrid = null;
+let _noiseW = 0, _noiseH = 0;
+const NOISE_COLS = 140, NOISE_ROWS = 90;
+
+function buildNoiseGrid(W, H) {
+  _noiseW = W; _noiseH = H;
+  _noiseGrid = [];
+  const SEED = 42;
+  const srcNX = 0.17, srcNY = 0.03;
+  for (let r = 0; r <= NOISE_ROWS; r++) {
+    _noiseGrid[r] = [];
+    const ny = r / NOISE_ROWS;
+    for (let col = 0; col <= NOISE_COLS; col++) {
+      const nx = col / NOISE_COLS;
+      const distToSource = Math.hypot(nx - srcNX, (ny - srcNY) * 1.5);
+      const sourceTighten = 1 + Math.max(0, 0.28 - distToSource) * 10;
+      const freqBoost     = 1 + Math.max(0, 0.45 - ny) * 1.4;
+      const n = octaveNoise(
+        nx * 3.4 * sourceTighten * freqBoost,
+        ny * 3.4 * sourceTighten * freqBoost,
+        5, SEED
+      );
+      const elevGrad = Math.pow(1 - ny, 0.62);
+      const plainN   = octaveNoise(nx * 1.6, ny * 1.6, 3, SEED + 17) * 0.12 * ny;
+      _noiseGrid[r][col] = n * 0.42 * (0.7 + 0.3 * (1 - ny)) + elevGrad * 0.92 + plainN + 0.04;
+    }
+  }
+}
+
+// Sample noise field at arbitrary normalised coords (bilinear interpolation).
+function sampleNoise(nx, ny) {
+  if (!_noiseGrid) return 0;
+  const col = Math.max(0, Math.min(NOISE_COLS - 1, nx * NOISE_COLS));
+  const row = Math.max(0, Math.min(NOISE_ROWS - 1, ny * NOISE_ROWS));
+  const c0 = Math.floor(col), c1 = Math.min(NOISE_COLS, c0 + 1);
+  const r0 = Math.floor(row), r1 = Math.min(NOISE_ROWS, r0 + 1);
+  const cf = col - c0, rf = row - r0;
+  const v00 = _noiseGrid[r0][c0], v10 = _noiseGrid[r0][c1];
+  const v01 = _noiseGrid[r1][c0], v11 = _noiseGrid[r1][c1];
+  return v00*(1-cf)*(1-rf) + v10*cf*(1-rf) + v01*(1-cf)*rf + v11*cf*rf;
+}
+
+// ── Option B: route tributary path by descending the noise gradient ─────────
+// Starting from a headwater point above the confluence, we perform gradient
+// descent on the noise field — stepping each point toward the steepest downhill
+// neighbour. This naturally follows valleys in the noise terrain, giving
+// contour-aligned paths without requiring explicit valley extraction.
+//
+// The descent is seeded with the confluence side (left/right) and the
+// milestone index so each tributary is deterministically unique.
+function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major) {
+  // How far upstream the headwater sits (inside canvas bounds).
+  const reachY  = (major ? 0.24 : 0.14) * H * (isMobile() ? 0.65 : 1);
+  // Lateral offset of headwater from confluence — tributaries come from the side.
+  const reachX  = (major ? 0.18 : 0.10) * W * side;
+
+  // Headwater start — clamped well inside canvas
+  const hwX = Math.max(W * 0.04, Math.min(W * 0.96, confluenceX + reachX));
+  const hwY = Math.max(H * 0.02, confluenceY - reachY);
+
+  // Number of control points along the path (more = smoother gradient descent)
+  const NPTS = major ? 28 : 18;
+  const pts  = [{ x: hwX, y: hwY }];
+
+  // Gradient descent step size in normalised coordinates
+  const STEP = 1.0 / NOISE_ROWS;
+
+  // We move from headwater → confluence in NPTS steps.
+  // Each step blends gradient descent (follow valley) with a straight pull
+  // toward the confluence, so the path always arrives correctly.
+  const targetNX = confluenceX / W;
+  const targetNY = confluenceY / H;
+
+  let cx = hwX / W, cy = hwY / H;
+
+  for (let s = 1; s < NPTS; s++) {
+    const progress = s / (NPTS - 1); // 0→1 (headwater→confluence)
+
+    // Gradient descent: find steepest downhill direction
+    const eps  = STEP * 0.9;
+    const here = sampleNoise(cx, cy);
+    const gx   = (sampleNoise(cx + eps, cy) - sampleNoise(cx - eps, cy)) / (2 * eps);
+    const gy   = (sampleNoise(cx, cy + eps) - sampleNoise(cx, cy - eps)) / (2 * eps);
+    const gLen = Math.hypot(gx, gy) || 1;
+
+    // Descent direction (downhill = negative gradient)
+    const descX = -gx / gLen;
+    const descY = -gy / gLen;
+
+    // Pull direction toward confluence
+    const pullX = targetNX - cx;
+    const pullY = targetNY - cy;
+    const pLen  = Math.hypot(pullX, pullY) || 1;
+
+    // Blend: early = more descent (follow valley), late = more pull (arrive at confluence)
+    // This prevents the path overshooting the confluence on the noise field.
+    const pullStrength = 0.25 + progress * 0.65;
+    const descStrength = 1 - pullStrength;
+
+    const moveX = descX * descStrength + (pullX / pLen) * pullStrength;
+    const moveY = descY * descStrength + (pullY / pLen) * pullStrength;
+    const mLen  = Math.hypot(moveX, moveY) || 1;
+
+    // Step size: larger early (exploring the valley), smaller near confluence
+    const stepScale = STEP * 2.8 * (1 - progress * 0.5);
+
+    cx = Math.max(0.03, Math.min(0.97, cx + (moveX / mLen) * stepScale));
+    cy = Math.max(0.02, Math.min(0.97, cy + (moveY / mLen) * stepScale));
+
+    // Small seeded organic wobble on top of the gradient — same as mainstem
+    const wobble = seededRand(idx * 13.7 + s * 4.3) - 0.5;
+    const wAmp   = 0.008 * (1 - progress) * (major ? 1.4 : 0.9);
+    cx = Math.max(0.03, Math.min(0.97, cx + wobble * wAmp));
+
+    pts.push({ x: cx * W, y: cy * H });
+  }
+
+  // Final point = exact confluence
+  pts.push({ x: confluenceX, y: confluenceY });
+  return pts;
+}
+
+// ── buildLayout ──────────────────────────────────────────────────────────────
 function buildLayout(W, H, milestones) {
+  // Rebuild the shared noise grid for this canvas size.
+  // drawTopo will reuse it (no double computation).
+  buildNoiseGrid(W, H);
+
   const confluences = [];
   const n = milestones.length;
 
-  // Assign vertical position:
-  // – If milestone has elevation set → convert directly.
-  // – Otherwise → auto-space evenly between source (8%) and mouth (88%),
-  //   interleaving with elevation-placed milestones so nothing collides badly.
-  const AUTO_START = 0.08, AUTO_END = 0.88;
-  let autoCount = 0;
+  const AUTO_START = 0.08, AUTO_END = 0.86;
+  let autoCount  = 0;
   const autoTotal = milestones.filter(m => !m.elevation).length;
 
   milestones.forEach((m, i) => {
+    // ── Vertical position ──────────────────────────────────────
     let frac;
     if (m.elevation) {
       frac = elevToFrac(m.elevation);
     } else {
-      // Auto-place: distribute evenly across the remaining span
       frac = autoTotal > 1
         ? AUTO_START + (autoCount / (autoTotal - 1)) * (AUTO_END - AUTO_START)
         : 0.48;
       autoCount++;
     }
 
-    const y = frac * H;
+    const y = Math.min(H * 0.92, frac * H);
     const x = getRiverXFrac(frac) * W;
     const major = m.type === 'major';
-    const side  = i % 2 === 0 ? 1 : -1; // alternate left/right
+    const side  = i % 2 === 0 ? 1 : -1;
 
-    // ── Tributary dimensions ────────────────────────────────
-    // major: 60–70% of mainstem width at that elevation
-    // minor: 40–60% of mainstem width
-    // Mainstem width at this y is given by widthAtY (called after confluences built,
-    // so we store a width multiplier and resolve it during draw).
+    // ── Width multiplier ───────────────────────────────────────
+    // major: 60–70% of mainstem; minor: 40–60%
     const tribWidthMult = major
-      ? (0.60 + seededRand(i * 2.3) * 0.10)   // 0.60–0.70 × mainstem
-      : (0.40 + seededRand(i * 2.3) * 0.20);   // 0.40–0.60 × mainstem
+      ? (0.60 + seededRand(i * 2.3) * 0.10)
+      : (0.40 + seededRand(i * 2.3) * 0.20);
 
-    // ── Tributary reach (how far it extends from confluence) ─
-    const reachX = (major
-      ? (0.15 + seededRand(i * 3.1) * 0.07)
-      : (0.07 + seededRand(i * 3.1) * 0.05)) * W * side;
-    const reachY = (major
-      ? (180 + seededRand(i * 5.7) * 70)
-      : (90  + seededRand(i * 5.7) * 45)) * (isMobile() ? 0.62 : 1);
-
-    // ── Catmull-Rom control points for tributary path ────────
-    const segs = major ? 4 : 3;
-    const pts  = [];
-    for (let s = 0; s <= segs; s++) {
-      const t  = s / segs;
-      const px = x + reachX * (1 - t) * (1 - t * 0.15);
-      const jitter = (seededRand(i * 7.3 + s * 2.9) - 0.5) * reachX * 0.35 * (1 - t);
-      const py = y - reachY * (1 - t) + jitter * 0.4;
-      pts.push({ x: Math.max(W * 0.02, Math.min(W * 0.98, px + jitter)), y: py });
-    }
-    pts.push({ x, y }); // confluence point
+    // ── Route path through noise valley (Option B) ─────────────
+    const tribPath = routeTributaryByValley(W, H, x, y, side, i, major);
 
     confluences.push({
       frac, x, y, major,
-      type:           major ? 'major' : 'minor',
-      side,
-      milestone:      m,
-      tribPath:       pts,
-      tribWidthMult,              // fraction of mainstem width
-      increment:      major ? 0.9 : 0.4,
+      type:         major ? 'major' : 'minor',
+      side, milestone: m,
+      tribPath,
+      tribWidthMult,
+      increment: major ? 0.9 : 0.4,
     });
   });
+
   return { confluences };
 }
 
@@ -2210,40 +2304,55 @@ function drawTopo() {
   topoCtx.clearRect(0, 0, topoW, topoH);
 
   const LEVELS = Math.max(22, Math.round(topoH / 55));
-  const SEED   = 42;
-  const COLS = 140, ROWS = Math.max(80, Math.round(topoH / 18));
-  const grid = [];
-  const srcNX = 0.17, srcNY = 0.03;
+  const COLS = NOISE_COLS, ROWS = NOISE_ROWS;
 
+  // Reuse the shared noise grid built in buildLayout.
+  // If it hasn't been built yet (first draw before any milestones), build now.
+  if (!_noiseGrid || _noiseW !== topoW || _noiseH !== topoH) {
+    buildNoiseGrid(topoW, topoH);
+  }
+
+  // Compose final terrain grid: base noise + mainstem valley + tributary valleys
+  const grid = [];
   for (let r = 0; r <= ROWS; r++) {
     grid[r] = [];
     const ny = r / ROWS;
     for (let col = 0; col <= COLS; col++) {
-      const nx = col / COLS;
-      const distToSource = Math.hypot(nx - srcNX, (ny - srcNY) * 1.5);
-      const sourceTighten = 1 + Math.max(0, 0.28 - distToSource) * 10;
-      const freqBoost = 1 + Math.max(0, 0.45 - ny) * 1.4;
-      const n = octaveNoise(
-        nx * 3.4 * sourceTighten * freqBoost,
-        ny * 3.4 * sourceTighten * freqBoost,
-        5, SEED
-      );
-      const elevGrad = Math.pow(1 - ny, 0.62);
-      const plainN = octaveNoise(nx * 1.6, ny * 1.6, 3, SEED + 17) * 0.12 * ny;
-      const terrainBase = n * 0.42 * (0.7 + 0.3 * (1 - ny)) + elevGrad * 0.92 + plainN + 0.04;
+      const nx     = col / COLS;
+      const terrainBase = _noiseGrid[r][col];
 
-      // Let the topography respond subtly to the Journey river. The river
-      // centerline acts as a low valley corridor, so nearby contours bend
-      // around the same five broad meanders instead of floating independently
-      // behind the river. The effect strengthens downstream where the valley
-      // becomes broader, while the surrounding terrain remains irregular.
-      const riverX = getRiverXFrac(ny);
-      const riverDist = Math.abs(nx - riverX);
-      const valleyWidth = 0.045 + ny * 0.075;
-      const valleyInfluence = Math.exp(-Math.pow(riverDist / valleyWidth, 2));
-      const floodplainLift = Math.max(0, ny - 0.58) * 0.08 * valleyInfluence;
-      const valleyCut = (0.17 + ny * 0.13) * valleyInfluence;
-      grid[r][col] = terrainBase - valleyCut + floodplainLift;
+      // ── Mainstem valley cut ─────────────────────────────────
+      const riverX         = getRiverXFrac(ny);
+      const riverDist      = Math.abs(nx - riverX);
+      const valleyWidth    = 0.045 + ny * 0.075;
+      const valleyInfl     = Math.exp(-Math.pow(riverDist / valleyWidth, 2));
+      const floodplainLift = Math.max(0, ny - 0.58) * 0.08 * valleyInfl;
+      const valleyCut      = (0.17 + ny * 0.13) * valleyInfl;
+
+      // ── Tributary valley cuts ───────────────────────────────
+      // For each tributary path, we apply a narrower, shallower valley cut
+      // along its route. This makes contours visibly "V" into each tributary
+      // valley — the same physical process that shapes real drainage networks.
+      let tribCut = 0;
+      if (layout && layout.confluences) {
+        for (const conf of layout.confluences) {
+          if (!conf.tribPath || conf.tribPath.length < 2) continue;
+          // Find the closest point on this tributary path to the current cell
+          let minDist = Infinity;
+          for (const pt of conf.tribPath) {
+            const tnx = pt.x / (topoW || 1);
+            const tny = pt.y / (topoH || 1);
+            const d   = Math.hypot((nx - tnx) * 1.8, ny - tny); // slight x-stretch
+            if (d < minDist) minDist = d;
+          }
+          // Valley width is narrower than mainstem; depth scales with class
+          const tw = conf.major ? 0.028 : 0.018;
+          const td = conf.major ? 0.10  : 0.07;
+          tribCut += td * Math.exp(-Math.pow(minDist / tw, 2));
+        }
+      }
+
+      grid[r][col] = terrainBase - valleyCut + floodplainLift - tribCut;
     }
   }
 
@@ -2814,22 +2923,23 @@ function spawnParticle() {
   const braids = window._braidPaths || [];
   const tribs  = window._tribPaths  || [];
 
-  // ── Tributary particles (15% of spawns) ──────────────────
-  // Tributaries flow headwater→confluence, so particles travel
-  // from path[0] (source) toward path[end] (confluence with mainstem).
-  if (tribs.length && Math.random() < 0.15) {
+  // ── Tributary particles (18% of spawns) ──────────────────
+  // Same color as mainstem — they are the same water system.
+  // Slightly slower + smaller streaks (lower discharge = less momentum).
+  if (tribs.length && Math.random() < 0.18) {
     const path = tribs[Math.floor(Math.random() * tribs.length)];
     if (path && path.length > 8) {
       return {
-        pos: 0, // always start at headwater tip
+        pos:          0,  // start at headwater tip, flow toward confluence
         path,
-        channelIndex: -2, // sentinel: tributary
-        isTrib: true,
-        baseSpeed: 0.55 + Math.random() * 0.25, // slightly slower than mainstem
-        alpha: 0.38 + Math.random() * 0.35,
-        size: 0.45 + Math.random() * 0.55,       // slightly smaller streaks
-        seed: Math.random() * 1000,
-        trailLen: 4
+        channelIndex: -2, // sentinel: tributary (not braid, not mainstem)
+        isTrib:       true,
+        baseSpeed:    0.50 + Math.random() * 0.22, // slightly slower
+        alpha:        0.42 + Math.random() * 0.38, // same alpha range as mainstem
+        size:         0.50 + Math.random() * 0.60, // slightly smaller
+        seed:         Math.random() * 1000,
+        trailLen:     4,
+        useTribColor: false, // false = use same color as mainstem particles
       };
     }
   }
@@ -3084,58 +3194,98 @@ function buildMilestones() {
   const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
     ? window._timelineMilestones : [];
 
-  // Size the whole section from the milestone count so the watershed has
-  // room to grow from a narrow headwater to a mature mouth.
-  const spacing = isMobile() ? 230 : 300;
-  const targetH = Math.max(560, 480 + MILESTONES.length * spacing);
-  inner.style.height = targetH + 'px';
+  // ── Fixed height — tributaries draw inside canvas, never expand section ──
+  const FIXED_H = isMobile() ? 520 : 680;
+  inner.style.height = FIXED_H + 'px';
 
   resizeTopo(); resizeRiverBase(); resizeRiver();
-  layout = buildLayout(topoW || inner.clientWidth, targetH, MILESTONES);
+  layout = buildLayout(topoW || inner.clientWidth, FIXED_H, MILESTONES);
   drawTopo();
   drawRiverBase();
 
-  if (milestoneObserver) milestoneObserver.disconnect();
-  milestoneObserver = new IntersectionObserver(entries => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const el = entry.target;
-      if (el.classList.contains('jrn-in-view')) return;
-      el.classList.add('jrn-in-view', 'jrn-pulse');
-      const idx = +el.dataset.idx;
-      const c = layout.confluences[idx];
-      if (c) flashConfluence(c);
-      milestoneObserver.unobserve(el);
-    });
-  }, { threshold: 0.5, rootMargin: '0px 0px -10% 0px' });
+  // ── Hint label ─────────────────────────────────────────────────────
+  if (MILESTONES.length) {
+    const hint = document.createElement('div');
+    hint.className = 'jrn-trib-hint';
+    hint.textContent = 'Hover over tributaries to explore milestones';
+    wrap.appendChild(hint);
+  }
 
-  layout.confluences.forEach((c, i) => {
-    const m = c.milestone;
-    const yPct = (c.y / targetH * 100).toFixed(2) + '%';
-    const side = c.side === 1 ? 'r' : 'l';
+  // ── Popup ──────────────────────────────────────────────────────────
+  let popup = document.getElementById('jrn-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'jrn-popup';
+    popup.className = 'jrn-popup';
+    wrap.appendChild(popup);
+  }
 
-    const anchor = document.createElement('div');
-    anchor.className = 'jrn-anchor ' + (c.major ? 'jrn-major' : 'jrn-minor');
-    anchor.style.top = yPct;
-    anchor.style.left = (c.x / (topoW || inner.clientWidth) * 100).toFixed(2) + '%';
-    anchor.dataset.idx = i;
-    anchor.title = m.title || '';
+  if (!layout || !layout.confluences.length) return;
 
-    const card = document.createElement('div');
-    card.className = 'jrn-card jrn-side-' + side;
-    // Show elevation badge if set (e.g. "3500 m")
-    const elevLabel = m.elevation ? m.elevation + ' m' : '';
-    card.innerHTML =
-      (elevLabel ? `<div class="jrn-card-elev">${esc(elevLabel)}</div>` : '') +
-      (m.date ? `<div class="jrn-card-date">${esc(m.date)}</div>` : '') +
-      (m.title ? `<div class="jrn-card-title">${esc(m.title)}</div>` : '') +
-      (m.description ? `<div class="jrn-card-desc">${esc(m.description)}</div>` : '');
+  // Pre-sample tributary paths for hit testing
+  const hitPaths = layout.confluences.map(conf => ({
+    conf,
+    pts: samplePath(conf.tribPath || [], conf.major ? 60 : 36),
+  }));
 
-    anchor.innerHTML = '<div class="jrn-anchor-dot"></div>';
-    anchor.appendChild(card);
-    wrap.appendChild(anchor);
-    milestoneObserver.observe(anchor);
+  const HIT_R = isMobile() ? 22 : 16;
+  let activeConf = null;
+
+  function cxy(e) {
+    const r = (document.getElementById('jrn-particle') || e.target).getBoundingClientRect();
+    return {
+      x: (e.touches ? e.touches[0].clientX : e.clientX) - r.left,
+      y: (e.touches ? e.touches[0].clientY : e.clientY) - r.top,
+    };
+  }
+
+  function findHit(mx, my) {
+    for (const hp of hitPaths)
+      for (const pt of hp.pts)
+        if (Math.hypot(mx - pt.x, my - pt.y) < HIT_R) return hp.conf;
+    return null;
+  }
+
+  function showPopup(conf, mx, my) {
+    const m = conf.milestone || {};
+    const elev = m.elevation ? m.elevation + ' m' : '';
+    const html = [
+      elev        ? `<div class="jrn-popup-elev">${esc(elev)}</div>`        : '',
+      m.date      ? `<div class="jrn-popup-date">${esc(m.date)}</div>`      : '',
+      m.title     ? `<div class="jrn-popup-title">${esc(m.title)}</div>`    : '',
+      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : '',
+      `<span class="jrn-popup-badge${conf.major?'':' jrn-minor-badge'}">${conf.major?'Major Tributary':'Tributary'}</span>`,
+    ].join('');
+    popup.innerHTML = html;
+    popup.classList.add('show');
+    const el = document.getElementById('jrn-particle') || inner;
+    const cw = el.offsetWidth, ch = el.offsetHeight;
+    let px = mx + 16, py = my - 60;
+    if (px + 210 > cw) px = mx - 220;
+    if (py < 4) py = 4;
+    if (py > ch - 20) py = ch - 110;
+    popup.style.left = px + 'px';
+    popup.style.top  = py + 'px';
+  }
+
+  function hide() { popup.classList.remove('show'); activeConf = null; }
+
+  // Wire to particle canvas (topmost layer)
+  const pc = document.getElementById('jrn-particle');
+  if (!pc) return;
+  pc.addEventListener('mousemove', e => {
+    const {x,y} = cxy(e);
+    const f = findHit(x,y);
+    if (f !== activeConf) { activeConf = f; f ? showPopup(f,x,y) : hide(); }
+    else if (f) showPopup(f,x,y);
+    pc.style.cursor = f ? 'crosshair' : '';
   });
+  pc.addEventListener('mouseleave', hide);
+  pc.addEventListener('touchstart', e => {
+    const {x,y} = cxy(e);
+    const f = findHit(x,y);
+    f ? showPopup(f,x,y) : hide();
+  }, {passive:true});
 }
 function esc(str) {
   const d = document.createElement('div');
