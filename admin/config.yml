@@ -78,11 +78,21 @@ collections:
             required: false
             hint: "Each milestone appears as a card on the horizontal timeline. Drag to reorder."
             fields:
-              - { label: "Year", name: "year", widget: "string", hint: "e.g. 2024" }
-              - { label: "Icon (emoji)", name: "icon", widget: "string", default: "📌" }
-              - { label: "Title", name: "title", widget: "string" }
-              - { label: "Subtitle", name: "sub", widget: "string", hint: "e.g. Tribhuvan University" }
-              - { label: "Detail (shown when clicked)", name: "detail", widget: "text", required: false }
+              - { label: "Year / Date", name: "year", widget: "string", hint: "e.g. 2024 or Jan 2024", required: true }
+              - { label: "Display Date (optional)", name: "date", widget: "string", required: false, hint: "Shown on card — e.g. March 2024. Falls back to Year if empty." }
+              - label: "Milestone Type"
+                name: "type"
+                widget: "select"
+                required: false
+                default: "minor"
+                hint: "Major milestones generate a wider tributary and larger anchor dot."
+                options:
+                  - { label: "Minor (standard tributary)", value: "minor" }
+                  - { label: "Major (wider tributary, larger dot)", value: "major" }
+              - { label: "Title", name: "title", widget: "string", required: false }
+              - { label: "Description", name: "description", widget: "text", required: false, hint: "Shown on the card when expanded." }
+              - { label: "Subtitle / Institution", name: "sub", widget: "string", required: false, hint: "e.g. Tribhuvan University" }
+              - { label: "Icon (emoji)", name: "icon", widget: "string", required: false, default: "📌" }
           - label: "── Statistics Counter Bar ──"
             name: "statsLabel"
             widget: "hidden"
