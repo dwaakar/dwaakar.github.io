@@ -277,12 +277,15 @@
     .jrn-trib-hint{position:absolute;bottom:1.8rem;left:50%;transform:translateX(-50%);
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
-    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
+    .jrn-popup{position:absolute;z-index:10;pointer-events:auto;
       background:var(--surface);border:1px solid var(--border);
       border-radius:10px;padding:.75rem .95rem;width:200px;
       box-shadow:0 8px 32px rgba(0,0,0,.14);
       opacity:0;transition:opacity .15s;font-size:.8rem}
     .jrn-popup.show{opacity:1}
+    .jrn-popup-close{position:absolute;top:.38rem;right:.42rem;border:0;background:none;color:var(--ink2);font-size:1rem;line-height:1;cursor:pointer;padding:.1rem .25rem;opacity:.65}
+    .jrn-popup-close:hover{opacity:1}
+    .jrn-popup-body{padding-right:.7rem}
     .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
       color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
     .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
@@ -1926,7 +1929,7 @@ function theme() {
     contourBase: dark ? 'rgba(82,183,136,'  : 'rgba(27,70,45,',
     riverFill:   dark ? 'rgba(70,150,215,'  : 'rgba(20,95,175,',
     riverCore:   dark ? 'rgba(150,205,255,' : 'rgba(15,70,140,',
-    tribFill:    dark ? 'rgba(70,150,215,'  : 'rgba(30,110,190,',
+    tribFill:    dark ? 'rgba(70,150,215,'  : 'rgba(20,95,175,',
     particle:    dark ? 'rgba(255,255,255,' : 'rgba(15,75,150,',
     glow:        dark ? 'rgba(80,200,140,'  : 'rgba(30,120,200,',
     bgLabel:     dark ? 'rgba(17,20,16,0.82)' : 'rgba(247,245,240,0.82)',
@@ -2669,6 +2672,20 @@ function drawRiverBase() {
   baseCtx.clearRect(0, 0, baseW, baseH);
   const confluences = layout.confluences;
 
+  // All river channels are rendered through shared union masks. This prevents
+  // semi-transparent Canvas fills from darkening where mainstem, tributary,
+  // and braid polygons overlap. The network is coloured exactly once per layer.
+  const makeMask = () => {
+    const c = document.createElement('canvas');
+    c.width = baseW; c.height = baseH;
+    return c.getContext('2d');
+  };
+  const waterMask = makeMask();
+  const coreMask = makeMask();
+  const glowMask = makeMask();
+  const detailMask = makeMask();
+  const MASK = 'rgba(255,255,255,1)';
+
   // Tributaries — identical 4-layer pipeline as mainstem (glow, fill, core, thalweg).
   // Width = tribWidthMult × mainstem width at the confluence elevation.
   // major: 60–70% of mainstem; minor: 40–60% of mainstem.
@@ -2696,27 +2713,27 @@ function drawRiverBase() {
     };
 
     // Layer 1: outer soft glow
-    fillVariableWidthPath(baseCtx, pathPts,
+    fillVariableWidthPath(glowMask, pathPts,
       (i, len) => wFn(i, len) + 2.4,
-      t.glow + (c.major ? '0.060)' : '0.040)'));
+      MASK);
 
     // Layer 2: water body fill
-    fillVariableWidthPath(baseCtx, pathPts,
+    fillVariableWidthPath(waterMask, pathPts,
       (i, len) => wFn(i, len),
-      t.tribFill + (c.major ? '0.52)' : '0.40)'));
+      MASK);
 
     // Layer 3: inner core tint (0.42× of width — same ratio as mainstem)
-    fillVariableWidthPath(baseCtx, pathPts,
+    fillVariableWidthPath(coreMask, pathPts,
       (i, len) => Math.max(0.4, wFn(i, len) * 0.42),
-      t.riverCore + '0.08)');
+      MASK);
 
     // Layer 4: thalweg centreline
     // Stroke width proportional to class — major 0.65px, minor 0.45px
-    baseCtx.beginPath();
-    pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-    baseCtx.strokeStyle = t.riverCore + (c.major ? '0.24)' : '0.17)');
-    baseCtx.lineWidth   = c.major ? 0.65 : 0.45;
-    baseCtx.stroke();
+    detailMask.beginPath();
+    pathPts.forEach((p, i) => i === 0 ? detailMask.moveTo(p.x, p.y) : detailMask.lineTo(p.x, p.y));
+    detailMask.strokeStyle = MASK;
+    detailMask.lineWidth   = c.major ? 0.65 : 0.45;
+    detailMask.stroke();
   });
 
   // Full mainstem polyline
@@ -2769,21 +2786,21 @@ function drawRiverBase() {
       if (activePts.length >= 6) {
         // Divergent channels use the exact same water palette/opacity as the mainstem.
         // A matching soft glow is added so they do not appear visually faded.
-        fillVariableWidthPath(baseCtx, activePts,
+        fillVariableWidthPath(glowMask, activePts,
           (j) => Math.max(1.2, sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale)) + 2.4,
-          t.glow + '0.060)');
-        fillVariableWidthPath(baseCtx, activePts,
+          MASK);
+        fillVariableWidthPath(waterMask, activePts,
           (j) => Math.max(1.2, sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale)),
-          t.riverFill + '0.54)');
-        fillVariableWidthPath(baseCtx, activePts,
+          MASK);
+        fillVariableWidthPath(coreMask, activePts,
           (j) => Math.max(0.8, sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale) * 0.42),
-          t.riverCore + '0.095)');
+          MASK);
         // Subtle bank edge only; the filled polygon is the river.
-        baseCtx.beginPath();
-        activePts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-        baseCtx.strokeStyle = t.riverCore + '0.16)';
-        baseCtx.lineWidth = 0.55;
-        baseCtx.stroke();
+        detailMask.beginPath();
+        activePts.forEach((p, i) => i === 0 ? detailMask.moveTo(p.x, p.y) : detailMask.lineTo(p.x, p.y));
+        detailMask.strokeStyle = MASK;
+        detailMask.lineWidth = 0.55;
+        detailMask.stroke();
       }
       activePts.length = 0;
     };
@@ -2813,22 +2830,53 @@ function drawRiverBase() {
     const n = i / Math.max(1, len - 1);
     return 0.7 + 0.35 * Math.sin(n * 31.7 + 0.8) + 0.18 * Math.sin(n * 83.1);
   };
-  fillVariableWidthPath(baseCtx, mainPts,
+  fillVariableWidthPath(glowMask, mainPts,
     (i) => mainWidthAt(mainPts[i].y) + 2.4 + edgeJitter(i, mainPts.length) * 0.55,
-    t.glow + '0.085)');
-  fillVariableWidthPath(baseCtx, mainPts,
+    MASK);
+  fillVariableWidthPath(waterMask, mainPts,
     (i) => mainWidthAt(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28,
-    t.riverFill + '0.54)');
-  fillVariableWidthPath(baseCtx, mainPts,
+    MASK);
+  fillVariableWidthPath(coreMask, mainPts,
     (i) => Math.max(0.8, mainWidthAt(mainPts[i].y) * 0.42),
-    t.riverCore + '0.095)');
+    MASK);
 
   // A restrained moving-water highlight follows the full channel centreline.
-  baseCtx.beginPath();
-  mainPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-  baseCtx.strokeStyle = t.riverCore + '0.28)';
-  baseCtx.lineWidth = 0.85;
-  baseCtx.stroke();
+  detailMask.beginPath();
+  mainPts.forEach((p, i) => i === 0 ? detailMask.moveTo(p.x, p.y) : detailMask.lineTo(p.x, p.y));
+  detailMask.strokeStyle = MASK;
+  detailMask.lineWidth = 0.85;
+  detailMask.stroke();
+
+  // Composite each union exactly once. This is the key anti-darkening step:
+  // overlapping channels share one alpha footprint instead of stacking alpha.
+  const paintMask = (mask, color) => {
+    baseCtx.save();
+    baseCtx.globalCompositeOperation = 'source-over';
+    baseCtx.fillStyle = color;
+    baseCtx.globalAlpha = 1;
+    baseCtx.globalCompositeOperation = 'source-over';
+    baseCtx.drawImage(mask.canvas, 0, 0);
+    baseCtx.globalCompositeOperation = 'source-in';
+    baseCtx.fillRect(0, 0, baseW, baseH);
+    baseCtx.restore();
+  };
+
+  // Use a temporary canvas for each layer so the mask itself controls opacity.
+  const compositeLayer = (mask, color) => {
+    const layer = document.createElement('canvas');
+    layer.width = baseW; layer.height = baseH;
+    const lc = layer.getContext('2d');
+    lc.fillStyle = color;
+    lc.fillRect(0, 0, baseW, baseH);
+    lc.globalCompositeOperation = 'destination-in';
+    lc.drawImage(mask.canvas, 0, 0);
+    baseCtx.drawImage(layer, 0, 0);
+  };
+
+  compositeLayer(glowMask, t.glow + '0.070)');
+  compositeLayer(waterMask, t.riverFill + '0.54)');
+  compositeLayer(coreMask, t.riverCore + '0.095)');
+  compositeLayer(detailMask, t.riverCore + '0.20)');
 }
 
 // Brief, elegant brighten of one confluence + its tributary — used by the
@@ -3230,34 +3278,66 @@ function buildMilestones() {
 
   const HIT_R = isMobile() ? 22 : 16;
   let activeConf = null;
+  let hoverConf = null;
 
   function cxy(e) {
     const r = (document.getElementById('jrn-particle') || e.target).getBoundingClientRect();
-    return {
-      x: (e.touches ? e.touches[0].clientX : e.clientX) - r.left,
-      y: (e.touches ? e.touches[0].clientY : e.clientY) - r.top,
-    };
+    const src = e.touches && e.touches.length ? e.touches[0] : e;
+    return { x: src.clientX - r.left, y: src.clientY - r.top };
   }
 
   function findHit(mx, my) {
-    for (const hp of hitPaths)
-      for (const pt of hp.pts)
-        if (Math.hypot(mx - pt.x, my - pt.y) < HIT_R) return hp.conf;
-    return null;
+    let best = null, bestD = HIT_R;
+    for (const hp of hitPaths) {
+      for (const pt of hp.pts) {
+        const d = Math.hypot(mx - pt.x, my - pt.y);
+        if (d < bestD) { bestD = d; best = hp.conf; }
+      }
+    }
+    return best;
   }
 
-  function showPopup(conf, mx, my) {
-    const m = conf.milestone || {};
-    const elev = m.elevation ? m.elevation + ' m' : '';
-    const html = [
-      elev        ? `<div class="jrn-popup-elev">${esc(elev)}</div>`        : '',
-      m.date      ? `<div class="jrn-popup-date">${esc(m.date)}</div>`      : '',
-      m.title     ? `<div class="jrn-popup-title">${esc(m.title)}</div>`    : '',
-      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : '',
-      `<span class="jrn-popup-badge${conf.major?'':' jrn-minor-badge'}">${conf.major?'Major Tributary':'Tributary'}</span>`,
-    ].join('');
-    popup.innerHTML = html;
-    popup.classList.add('show');
+  // Lightweight hover highlight: the river itself is never recoloured;
+  // only a temporary, subtle interaction stroke is drawn on a separate canvas.
+  let highlightCanvas = document.getElementById('jrn-trib-highlight');
+  if (!highlightCanvas) {
+    highlightCanvas = document.createElement('canvas');
+    highlightCanvas.id = 'jrn-trib-highlight';
+    highlightCanvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:8;pointer-events:none;';
+    wrap.appendChild(highlightCanvas);
+  }
+  const hctx = highlightCanvas.getContext('2d');
+
+  function resizeHighlight() {
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const r = wrap.getBoundingClientRect();
+    highlightCanvas.width = Math.max(1, Math.round(r.width * dpr));
+    highlightCanvas.height = Math.max(1, Math.round(r.height * dpr));
+    hctx.setTransform(dpr,0,0,dpr,0,0);
+    drawHighlight();
+  }
+
+  function drawHighlight() {
+    if (!hctx) return;
+    const r = wrap.getBoundingClientRect();
+    hctx.clearRect(0,0,r.width,r.height);
+    if (!hoverConf || !hoverConf.tribPath) return;
+    const pts = samplePath(hoverConf.tribPath, hoverConf.major ? 70 : 48);
+    if (pts.length < 2) return;
+    hctx.save();
+    hctx.beginPath();
+    pts.forEach((p,i) => i ? hctx.lineTo(p.x,p.y) : hctx.moveTo(p.x,p.y));
+    hctx.strokeStyle = theme().riverCore + '0.42)';
+    hctx.lineWidth = Math.max(2.2, (hoverConf.major ? 1.8 : 1.4) + (isMobile() ? 1 : 0));
+    hctx.lineCap = 'round';
+    hctx.lineJoin = 'round';
+    hctx.shadowBlur = 4;
+    hctx.shadowColor = theme().riverCore + '0.22)';
+    hctx.stroke();
+    hctx.restore();
+  }
+
+  function positionPopup(conf, mx, my) {
     const el = document.getElementById('jrn-particle') || inner;
     const cw = el.offsetWidth, ch = el.offsetHeight;
     let px = mx + 16, py = my - 60;
@@ -3265,27 +3345,80 @@ function buildMilestones() {
     if (py < 4) py = 4;
     if (py > ch - 20) py = ch - 110;
     popup.style.left = px + 'px';
-    popup.style.top  = py + 'px';
+    popup.style.top = py + 'px';
   }
 
-  function hide() { popup.classList.remove('show'); activeConf = null; }
+  function showPopup(conf, mx, my) {
+    const m = conf.milestone || {};
+    const elev = m.elevation ? m.elevation + ' m' : '';
+    const html = [
+      `<button class="jrn-popup-close" type="button" aria-label="Close">×</button>`,
+      `<div class="jrn-popup-body">`,
+      elev ? `<div class="jrn-popup-elev">${esc(elev)}</div>` : '',
+      m.date ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
+      m.title ? `<div class="jrn-popup-title">${esc(m.title)}</div>` : '',
+      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : '',
+      `<span class="jrn-popup-badge${conf.major?'':' jrn-minor-badge'}">${conf.major?'Major Tributary':'Tributary'}</span>`,
+      `</div>`
+    ].join('');
+    popup.innerHTML = html;
+    popup.classList.add('show');
+    positionPopup(conf, mx, my);
+    const close = popup.querySelector('.jrn-popup-close');
+    if (close) close.addEventListener('click', e => { e.stopPropagation(); hide(); });
+  }
 
-  // Wire to particle canvas (topmost layer)
+  function hide() {
+    popup.classList.remove('show');
+    activeConf = null;
+  }
+
   const pc = document.getElementById('jrn-particle');
   if (!pc) return;
+
   pc.addEventListener('mousemove', e => {
     const {x,y} = cxy(e);
     const f = findHit(x,y);
-    if (f !== activeConf) { activeConf = f; f ? showPopup(f,x,y) : hide(); }
-    else if (f) showPopup(f,x,y);
-    pc.style.cursor = f ? 'crosshair' : '';
+    hoverConf = f;
+    drawHighlight();
+    pc.style.cursor = f ? 'pointer' : '';
+    // Hover only highlights; it NEVER opens the information dialog.
   });
-  pc.addEventListener('mouseleave', hide);
+
+  pc.addEventListener('mouseleave', () => {
+    hoverConf = null;
+    drawHighlight();
+    pc.style.cursor = '';
+  });
+
+  pc.addEventListener('click', e => {
+    const {x,y} = cxy(e);
+    const f = findHit(x,y);
+    if (f) {
+      activeConf = f;
+      showPopup(f,x,y);
+    } else {
+      hide();
+    }
+  });
+
   pc.addEventListener('touchstart', e => {
     const {x,y} = cxy(e);
     const f = findHit(x,y);
-    f ? showPopup(f,x,y) : hide();
+    if (f) {
+      activeConf = f;
+      showPopup(f,x,y);
+    } else {
+      hide();
+    }
   }, {passive:true});
+
+  document.addEventListener('click', e => {
+    if (!popup.contains(e.target) && e.target !== pc && !pc.contains(e.target)) hide();
+  });
+
+  window.addEventListener('resize', resizeHighlight, {passive:true});
+  resizeHighlight();
 }
 function esc(str) {
   const d = document.createElement('div');
