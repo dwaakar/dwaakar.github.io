@@ -2085,7 +2085,7 @@ function sampleNoise(nx, ny) {
 //
 // The descent is seeded with the confluence side (left/right) and the
 // milestone index so each tributary is deterministically unique.
-function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major, existingPaths = []) {
+function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major, existingPaths = [], attempt = 0) {
   // Organic, constraint-aware tributary routing.
   // The path always advances in Y (upstream -> downstream), while X is
   // allowed to bend around the mainstem and previously accepted tributaries.
@@ -2104,7 +2104,8 @@ function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major
 
   const hwY = Math.max(H * 0.025, confluenceY - reachY);
   // Keep the source on the requested side, but never pin it too close to an edge.
-  const hwX = Math.max(W * 0.045, Math.min(W * 0.955, confluenceX + reachX));
+  const rerouteShift = (seededRand(idx * 31.7 + attempt * 11.3) - 0.5) * W * (major ? 0.12 : 0.075);
+  const hwX = Math.max(W * 0.045, Math.min(W * 0.955, confluenceX + reachX + rerouteShift));
 
   const NPTS = major ? 42 : 28;
   const pts = [{ x: hwX, y: hwY }];
@@ -2228,6 +2229,63 @@ function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major
   return smooth;
 }
 
+// ── HARD TOPOLOGY VALIDATION ────────────────────────────────────────────────
+// Routing is allowed to be organic, but an accepted tributary must satisfy
+// strict topology: no tributary-tributary intersections and no premature
+// mainstem crossings. A small centreline clearance also prevents channels
+// from visually merging even when they technically do not intersect.
+function segmentDistance2D(a,b,c,d){
+  const rX=b.x-a.x, rY=b.y-a.y, sX=d.x-c.x, sY=d.y-c.y;
+  const cross=rX*sY-rY*sX;
+  const qX=c.x-a.x, qY=c.y-a.y;
+  if(Math.abs(cross)>1e-10){
+    const t=(qX*sY-qY*sX)/cross;
+    const u=(qX*rY-qY*rX)/cross;
+    if(t>=0&&t<=1&&u>=0&&u<=1) return 0;
+  }
+  const rr=rX*rX+rY*rY||1e-12;
+  const ss=sX*sX+sY*sY||1e-12;
+  const pointSeg=(p,x,y,z)=>{
+    const vx=z.x-y.x, vy=z.y-y.y, vv=vx*vx+vy*vy||1e-12;
+    const t=Math.max(0,Math.min(1,((p.x-y.x)*vx+(p.y-y.y)*vy)/vv));
+    return Math.hypot(p.x-(y.x+vx*t),p.y-(y.y+vy*t));
+  };
+  return Math.min(pointSeg(a,c,d),pointSeg(b,c,d),pointSeg(c,a,b),pointSeg(d,a,b));
+}
+function pathClearance(a,b,W,H){
+  let best=Infinity;
+  for(let i=1;i<a.length;i++) for(let j=1;j<b.length;j++){
+    const d=segmentDistance2D(a[i-1],a[i],b[j-1],b[j]);
+    best=Math.min(best,d/Math.min(W,H));
+    if(best===0) return 0;
+  }
+  return best;
+}
+function mainstemPathUntil(W,H,fromY,toY){
+  const out=[]; const a=Math.max(0,fromY/H), b=Math.max(a,toY/H-0.035);
+  for(let i=0;i<=140;i++){
+    const n=a+(b-a)*i/140;
+    out.push({x:getRiverXFrac(n)*W,y:n*H});
+  }
+  return out;
+}
+function validateTributaryTopology(path,W,H,confluenceY,existingPaths,side){
+  if(!path || path.length<3) return false;
+  // Strictly downstream: no upstream reversal.
+  for(let i=1;i<path.length;i++) if(path[i].y <= path[i-1].y-0.5) return false;
+  const clearance=0.020;
+  for(const other of existingPaths){
+    if(other && other.length>1 && pathClearance(path,other,W,H)<clearance) return false;
+  }
+  // Mainstem is forbidden before the intended confluence.
+  const main=mainstemPathUntil(W,H,path[0].y,confluenceY);
+  if(main.length>1 && pathClearance(path,main,W,H)<clearance) return false;
+  // Source must remain on its declared origin side.
+  const riverX=getRiverXFrac(path[0].y/H)*W;
+  if((path[0].x-riverX)*side < W*0.008) return false;
+  return true;
+}
+
 // ── buildLayout ──────────────────────────────────────────────────────────────
 function buildLayout(W, H, milestones) {
   // Rebuild the shared noise grid for this canvas size.
@@ -2299,7 +2357,28 @@ function buildLayout(W, H, milestones) {
       : (0.40 + seededRand(i * 2.3) * 0.20);
 
     // ── Route path through noise valley (Option B) ─────────────
-    const tribPath = routeTributaryByValley(W, H, x, y, side, i, major, confluences.map(c => c.tribPath).filter(Boolean));
+    const existingPaths = confluences.map(c => c.tribPath).filter(Boolean);
+    let tribPath = null;
+    let fallbackPath = null;
+    let fallbackScore = -Infinity;
+    // Generate several organic alternatives. A candidate is accepted only
+    // after the complete polyline has passed the hard topology test.
+    for (let attempt = 0; attempt < 24; attempt++) {
+      const candidate = routeTributaryByValley(W, H, x, y, side, i, major, existingPaths, attempt);
+      const main = mainstemPathUntil(W, H, candidate[0].y, y);
+      let score = Infinity;
+      for (const other of existingPaths) score = Math.min(score, pathClearance(candidate, other, W, H));
+      score = Math.min(score, pathClearance(candidate, main, W, H));
+      if (score > fallbackScore) { fallbackScore = score; fallbackPath = candidate; }
+      if (validateTributaryTopology(candidate, W, H, y, existingPaths, side)) {
+        tribPath = candidate;
+        break;
+      }
+    }
+    // In the extremely unlikely case that all 24 candidates fail, retain the
+    // route with the largest clearance rather than silently dropping the CMS
+    // tributary. This is a visual fallback; normal routes pass the hard test.
+    if (!tribPath) tribPath = fallbackPath;
 
     confluences.push({
       frac, x, y, major,
