@@ -277,6 +277,10 @@
     .jrn-trib-hint{position:absolute;bottom:1.8rem;left:50%;transform:translateX(-50%);
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
+
+    .jrn-milestone-dot{position:absolute;width:13px;height:13px;padding:0;border-radius:50%;transform:translate(-50%,-50%);background:var(--surface);border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.16);pointer-events:auto;transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
+    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%) scale(1.28);background:var(--accent);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 12px rgba(0,0,0,.18)}
+    .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
     .jrn-popup{position:absolute;z-index:10;pointer-events:none;
       background:var(--surface);border:1px solid var(--border);
       border-radius:10px;padding:.75rem .95rem;width:200px;
@@ -521,7 +525,7 @@
       <!-- Layer 2: Flow particles, redrawn every frame -->
       <canvas id="jrn-river" class="jrn-layer"></canvas>
 
-      <!-- Layer 3: Milestone anchors + cards (populated by JS from CMS data) -->
+      <!-- Layer 3: CMS milestone anchors on the mainstem + expandable cards -->
       <div id="jrn-milestones" class="jrn-layer"></div>
 
     </div>
@@ -1229,8 +1233,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   }
 
   // ── JOURNEY / RIVER TIMELINE ─────────────────────────────
-  // Every visible piece of the Journey section is CMS-driven: the
-  // milestones themselves (type/title/date/description) and the
+  // Milestone content is CMS-driven; elevation controls placement on
+  // the mainstem. Tributaries are fixed visual geometry in the Journey.
   // surrounding labels. Old field names (year/sub/detail) are kept as
   // fallbacks so existing CMS entries keep working.
   document.getElementById('jrn-toggle-label-text').textContent = safe(s.journeyLabel || 'Explore My Journey');
@@ -1243,11 +1247,11 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   if (s.milestones && s.milestones.length) {
     window._timelineMilestones = s.milestones.map(m => ({
-      type:        (m.type === 'major') ? 'major' : 'minor',
       title:       m.title || '',
       date:        m.date  || m.year   || '',
       description: m.description || m.detail || m.sub || '',
-      elevation:   m.elevation ? +m.elevation : null, // metres; null = auto-place
+      elevation:   m.elevation !== undefined && m.elevation !== ''
+        ? +m.elevation : null,
     }));
     // Rebuild the river network with CMS milestones
     if (window._buildRoad) window._buildRoad();
@@ -1872,8 +1876,10 @@ function setOpenHeight() {
 }
 
 function ensureJourneyReady() {
-  // Keep the Journey independent from CMS timing and accordion visibility.
-  // Rendering errors must not prevent the section itself from opening.
+  // The Journey cannot be sized correctly while its accordion body is collapsed:
+  // canvas.offsetHeight is 0 when .jrn-body has max-height:0. Therefore this
+  // function only prepares the engines; the actual canvas sizing happens after
+  // the body is opened and has a real layout height.
   try {
     initEngines();
     if (typeof window._buildRoad === 'function') window._buildRoad();
@@ -1883,6 +1889,28 @@ function ensureJourneyReady() {
     if (inner) inner.style.minHeight = '560px';
     if (body) body.style.setProperty('--jrn-open-h', (inner ? Math.max(inner.scrollHeight, 560) : 560) + 'px');
   }
+}
+
+function refreshJourneyAfterOpen() {
+  // IMPORTANT: canvas dimensions are zero while the accordion is collapsed.
+  // Re-measure only after the browser has laid out the opened Journey.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      try {
+        resizeTopo();
+        resizeRiverBase();
+        resizeRiver();
+        drawTopo();
+        drawRiverBase();
+        buildMilestones();
+        setOpenHeight();
+        revealSection();
+      } catch (err) {
+        console.error('[Journey] post-open render failed:', err);
+        if (inner) inner.classList.add('jrn-revealed');
+      }
+    });
+  });
 }
 
 if (toggle && body) {
@@ -1896,7 +1924,9 @@ if (toggle && body) {
       body.classList.add('open');
       toggle.setAttribute('aria-expanded', 'true');
       if (hintEl) hintEl.textContent = hintEl.dataset.collapseText || 'Click to collapse';
-      setTimeout(revealSection, 50);
+      // Do not render from the collapsed state. The canvas dimensions are zero
+      // until the browser has laid out the opened accordion.
+      refreshJourneyAfterOpen();
       body.addEventListener('transitionend', function onEnd(e) {
         if (e.propertyName !== 'max-height') return;
         body.style.maxHeight = 'none';
@@ -2089,325 +2119,115 @@ function sampleNoise(nx, ny) {
   return v00*(1-cf)*(1-rf) + v10*cf*(1-rf) + v01*(1-cf)*rf + v11*cf*rf;
 }
 
-// ── Option B: route tributary path by descending the noise gradient ─────────
-// Starting from a headwater point above the confluence, we perform gradient
-// descent on the noise field — stepping each point toward the steepest downhill
-// neighbour. This naturally follows valleys in the noise terrain, giving
-// contour-aligned paths without requiring explicit valley extraction.
-//
-// The descent is seeded with the confluence side (left/right) and the
-// milestone index so each tributary is deterministically unique.
-function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major, existingPaths = [], attempt = 0) {
-  // Organic, constraint-aware tributary routing.
-  // The path always advances in Y (upstream -> downstream), while X is
-  // allowed to bend around the mainstem and previously accepted tributaries.
-  // Major tributaries get a longer upstream reach; they are no longer forced
-  // to remain in a straight highland corridor.
-  const targetNX = confluenceX / W;
-  const targetNY = confluenceY / H;
+// ── HAND-AUTHORED WATERSHED TRIBUTARIES ────────────────────────────────────
+// The tributary network is deliberately NOT generated from CMS milestones.
+// Each branch has a small upstream catchment, its own irregular meander, and
+// a controlled confluence with the mainstem.  The geometry is expressed as a
+// smooth lateral offset from the same mainstem centreline, which makes every
+// tributary read as part of one drainage system instead of as a free-floating
+// decorative curve.
+const HARD_TRIBUTARIES = [
+  // major: longer, broader, slightly more sinuous
+  { id:'t1', major:true,  frac:0.185, source:0.035, side:-1, width:0.64,
+    offsets:[0.220,0.205,0.235,0.255,0.215,0.180,0.145,0.095,0.045,0.000] },
+  { id:'t2', major:false, frac:0.292, source:0.0600, side: 1, width:0.49,
+    offsets:[0.310,0.340,0.315,0.275,0.230,0.185,0.125,0.075,0.035,0.000] },
+  { id:'t3', major:false, frac:0.405, source:0.2337, side:-1, width:0.46,
+    offsets:[0.175,0.145,0.185,0.150,0.115,0.078,0.035,0.000] },
+  { id:'t4', major:true,  frac:0.535, source:0.4876, side: 1, width:0.62,
+    offsets:[0.205,0.235,0.195,0.225,0.165,0.120,0.075,0.035,0.000] },
+  { id:'t5', major:false, frac:0.645, source:0.60137, side:-1, width:0.50,
+    offsets:[0.300,0.270,0.285,0.240,0.190,0.135,0.085,0.040,0.000] },
+  { id:'t6', major:false, frac:0.755, source:0.675, side: 1, width:0.45,
+    offsets:[0.125,0.108,0.145,0.112,0.080,0.050,0.024,0.000] },
+  { id:'t7', major:false, frac:0.845, source:0.755, side: 1, width:0.48,
+    offsets:[0.185,0.220,0.165,0.190,0.125,0.075,0.030,0.000] }
+];
 
-  // Watershed-style tributaries: keep all tributaries relatively short.
-  // Major tributaries are only modestly longer than minor tributaries; we do
-  // not force them to originate from the extreme highlands.
-  const reachFrac = major
-    ? (0.235 + 0.045 * seededRand(idx * 7.31 + 2.1))
-    : (0.145 + 0.030 * seededRand(idx * 7.31 + 2.1));
-  const reachY = reachFrac * H * (isMobile() ? 0.72 : 1);
-  const reachX = (major ? 0.16 : 0.11) * W * side;
+// Smooth interpolation for the hand-authored offset profile.  Catmull-Rom
+// keeps the tributary bends flowing through the control values without the
+// angular joins that a polyline would create.
+function catmullRom(a,b,c,d,t){
+  const t2=t*t, t3=t2*t;
+  return 0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);
+}
 
-  const hwY = Math.max(H * 0.025, confluenceY - reachY);
-  // Keep the source on the requested side, but never pin it too close to an edge.
-  const rerouteShift = (seededRand(idx * 31.7 + attempt * 11.3) - 0.5) * W * (major ? 0.08 : 0.055);
-  const hwX = Math.max(W * 0.045, Math.min(W * 0.955, confluenceX + reachX + rerouteShift));
+function makeHardTributary(W,H,spec,index){
+  const source = Math.max(0.018, Math.min(spec.source, spec.frac - 0.018));
+  const n = spec.offsets.length;
+  const pts=[];
+  const samples = spec.major ? 64 : 50;
 
-  const NPTS = major ? 34 : 24;
-  const pts = [{ x: hwX, y: hwY }];
-  let cx = hwX / W;
-  let cy = hwY / H;
+  // The tributary is built as a gently meandering ribbon parallel to the
+  // local mainstem.  Because its lateral offset is always on one side and
+  // fades continuously to zero, the last section naturally folds into the
+  // mainstem instead of stabbing into it.
+  for(let i=0;i<samples;i++){
+    const t=i/(samples-1);
+    const norm=source + (spec.frac-source)*t;
+    const u=t*(n-1);
+    const k=Math.min(n-2,Math.floor(u));
+    const f=u-k;
+    const get=j=>spec.offsets[Math.max(0,Math.min(n-1,j))];
+    let off=catmullRom(get(k-1),get(k),get(k+1),get(k+2),f);
+    off=Math.max(0,off);
 
-  // Mainstem obstacle samples, excluding a small neighbourhood around the
-  // intended confluence. The tributary may touch the mainstem only at target.
-  const mainSamples = [];
-  const mainStart = Math.max(0.01, hwY / H);
-  const mainEnd = Math.min(0.97, targetNY);
-  const mainN = 90;
-  for (let k = 0; k <= mainN; k++) {
-    const ny = mainStart + (mainEnd - mainStart) * (k / mainN);
-    mainSamples.push({ x: getRiverXFrac(ny), y: ny });
+    // A very low-frequency, deterministic wiggle gives each branch a
+    // slightly different natural character without creating noise-like kinks.
+    const wiggle=(Math.sin(t*Math.PI*(2.0+index*0.23)+index*1.31)*0.006 +
+                  Math.sin(t*Math.PI*(3.1+index*0.17)-0.4)*0.0035) * (1-t);
+    off=Math.max(0,off+wiggle);
+
+    const mainX=getRiverXFrac(norm)*W;
+    pts.push({x:mainX + spec.side*off*W, y:norm*H});
   }
 
-  const obstaclePaths = existingPaths.filter(p => p && p.length > 1);
+  // Exact source and confluence anchors.
+  pts[0]={x:getRiverXFrac(source)*W + spec.side*spec.offsets[0]*W, y:source*H};
+  pts[pts.length-1]={x:getRiverXFrac(spec.frac)*W, y:spec.frac*H};
+  return pts;
+}
 
-  // Distance from a point to a polyline, returning nearest point and vector.
-  function nearestOnPath(px, py, path) {
-    let best = { d: Infinity, x: 0, y: 0, dx: 0, dy: 0 };
-    for (let i = 1; i < path.length; i++) {
-      const a = path[i - 1], b = path[i];
-      const ax = a.x / W, ay = a.y / H;
-      const bx = b.x / W, by = b.y / H;
-      const vx = bx - ax, vy = by - ay;
-      const vv = vx * vx + vy * vy || 1e-9;
-      const t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / vv));
-      const qx = ax + vx * t, qy = ay + vy * t;
-      const dx = px - qx, dy = py - qy;
-      const d = Math.hypot(dx * 1.45, dy);
-      if (d < best.d) best = { d, x: qx, y: qy, dx, dy };
-    }
-    return best;
-  }
-
-  // Low-frequency organic lateral preference: it creates broad irregular
-  // river bends rather than angular avoidance turns.
-  const organic = seededRand(idx * 19.17 + 4.2) * Math.PI * 2;
-  const lateralNoise = s =>
-    0.55 * Math.sin(s * 0.42 + organic) +
-    0.28 * Math.sin(s * 0.19 + organic * 1.7) +
-    0.17 * Math.sin(s * 0.83 + organic * 0.6);
-
-  for (let s = 1; s < NPTS; s++) {
-    const progress = s / (NPTS - 1);
-    // Strictly downstream Y progression. Never allow a tributary to flow back up.
-    const nextNY = hwY / H + (targetNY - hwY / H) * progress;
-    cy = Math.min(targetNY, nextNY);
-
-    // Preferred lateral position: smoothly interpolate toward the exact
-    // confluence, with a broad organic bend away from the straight line.
-    const straightX = (hwX / W) * (1 - progress) + targetNX * progress;
-    const bendAmp = (major ? 0.035 : 0.024) * Math.sin(Math.PI * progress);
-    let preferredX = straightX + lateralNoise(s) * bendAmp * (1 - progress * 0.25);
-
-    // Mild terrain/noise steering, deliberately secondary to destination and
-    // topology constraints. This gives the path a valley-like irregularity.
-    const eps = 1 / NOISE_COLS;
-    const gx = (sampleNoise(cx + eps, cy) - sampleNoise(cx - eps, cy)) / (2 * eps);
-    const terrainSide = Math.abs(gx) < 1e-5 ? 0 : -Math.sign(gx);
-    preferredX += terrainSide * 0.008 * Math.sin(Math.PI * progress);
-
-    // Collision avoidance. Obstacles repel the tributary laterally, with a
-    // smooth falloff. The final confluence zone is exempt so the path can join.
-    let avoid = 0;
-    const clearance = major ? 0.032 : 0.026;
-    const strength = 0.075;
-
-    // Mainstem: prevent touching/crossing it before the intended confluence.
-    if (progress < 0.90) {
-      const riverX = getRiverXFrac(cy);
-      const dx = cx - riverX;
-      const ad = Math.abs(dx);
-      if (ad < clearance * 1.35) {
-        // Always push back toward the tributary's originating side.
-        const dir = side > 0 ? 1 : -1;
-        const t = 1 - ad / (clearance * 1.35);
-        avoid += dir * strength * t * t;
-      }
-    }
-
-    // Previously accepted tributaries are hard obstacles. We use their whole
-    // paths, not just their confluence points, so no tributary can intersect.
-    for (const path of obstaclePaths) {
-      const near = nearestOnPath(cx, cy, path);
-      if (near.d < clearance) {
-        const sign = near.dx === 0 ? (side > 0 ? 1 : -1) : Math.sign(near.dx);
-        const t = 1 - near.d / clearance;
-        avoid += sign * strength * 1.35 * t * t;
-      }
-    }
-
-    // Apply the preferred destination plus avoidance. Clamp the lateral move
-    // so collision avoidance produces a broad S-bend rather than a sharp turn.
-    let desiredX = preferredX + avoid;
-    const maxLateralStep = 0.018 * (1.05 - 0.25 * progress);
-    const deltaX = desiredX - cx;
-    cx += Math.max(-maxLateralStep, Math.min(maxLateralStep, deltaX));
-    cx = Math.max(0.035, Math.min(0.965, cx));
-
-    pts.push({ x: cx * W, y: cy * H });
-  }
-
-  // Exact confluence. A final short blend is already created by the strong
-  // destination pull; this point guarantees the CMS milestone is honoured.
-  pts.push({ x: confluenceX, y: confluenceY });
-
-  // Smooth the generated polyline while preserving endpoints and strict Y order.
-  const smooth = pts.map((p, i) => {
-    if (i === 0 || i === pts.length - 1) return p;
-    const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+function buildHardTributaries(W,H){
+  return HARD_TRIBUTARIES.map((spec,i)=>{
+    const path=makeHardTributary(W,H,spec,i);
     return {
-      x: b.x * 0.52 + (a.x + c.x) * 0.24,
-      y: b.y
+      frac:spec.frac,
+      x:getRiverXFrac(spec.frac)*W,
+      y:spec.frac*H,
+      major:spec.major,
+      type:spec.major?'major':'minor',
+      side:spec.side,
+      milestone:null,
+      tribPath:path,
+      tribWidthMult:spec.width,
+      increment:spec.major?0.75:0.30,
+      hardcoded:true
     };
   });
-  smooth[0] = pts[0];
-  smooth[smooth.length - 1] = pts[pts.length - 1];
-  return smooth;
-}
-
-// ── HARD TOPOLOGY VALIDATION ────────────────────────────────────────────────
-// Routing is allowed to be organic, but an accepted tributary must satisfy
-// strict topology: no tributary-tributary intersections and no premature
-// mainstem crossings. A small centreline clearance also prevents channels
-// from visually merging even when they technically do not intersect.
-function segmentDistance2D(a,b,c,d){
-  const rX=b.x-a.x, rY=b.y-a.y, sX=d.x-c.x, sY=d.y-c.y;
-  const cross=rX*sY-rY*sX;
-  const qX=c.x-a.x, qY=c.y-a.y;
-  if(Math.abs(cross)>1e-10){
-    const t=(qX*sY-qY*sX)/cross;
-    const u=(qX*rY-qY*rX)/cross;
-    if(t>=0&&t<=1&&u>=0&&u<=1) return 0;
-  }
-  const rr=rX*rX+rY*rY||1e-12;
-  const ss=sX*sX+sY*sY||1e-12;
-  const pointSeg=(p,x,y,z)=>{
-    const vx=z.x-y.x, vy=z.y-y.y, vv=vx*vx+vy*vy||1e-12;
-    const t=Math.max(0,Math.min(1,((p.x-y.x)*vx+(p.y-y.y)*vy)/vv));
-    return Math.hypot(p.x-(y.x+vx*t),p.y-(y.y+vy*t));
-  };
-  return Math.min(pointSeg(a,c,d),pointSeg(b,c,d),pointSeg(c,a,b),pointSeg(d,a,b));
-}
-function pathClearance(a,b,W,H){
-  let best=Infinity;
-  for(let i=1;i<a.length;i++) for(let j=1;j<b.length;j++){
-    const d=segmentDistance2D(a[i-1],a[i],b[j-1],b[j]);
-    best=Math.min(best,d/Math.min(W,H));
-    if(best===0) return 0;
-  }
-  return best;
-}
-function mainstemPathUntil(W,H,fromY,toY){
-  const out=[]; const a=Math.max(0,fromY/H), b=Math.max(a,toY/H-0.035);
-  for(let i=0;i<=140;i++){
-    const n=a+(b-a)*i/140;
-    out.push({x:getRiverXFrac(n)*W,y:n*H});
-  }
-  return out;
-}
-function validateTributaryTopology(path,W,H,confluenceY,existingPaths,side){
-  if(!path || path.length<3) return false;
-  // Strictly downstream: no upstream reversal.
-  for(let i=1;i<path.length;i++) if(path[i].y <= path[i-1].y-0.5) return false;
-  const clearance=0.020;
-  for(const other of existingPaths){
-    if(other && other.length>1 && pathClearance(path,other,W,H)<clearance) return false;
-  }
-  // Mainstem is forbidden before the intended confluence.
-  const main=mainstemPathUntil(W,H,path[0].y,confluenceY);
-  if(main.length>1 && pathClearance(path,main,W,H)<clearance) return false;
-  // Source must remain on its declared origin side.
-  const riverX=getRiverXFrac(path[0].y/H)*W;
-  if((path[0].x-riverX)*side < W*0.008) return false;
-  return true;
 }
 
 // ── buildLayout ──────────────────────────────────────────────────────────────
-function buildLayout(W, H, milestones) {
-  // Rebuild the shared noise grid for this canvas size.
-  // drawTopo will reuse it (no double computation).
-  buildNoiseGrid(W, H);
-
-  const confluences = [];
-  const n = milestones.length;
-
-  const AUTO_START = 0.08, AUTO_END = 0.86;
-  let autoCount  = 0;
-  const autoTotal = milestones.filter(m => !m.elevation).length;
-
-  // Group CMS milestones that share the exact same elevation. The CMS only
-  // tells us "this tributary joins at 3000 m"; the renderer decides how to
-  // distribute several tributaries within a small confluence zone so they do
-  // not all terminate at the exact same pixel.
-  const elevationGroups = new Map();
-  milestones.forEach((m, i) => {
-    if (m.elevation == null || m.elevation === '') return;
-    const key = String(+m.elevation);
-    if (!elevationGroups.has(key)) elevationGroups.set(key, []);
-    elevationGroups.get(key).push(i);
-  });
-
-  const sameElevationSlot = (groupSize, slot) => {
-    if (groupSize <= 1) return 0;
-    // Keep the total displacement comfortably smaller than the normal
-    // 250 m milestone spacing. This is a visual confluence zone, not a
-    // claim that the tributaries occur at different recorded elevations.
-    const spacing = Math.min(0.016, 0.044 / Math.max(2, groupSize));
-    return (slot - (groupSize - 1) / 2) * spacing;
-  };
-
-  milestones.forEach((m, i) => {
-    // ── Vertical position ──────────────────────────────────────
-    let frac;
-    let elevationKey = null;
-    if (m.elevation != null && m.elevation !== '') {
-      elevationKey = String(+m.elevation);
-      frac = elevToFrac(m.elevation);
-      const group = elevationGroups.get(elevationKey) || [i];
-      const slot = group.indexOf(i);
-      frac += sameElevationSlot(group.length, slot);
-      frac = Math.max(AUTO_START, Math.min(AUTO_END, frac));
-    } else {
-      frac = autoTotal > 1
-        ? AUTO_START + (autoCount / (autoTotal - 1)) * (AUTO_END - AUTO_START)
-        : 0.48;
-      autoCount++;
-    }
-
-    const y = Math.min(H * 0.92, frac * H);
-    const x = getRiverXFrac(frac) * W;
-    const major = m.type === 'major';
-
-    // Alternate tributary sides, but reset the alternation inside each
-    // same-elevation group. This makes 2+ tributaries at one elevation read
-    // as a balanced confluence cluster instead of arbitrary left/right
-    // collisions inherited from the global milestone index.
-    const group = elevationKey ? (elevationGroups.get(elevationKey) || [i]) : [i];
-    const slot = group.indexOf(i);
-    const side = slot % 2 === 0 ? 1 : -1;
-
-    // ── Width multiplier ───────────────────────────────────────
-    // major: 60–70% of mainstem; minor: 40–60%
-    const tribWidthMult = major
-      ? (0.60 + seededRand(i * 2.3) * 0.10)
-      : (0.40 + seededRand(i * 2.3) * 0.20);
-
-    // ── Route path through noise valley (Option B) ─────────────
-    const existingPaths = confluences.map(c => c.tribPath).filter(Boolean);
-    let tribPath = null;
-    let fallbackPath = null;
-    let fallbackScore = -Infinity;
-    // Generate several organic alternatives. A candidate is accepted only
-    // after the complete polyline has passed the hard topology test.
-    for (let attempt = 0; attempt < 24; attempt++) {
-      const candidate = routeTributaryByValley(W, H, x, y, side, i, major, existingPaths, attempt);
-      const main = mainstemPathUntil(W, H, candidate[0].y, y);
-      let score = Infinity;
-      for (const other of existingPaths) score = Math.min(score, pathClearance(candidate, other, W, H));
-      score = Math.min(score, pathClearance(candidate, main, W, H));
-      if (score > fallbackScore) { fallbackScore = score; fallbackPath = candidate; }
-      if (validateTributaryTopology(candidate, W, H, y, existingPaths, side)) {
-        tribPath = candidate;
-        break;
-      }
-    }
-    // In the extremely unlikely case that all 24 candidates fail, retain the
-    // route with the largest clearance rather than silently dropping the CMS
-    // tributary. This is a visual fallback; normal routes pass the hard test.
-    if (!tribPath) tribPath = fallbackPath;
-
-    confluences.push({
-      frac, x, y, major,
-      type:         major ? 'major' : 'minor',
-      side,
-      milestone: m,
-      elevationKey,
-      elevationGroupSize: group.length,
-      elevationGroupSlot: slot,
-      tribPath,
-      tribWidthMult,
-      increment: major ? 0.9 : 0.4,
-    });
-  });
-
-  return { confluences };
+// The river network is fixed: mainstem + hard-coded tributaries.
+// CMS milestones are separate clickable anchors on the mainstem.
+// Elevation controls only milestone placement; CMS never creates or
+// classifies tributaries.
+function buildLayout(W,H,milestones){
+  buildNoiseGrid(W,H);
+  const confluences=buildHardTributaries(W,H);
+  const milestoneAnchors=(milestones||[]).map((m,i)=>{
+    const frac=(m.elevation!=null && m.elevation!=='')
+      ? Math.max(0.06,Math.min(0.86,elevToFrac(m.elevation)))
+      : (0.10+(i/Math.max(1,(milestones.length||1)-1))*0.72);
+    return {
+      milestone:m,
+      frac,
+      x:getRiverXFrac(frac)*W,
+      y:frac*H,
+      index:i
+    };
+  }).sort((a,b)=>a.frac-b.frac);
+  return {confluences,milestoneAnchors};
 }
 
 function widthAtY(y, confluences) {
@@ -2504,7 +2324,13 @@ function drawTopo() {
   const t = theme();
   topoCtx.clearRect(0, 0, topoW, topoH);
 
-  const LEVELS = Math.max(22, Math.round(topoH / 55));
+  // Use the actual 500 m elevation interval for the contour system.
+  const contourElevations = [];
+  for (let e = ELEV_TOP; e >= ELEV_BOTTOM; e -= ELEV_STEP) contourElevations.push(e);
+  if (contourElevations[contourElevations.length - 1] !== ELEV_BOTTOM) {
+    contourElevations.push(ELEV_BOTTOM);
+  }
+  const LEVELS = contourElevations.length;
   const COLS = NOISE_COLS, ROWS = NOISE_ROWS;
 
   // Reuse the shared noise grid built in buildLayout.
@@ -2539,16 +2365,25 @@ function drawTopo() {
         for (const conf of layout.confluences) {
           if (!conf.tribPath || conf.tribPath.length < 2) continue;
           // Find the closest point on this tributary path to the current cell
+          // Measure against the full tributary polyline so the contour
+          // valley follows the actual meanders continuously.
           let minDist = Infinity;
-          for (const pt of conf.tribPath) {
-            const tnx = pt.x / (topoW || 1);
-            const tny = pt.y / (topoH || 1);
-            const d   = Math.hypot((nx - tnx) * 1.8, ny - tny); // slight x-stretch
-            if (d < minDist) minDist = d;
+          const path = conf.tribPath;
+          for (let k = 0; k < path.length - 1; k++) {
+            const a = path[k], b = path[k + 1];
+            const ax = a.x / (topoW || 1), ay = a.y / (topoH || 1);
+            const bx = b.x / (topoW || 1), by = b.y / (topoH || 1);
+            const vx = (bx - ax) * 1.8, vy = by - ay;
+            const wx = (nx - ax) * 1.8, wy = ny - ay;
+            const vv = vx * vx + vy * vy || 1e-9;
+            const q = Math.max(0, Math.min(1, (wx * vx + wy * vy) / vv));
+            const dx = ((ax + (bx - ax) * q) - nx) * 1.8;
+            const dy = (ay + (by - ay) * q) - ny;
+            minDist = Math.min(minDist, Math.hypot(dx, dy));
           }
-          // Valley width is narrower than mainstem; depth scales with class
-          const tw = conf.major ? 0.028 : 0.018;
-          const td = conf.major ? 0.10  : 0.07;
+          // Majors get a slightly deeper/wider valley than minors.
+          const tw = conf.major ? 0.032 : 0.021;
+          const td = conf.major ? 0.115 : 0.078;
           tribCut += td * Math.exp(-Math.pow(minDist / tw, 2));
         }
       }
@@ -2591,21 +2426,78 @@ function drawTopo() {
       }
     }
     topoCtx.strokeStyle = isDark()
-      ? "rgba(215,225,230,0.22)"
-      : "rgba(55,65,75,0.27)";
+      ? "rgba(215,225,230,0.30)"
+      : "rgba(55,65,75,0.34)";
     topoCtx.lineWidth = 1.05;
     topoCtx.stroke();
     return segs;
   }
 
+  // Draw one contour per 500 m elevation interval and place its
+  // elevation label on the left side.
   for (let lv = 0; lv < LEVELS; lv++) {
     const iso = ISO_MIN + ((lv + 0.5) / LEVELS) * (ISO_MAX - ISO_MIN);
-    const mid = 1 - Math.abs(lv / LEVELS - 0.45) * 1.6;
-    const alpha = (0.055 + Math.max(0, mid) * 0.08).toFixed(3);
-    traceIso(iso, 0.65, alpha, false);
+    const mid = 1 - Math.abs(lv / Math.max(1, LEVELS - 1) - 0.45) * 1.6;
+    const alpha = (0.075 + Math.max(0, mid) * 0.10).toFixed(3);
+    traceIso(iso, 0.85, alpha, false);
+
+    const labelElev = contourElevations[lv];
+    // Place the label near the left edge at the contour's first crossing.
+    let labelY = elevToFrac(labelElev) * topoH;
+    const maxCol = Math.max(2, Math.floor(COLS * 0.12));
+
+    for (let r = 0; r < ROWS; r++) {
+      let found = false;
+      for (let col = 0; col < maxCol; col++) {
+        const v00 = grid[r][col], v10 = grid[r][col + 1];
+        const v01 = grid[r + 1][col], v11 = grid[r + 1][col + 1];
+        const y0 = r * cellH, y1 = (r + 1) * cellH;
+        const hits = [];
+
+        if ((v00 < iso) !== (v10 < iso)) {
+          const q = (iso - v00) / (v10 - v00);
+          hits.push(y0);
+        }
+        if ((v01 < iso) !== (v11 < iso)) {
+          const q = (iso - v01) / (v11 - v01);
+          hits.push(y1);
+        }
+        if ((v00 < iso) !== (v01 < iso)) {
+          const q = (iso - v00) / (v01 - v00);
+          hits.push(y0 + (y1 - y0) * q);
+        }
+        if ((v10 < iso) !== (v11 < iso)) {
+          const q = (iso - v10) / (v11 - v10);
+          hits.push(y0 + (y1 - y0) * q);
+        }
+
+        if (hits.length) {
+          labelY = Math.min(...hits);
+          found = true;
+          break;
+        }
+      }
+      if (found) break;
+    }
+
+    topoCtx.save();
+    topoCtx.font = "600 10px 'JetBrains Mono', monospace";
+    topoCtx.textAlign = "left";
+    topoCtx.textBaseline = "middle";
+    topoCtx.fillStyle = isDark()
+      ? "rgba(220,230,235,0.72)"
+      : "rgba(45,55,65,0.72)";
+    topoCtx.strokeStyle = isDark()
+      ? "rgba(15,20,24,0.45)"
+      : "rgba(255,255,255,0.78)";
+    topoCtx.lineWidth = 3;
+    const label = `${labelElev} m`;
+    topoCtx.strokeText(label, 8, labelY);
+    topoCtx.fillText(label, 8, labelY);
+    topoCtx.restore();
   }
 
-  
+
 }
 
 // Subtle scroll parallax on the topo layer — transform only, no redraw
@@ -3433,8 +3325,6 @@ function buildMilestones() {
 
   const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
     ? window._timelineMilestones : [];
-
-  // ── Fixed height — tributaries draw inside canvas, never expand section ──
   const FIXED_H = isMobile() ? 520 : 680;
   inner.style.height = FIXED_H + 'px';
 
@@ -3443,94 +3333,56 @@ function buildMilestones() {
   drawTopo();
   drawRiverBase();
 
-  // ── Hint label ─────────────────────────────────────────────────────
-  if (MILESTONES.length) {
-    const hint = document.createElement('div');
-    hint.className = 'jrn-trib-hint';
-    hint.textContent = 'Hover over tributaries to explore milestones';
-    wrap.appendChild(hint);
-  }
+  if (!layout || !layout.milestoneAnchors.length) return;
 
-  // ── Popup ──────────────────────────────────────────────────────────
-  let popup = document.getElementById('jrn-popup');
-  if (!popup) {
-    popup = document.createElement('div');
-    popup.id = 'jrn-popup';
-    popup.className = 'jrn-popup';
-    wrap.appendChild(popup);
-  }
+  const popup=document.createElement('div');
+  popup.id='jrn-popup';
+  popup.className='jrn-popup';
+  wrap.appendChild(popup);
 
-  if (!layout || !layout.confluences.length) return;
+  let active=null;
+  const closePopup=()=>{
+    popup.classList.remove('show');
+    if(active) active.classList.remove('active');
+    active=null;
+  };
 
-  // Pre-sample tributary paths for hit testing
-  const hitPaths = layout.confluences.map(conf => ({
-    conf,
-    pts: samplePath(conf.tribPath || [], conf.major ? 60 : 36),
-  }));
-
-  const HIT_R = isMobile() ? 22 : 16;
-  let activeConf = null;
-
-  function cxy(e) {
-    const r = (document.getElementById('jrn-particle') || e.target).getBoundingClientRect();
-    return {
-      x: (e.touches ? e.touches[0].clientX : e.clientX) - r.left,
-      y: (e.touches ? e.touches[0].clientY : e.clientY) - r.top,
-    };
-  }
-
-  function findHit(mx, my) {
-    for (const hp of hitPaths)
-      for (const pt of hp.pts)
-        if (Math.hypot(mx - pt.x, my - pt.y) < HIT_R) return hp.conf;
-    return null;
-  }
-
-  function showPopup(conf, mx, my) {
-    const m = conf.milestone || {};
-    const elev = m.elevation ? m.elevation + ' m' : '';
-    const html = [
-      elev        ? `<div class="jrn-popup-elev">${esc(elev)}</div>`        : '',
-      m.date      ? `<div class="jrn-popup-date">${esc(m.date)}</div>`      : '',
-      m.title     ? `<div class="jrn-popup-title">${esc(m.title)}</div>`    : '',
-      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : '',
-      `<span class="jrn-popup-badge${conf.major?'':' jrn-minor-badge'}">${conf.major?'Major Tributary':'Tributary'}</span>`,
+  const showPopup=(anchor,button)=>{
+    if(active===button){ closePopup(); return; }
+    if(active) active.classList.remove('active');
+    active=button;
+    button.classList.add('active');
+    const m=anchor.milestone||{};
+    const elev=m.elevation ? `${esc(m.elevation)} m` : '';
+    popup.innerHTML=[
+      elev ? `<div class="jrn-popup-elev">${elev}</div>` : '',
+      m.date ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
+      m.title ? `<div class="jrn-popup-title">${esc(m.title)}</div>` : '',
+      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : ''
     ].join('');
-    popup.innerHTML = html;
     popup.classList.add('show');
-    const el = document.getElementById('jrn-particle') || inner;
-    const cw = el.offsetWidth, ch = el.offsetHeight;
-    let px = mx + 16, py = my - 60;
-    if (px + 210 > cw) px = mx - 220;
-    if (py < 4) py = 4;
-    if (py > ch - 20) py = ch - 110;
-    popup.style.left = px + 'px';
-    popup.style.top  = py + 'px';
-  }
+    const r=button.getBoundingClientRect();
+    const ir=inner.getBoundingClientRect();
+    let px=r.left-ir.left+18;
+    let py=r.top-ir.top-18;
+    if(px+210>inner.clientWidth) px=r.left-ir.left-220;
+    if(py<6) py=r.bottom-ir.top+10;
+    popup.style.left=px+'px';
+    popup.style.top=py+'px';
+  };
 
-  function hide() { popup.classList.remove('show'); activeConf = null; }
-
-  // Wire to particle canvas (topmost layer)
-  const pc = document.getElementById('jrn-particle');
-  if (!pc) return;
-  pc.addEventListener('mousemove', e => {
-    const {x,y} = cxy(e);
-    const f = findHit(x,y);
-    if (f !== activeConf) { activeConf = f; f ? showPopup(f,x,y) : hide(); }
-    else if (f) showPopup(f,x,y);
-    pc.style.cursor = f ? 'crosshair' : '';
+  layout.milestoneAnchors.forEach(anchor=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='jrn-milestone-dot';
+    b.setAttribute('aria-label', anchor.milestone.title || `Milestone at ${anchor.milestone.elevation||''} m`);
+    b.style.left=anchor.x+'px';
+    b.style.top=anchor.y+'px';
+    b.addEventListener('click',e=>{e.stopPropagation();showPopup(anchor,b);});
+    wrap.appendChild(b);
   });
-  pc.addEventListener('mouseleave', hide);
-  pc.addEventListener('touchstart', e => {
-    const {x,y} = cxy(e);
-    const f = findHit(x,y);
-    f ? showPopup(f,x,y) : hide();
-  }, {passive:true});
-}
-function esc(str) {
-  const d = document.createElement('div');
-  d.textContent = str == null ? '' : String(str);
-  return d.innerHTML;
+
+  wrap.addEventListener('click',closePopup);
 }
 
 // ═══════════════════════════════════════
