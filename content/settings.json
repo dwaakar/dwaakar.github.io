@@ -6,10 +6,81 @@
   ],
   "milestones": [
     {
-      "icon": "📌",
+      "icon": "",
       "year": "1996 ",
-      "title": "Borin",
-      "sub": "Nuwakot"
+      "title": "Born",
+      "sub": "Nuwakot",
+      "elevation": 6000,
+      "type": "minor"
+    },
+    {
+      "elevation": 6000,
+      "type": "minor",
+      "icon": "",
+      "year": "2000",
+      "title": "Attended School"
+    },
+    {
+      "elevation": 5500,
+      "type": "major",
+      "icon": "",
+      "year": "2012",
+      "title": "Completed Secondary School",
+      "sub": "Swati Sadan Higher Secondary School"
+    },
+    {
+      "elevation": 5000,
+      "type": "major",
+      "icon": "",
+      "year": "2014",
+      "date": "",
+      "title": "Completed High School",
+      "sub": "Heral International College"
+    },
+    {
+      "elevation": 4500,
+      "type": "major",
+      "icon": "",
+      "year": "2018",
+      "title": "Bachelors in Environmental Science"
+    },
+    {
+      "elevation": 4500,
+      "type": "minor",
+      "icon": "",
+      "year": "2018",
+      "title": "Joined ECCA Nepal"
+    },
+    {
+      "elevation": 4500,
+      "type": "minor",
+      "icon": "",
+      "year": "2018",
+      "title": "Joined CLEAN UP NEPAL"
+    },
+    {
+      "elevation": 4000,
+      "type": "minor",
+      "icon": "",
+      "year": "2021",
+      "title": "Joined Central Department of Environmental Science, Tribhuvan University"
+    },
+    {
+      "elevation": 3500,
+      "type": "major",
+      "icon": "",
+      "year": "2024",
+      "title": "Graduated in Environmental Science ",
+      "description": "Specialization in Water Resource Management and Restoration Ecology"
+    },
+    {
+      "elevation": 3000,
+      "type": "minor",
+      "icon": "",
+      "year": "2025 ",
+      "date": "",
+      "title": "Joined Nepal Peacebuilding Initiative",
+      "description": ""
     }
   ],
   "github": "",
@@ -42,6 +113,32 @@
   "cvAcademic": "/images/dwakar-adhikari.pdf",
   "email": "thisisdwakr@gmail.com",
   "linkedin": "https://www.linkedin.com/in/diwakaradhikari/",
-  "stats": [],
+  "stats": [
+    {
+      "value": "5",
+      "label": "Years of Experience",
+      "suffix": "+"
+    },
+    {
+      "value": "23",
+      "label": "Citations"
+    },
+    {
+      "value": "200",
+      "label": "Fundraising",
+      "prefix": "$",
+      "suffix": "K+"
+    },
+    {
+      "value": "1800",
+      "label": "People Empowered",
+      "suffix": "+"
+    },
+    {
+      "value": "45",
+      "label": "Districts Visited",
+      "suffix": "+"
+    }
+  ],
   "showSkills": false
 }
