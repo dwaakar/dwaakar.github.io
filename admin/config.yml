@@ -80,15 +80,36 @@ collections:
             fields:
               - { label: "Year / Date", name: "year", widget: "string", hint: "e.g. 2024 or Jan 2024", required: true }
               - { label: "Display Date (optional)", name: "date", widget: "string", required: false, hint: "Shown on card — e.g. March 2024. Falls back to Year if empty." }
-              - label: "Milestone Type"
+              - label: "Elevation"
+                name: "elevation"
+                widget: "select"
+                required: false
+                default: 3000
+                hint: "Sets where the milestone sits on the river — source is 6500 m, mouth is 60 m. Leave blank for auto-placement."
+                options:
+                  - { label: "6500 m — Summit / Glacial Source", value: 6500 }
+                  - { label: "6000 m — High Alpine", value: 6000 }
+                  - { label: "5500 m — Glacial Zone", value: 5500 }
+                  - { label: "5000 m — High Mountain", value: 5000 }
+                  - { label: "4500 m — Alpine Meadow", value: 4500 }
+                  - { label: "4000 m — Treeline", value: 4000 }
+                  - { label: "3500 m — Subalpine", value: 3500 }
+                  - { label: "3000 m — Mid-Mountain", value: 3000 }
+                  - { label: "2500 m — Lower Mountain", value: 2500 }
+                  - { label: "2000 m — Hill Zone", value: 2000 }
+                  - { label: "1500 m — Upper Hills", value: 1500 }
+                  - { label: "1000 m — Lower Hills", value: 1000 }
+                  - { label: "500 m — Foothills / Terai Edge", value: 500 }
+                  - { label: "60 m — River Mouth / Floodplain", value: 60 }
+              - label: "Tributary Class"
                 name: "type"
                 widget: "select"
                 required: false
                 default: "minor"
-                hint: "Major milestones generate a wider tributary and larger anchor dot."
+                hint: "Major = 60–70% of mainstem width. Minor = 40–60% of mainstem width."
                 options:
-                  - { label: "Minor (standard tributary)", value: "minor" }
-                  - { label: "Major (wider tributary, larger dot)", value: "major" }
+                  - { label: "Minor tributary (40–60% mainstem width)", value: "minor" }
+                  - { label: "Major tributary (60–70% mainstem width)", value: "major" }
               - { label: "Title", name: "title", widget: "string", required: false }
               - { label: "Description", name: "description", widget: "text", required: false, hint: "Shown on the card when expanded." }
               - { label: "Subtitle / Institution", name: "sub", widget: "string", required: false, hint: "e.g. Tribhuvan University" }
