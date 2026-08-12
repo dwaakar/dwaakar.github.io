@@ -1926,8 +1926,7 @@ function theme() {
     contourBase: dark ? 'rgba(82,183,136,'  : 'rgba(27,70,45,',
     riverFill:   dark ? 'rgba(70,150,215,'  : 'rgba(20,95,175,',
     riverCore:   dark ? 'rgba(150,205,255,' : 'rgba(15,70,140,',
-    tribFill:    dark ? 'rgba(70,150,215,'  : 'rgba(20,95,175,',
-    // Mainstem and tributary water use the exact same base color. Water-body fills are opaque so overlap cannot darken them.
+    tribFill:    dark ? 'rgba(70,150,215,'  : 'rgba(30,110,190,',
     particle:    dark ? 'rgba(255,255,255,' : 'rgba(15,75,150,',
     glow:        dark ? 'rgba(80,200,140,'  : 'rgba(30,120,200,',
     bgLabel:     dark ? 'rgba(17,20,16,0.82)' : 'rgba(247,245,240,0.82)',
@@ -2086,141 +2085,237 @@ function sampleNoise(nx, ny) {
 //
 // The descent is seeded with the confluence side (left/right) and the
 // milestone index so each tributary is deterministically unique.
-function segmentIntersection(a,b,c,d) {
-  const cross = (p,q,r) => (q.x-p.x)*(r.y-p.y) - (q.y-p.y)*(r.x-p.x);
-  const o1=cross(a,b,c), o2=cross(a,b,d), o3=cross(c,d,a), o4=cross(c,d,b);
-  const eps=1e-7;
-  return ((o1>eps && o2<-eps)||(o1<-eps && o2>eps)) &&
-         ((o3>eps && o4<-eps)||(o3<-eps && o4>eps));
-}
-function pointSegDistance(p,a,b) {
-  const dx=b.x-a.x, dy=b.y-a.y, ll=dx*dx+dy*dy || 1;
-  const t=Math.max(0,Math.min(1,((p.x-a.x)*dx+(p.y-a.y)*dy)/ll));
-  return Math.hypot(p.x-(a.x+t*dx), p.y-(a.y+t*dy));
-}
-function pathMinDistance(pathA, pathB) {
-  let best=Infinity;
-  for(let i=1;i<pathA.length;i++) for(let j=1;j<pathB.length;j++) {
-    const a=pathA[i-1], b=pathA[i], c=pathB[j-1], d=pathB[j];
-    if(segmentIntersection(a,b,c,d)) return 0;
-    best=Math.min(best, pointSegDistance(a,c,d), pointSegDistance(b,c,d), pointSegDistance(c,a,b), pointSegDistance(d,a,b));
-  }
-  return best;
-}
-function buildMainstemPath(W,H) {
-  const pts=[];
-  const N=220;
-  for(let i=0;i<=N;i++) { const y=(i/N)*H*0.92; pts.push({x:getRiverXFrac(y/H)*W,y}); }
-  return pts;
-}
-function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major, existingPaths, mainstemPath) {
-  // Hard hydrologic constraint: every tributary starts upstream of its
-  // confluence and its Y coordinate increases monotonically downstream.
-  // Major tributaries begin farther upslope, visually comparable to the
-  // highland headwaters of the mainstem.
-  const reachY = (major ? 0.40 : 0.24) * H * (isMobile() ? 0.78 : 1);
-  const hwY = Math.max(H*0.045, confluenceY - reachY);
-  const reachX = (major ? 0.20 : 0.12) * W;
-  const clearance = Math.max(11, Math.min(20, W*0.012));
-  const sourceOffsets = [0, 0.07, -0.07, 0.13, -0.13, 0.20, -0.20];
-  const sideOptions = [side, -side];
-  const NPTS = major ? 34 : 24;
+function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major, existingPaths = []) {
+  // Organic, constraint-aware tributary routing.
+  // The path always advances in Y (upstream -> downstream), while X is
+  // allowed to bend around the mainstem and previously accepted tributaries.
+  // Major tributaries get a longer upstream reach; they are no longer forced
+  // to remain in a straight highland corridor.
+  const targetNX = confluenceX / W;
+  const targetNY = confluenceY / H;
 
-  function makeCandidate(useSide, offset) {
-    const hwX=Math.max(W*0.04,Math.min(W*0.96,confluenceX + useSide*(reachX + offset*W)));
-    const pts=[{x:hwX,y:hwY}];
-    let cx=hwX/W;
-    const targetNX=confluenceX/W, targetNY=confluenceY/H;
-    for(let s=1;s<NPTS;s++) {
-      const progress=s/(NPTS-1);
-      const yNorm=(hwY/H) + progress*(targetNY-hwY/H);
-      const eps=1/NOISE_COLS;
-      const gx=(sampleNoise(cx+eps,yNorm)-sampleNoise(cx-eps,yNorm))/(2*eps);
-      const gLen=Math.hypot(gx,0)||1;
-      const valleyX=-gx/gLen;
-      const pullX=targetNX-cx;
-      const pullLen=Math.abs(pullX)||1;
-      const valleyWeight=(1-progress)*0.72;
-      const pullWeight=0.28+progress*0.72;
-      let moveX=valleyX*valleyWeight+(pullX/pullLen)*pullWeight;
-      if(!Number.isFinite(moveX)) moveX=pullX/pullLen;
-      const step=(major?0.018:0.014)*(1-progress*0.35);
-      cx=Math.max(0.035,Math.min(0.965,cx+Math.sign(moveX)*step));
-      const wobble=(seededRand(idx*17.3+s*5.1)-0.5)*(major?0.012:0.009)*(1-progress);
-      cx=Math.max(0.035,Math.min(0.965,cx+wobble));
-      pts.push({x:cx*W,y:yNorm*H});
+  // Longer source reach for majors. Keep the source inside the canvas while
+  // pushing major headwaters noticeably farther upstream than minor ones.
+  const reachFrac = major
+    ? (0.34 + 0.06 * seededRand(idx * 7.31 + 2.1))
+    : (0.18 + 0.035 * seededRand(idx * 7.31 + 2.1));
+  const reachY = reachFrac * H * (isMobile() ? 0.72 : 1);
+  const reachX = (major ? 0.22 : 0.12) * W * side;
+
+  const hwY = Math.max(H * 0.025, confluenceY - reachY);
+  // Keep the source on the requested side, but never pin it too close to an edge.
+  const hwX = Math.max(W * 0.045, Math.min(W * 0.955, confluenceX + reachX));
+
+  const NPTS = major ? 42 : 28;
+  const pts = [{ x: hwX, y: hwY }];
+  let cx = hwX / W;
+  let cy = hwY / H;
+
+  // Mainstem obstacle samples, excluding a small neighbourhood around the
+  // intended confluence. The tributary may touch the mainstem only at target.
+  const mainSamples = [];
+  const mainStart = Math.max(0.01, hwY / H);
+  const mainEnd = Math.min(0.97, targetNY);
+  const mainN = 90;
+  for (let k = 0; k <= mainN; k++) {
+    const ny = mainStart + (mainEnd - mainStart) * (k / mainN);
+    mainSamples.push({ x: getRiverXFrac(ny), y: ny });
+  }
+
+  const obstaclePaths = existingPaths.filter(p => p && p.length > 1);
+
+  // Distance from a point to a polyline, returning nearest point and vector.
+  function nearestOnPath(px, py, path) {
+    let best = { d: Infinity, x: 0, y: 0, dx: 0, dy: 0 };
+    for (let i = 1; i < path.length; i++) {
+      const a = path[i - 1], b = path[i];
+      const ax = a.x / W, ay = a.y / H;
+      const bx = b.x / W, by = b.y / H;
+      const vx = bx - ax, vy = by - ay;
+      const vv = vx * vx + vy * vy || 1e-9;
+      const t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / vv));
+      const qx = ax + vx * t, qy = ay + vy * t;
+      const dx = px - qx, dy = py - qy;
+      const d = Math.hypot(dx * 1.45, dy);
+      if (d < best.d) best = { d, x: qx, y: qy, dx, dy };
     }
-    pts.push({x:confluenceX,y:confluenceY});
-    return pts;
+    return best;
   }
 
-  // Try several deterministic source corridors/sides. A candidate is accepted
-  // only if it does not cross the mainstem before its own confluence and keeps
-  // a visible clearance from every previously accepted tributary.
-  for(const useSide of sideOptions) for(const off of sourceOffsets) {
-    const cand=makeCandidate(useSide,off);
-    let valid=true;
-    for(let i=1;i<cand.length-1 && valid;i++) {
-      const a=cand[i-1], b=cand[i];
-      for(let j=1;j<mainstemPath.length;j++) {
-        const c=mainstemPath[j-1], d=mainstemPath[j];
-        if(segmentIntersection(a,b,c,d)) { valid=false; break; }
+  // Low-frequency organic lateral preference: it creates broad irregular
+  // river bends rather than angular avoidance turns.
+  const organic = seededRand(idx * 19.17 + 4.2) * Math.PI * 2;
+  const lateralNoise = s =>
+    0.55 * Math.sin(s * 0.42 + organic) +
+    0.28 * Math.sin(s * 0.19 + organic * 1.7) +
+    0.17 * Math.sin(s * 0.83 + organic * 0.6);
+
+  for (let s = 1; s < NPTS; s++) {
+    const progress = s / (NPTS - 1);
+    // Strictly downstream Y progression. Never allow a tributary to flow back up.
+    const nextNY = hwY / H + (targetNY - hwY / H) * progress;
+    cy = Math.min(targetNY, nextNY);
+
+    // Preferred lateral position: smoothly interpolate toward the exact
+    // confluence, with a broad organic bend away from the straight line.
+    const straightX = (hwX / W) * (1 - progress) + targetNX * progress;
+    const bendAmp = (major ? 0.035 : 0.024) * Math.sin(Math.PI * progress);
+    let preferredX = straightX + lateralNoise(s) * bendAmp * (1 - progress * 0.25);
+
+    // Mild terrain/noise steering, deliberately secondary to destination and
+    // topology constraints. This gives the path a valley-like irregularity.
+    const eps = 1 / NOISE_COLS;
+    const gx = (sampleNoise(cx + eps, cy) - sampleNoise(cx - eps, cy)) / (2 * eps);
+    const terrainSide = Math.abs(gx) < 1e-5 ? 0 : -Math.sign(gx);
+    preferredX += terrainSide * 0.008 * Math.sin(Math.PI * progress);
+
+    // Collision avoidance. Obstacles repel the tributary laterally, with a
+    // smooth falloff. The final confluence zone is exempt so the path can join.
+    let avoid = 0;
+    const clearance = major ? 0.032 : 0.026;
+    const strength = 0.075;
+
+    // Mainstem: prevent touching/crossing it before the intended confluence.
+    if (progress < 0.90) {
+      const riverX = getRiverXFrac(cy);
+      const dx = cx - riverX;
+      const ad = Math.abs(dx);
+      if (ad < clearance * 1.35) {
+        // Always push back toward the tributary's originating side.
+        const dir = side > 0 ? 1 : -1;
+        const t = 1 - ad / (clearance * 1.35);
+        avoid += dir * strength * t * t;
       }
     }
-    if(!valid) continue;
-    for(const other of existingPaths) {
-      if(pathMinDistance(cand,other)<clearance) { valid=false; break; }
+
+    // Previously accepted tributaries are hard obstacles. We use their whole
+    // paths, not just their confluence points, so no tributary can intersect.
+    for (const path of obstaclePaths) {
+      const near = nearestOnPath(cx, cy, path);
+      if (near.d < clearance) {
+        const sign = near.dx === 0 ? (side > 0 ? 1 : -1) : Math.sign(near.dx);
+        const t = 1 - near.d / clearance;
+        avoid += sign * strength * 1.35 * t * t;
+      }
     }
-    if(valid) return cand;
+
+    // Apply the preferred destination plus avoidance. Clamp the lateral move
+    // so collision avoidance produces a broad S-bend rather than a sharp turn.
+    let desiredX = preferredX + avoid;
+    const maxLateralStep = 0.018 * (1.05 - 0.25 * progress);
+    const deltaX = desiredX - cx;
+    cx += Math.max(-maxLateralStep, Math.min(maxLateralStep, deltaX));
+    cx = Math.max(0.035, Math.min(0.965, cx));
+
+    pts.push({ x: cx * W, y: cy * H });
   }
 
-  // Fallback: preserve upstream→downstream flow even if the available map
-  // corridor is crowded. The path remains deterministic and never reverses.
-  return makeCandidate(side,0);
+  // Exact confluence. A final short blend is already created by the strong
+  // destination pull; this point guarantees the CMS milestone is honoured.
+  pts.push({ x: confluenceX, y: confluenceY });
+
+  // Smooth the generated polyline while preserving endpoints and strict Y order.
+  const smooth = pts.map((p, i) => {
+    if (i === 0 || i === pts.length - 1) return p;
+    const a = pts[i - 1], b = pts[i], c = pts[i + 1];
+    return {
+      x: b.x * 0.52 + (a.x + c.x) * 0.24,
+      y: b.y
+    };
+  });
+  smooth[0] = pts[0];
+  smooth[smooth.length - 1] = pts[pts.length - 1];
+  return smooth;
 }
 
 // ── buildLayout ──────────────────────────────────────────────────────────────
 function buildLayout(W, H, milestones) {
+  // Rebuild the shared noise grid for this canvas size.
+  // drawTopo will reuse it (no double computation).
   buildNoiseGrid(W, H);
-  const confluences=[];
-  const mainstemPath=buildMainstemPath(W,H);
-  const acceptedPaths=[];
-  const n=milestones.length;
-  const AUTO_START=0.08, AUTO_END=0.86;
-  let autoCount=0;
-  const autoTotal=milestones.filter(m=>!m.elevation).length;
 
-  // Sort only for routing so upstream tributaries are established before
-  // downstream ones. The original milestone order remains attached to each
-  // object and is not changed in the CMS.
-  const ordered=milestones.map((m,i)=>({m,i})).sort((a,b)=>{
-    const ea=a.m.elevation!=null?+a.m.elevation:-Infinity;
-    const eb=b.m.elevation!=null?+b.m.elevation:-Infinity;
-    return eb-ea || a.i-b.i;
+  const confluences = [];
+  const n = milestones.length;
+
+  const AUTO_START = 0.08, AUTO_END = 0.86;
+  let autoCount  = 0;
+  const autoTotal = milestones.filter(m => !m.elevation).length;
+
+  // Group CMS milestones that share the exact same elevation. The CMS only
+  // tells us "this tributary joins at 3000 m"; the renderer decides how to
+  // distribute several tributaries within a small confluence zone so they do
+  // not all terminate at the exact same pixel.
+  const elevationGroups = new Map();
+  milestones.forEach((m, i) => {
+    if (m.elevation == null || m.elevation === '') return;
+    const key = String(+m.elevation);
+    if (!elevationGroups.has(key)) elevationGroups.set(key, []);
+    elevationGroups.get(key).push(i);
   });
 
-  ordered.forEach(({m,i})=>{
+  const sameElevationSlot = (groupSize, slot) => {
+    if (groupSize <= 1) return 0;
+    // Keep the total displacement comfortably smaller than the normal
+    // 250 m milestone spacing. This is a visual confluence zone, not a
+    // claim that the tributaries occur at different recorded elevations.
+    const spacing = Math.min(0.016, 0.044 / Math.max(2, groupSize));
+    return (slot - (groupSize - 1) / 2) * spacing;
+  };
+
+  milestones.forEach((m, i) => {
+    // ── Vertical position ──────────────────────────────────────
     let frac;
-    if(m.elevation) frac=elevToFrac(m.elevation);
-    else {
-      frac=autoTotal>1 ? AUTO_START+(autoCount/(autoTotal-1))*(AUTO_END-AUTO_START) : 0.48;
+    let elevationKey = null;
+    if (m.elevation != null && m.elevation !== '') {
+      elevationKey = String(+m.elevation);
+      frac = elevToFrac(m.elevation);
+      const group = elevationGroups.get(elevationKey) || [i];
+      const slot = group.indexOf(i);
+      frac += sameElevationSlot(group.length, slot);
+      frac = Math.max(AUTO_START, Math.min(AUTO_END, frac));
+    } else {
+      frac = autoTotal > 1
+        ? AUTO_START + (autoCount / (autoTotal - 1)) * (AUTO_END - AUTO_START)
+        : 0.48;
       autoCount++;
     }
-    const y=Math.min(H*0.92,frac*H);
-    const x=getRiverXFrac(frac)*W;
-    const major=m.type==='major';
-    // Side describes origin only. Flow is always from smaller Y/higher
-    // elevation toward larger Y/lower elevation.
-    const side=(i%2===0)?1:-1;
-    const tribWidthMult=major ? (0.60+seededRand(i*2.3)*0.10) : (0.40+seededRand(i*2.3)*0.20);
-    const tribPath=routeTributaryByValley(W,H,x,y,side,i,major,acceptedPaths,mainstemPath);
-    acceptedPaths.push(tribPath);
-    confluences.push({frac,x,y,major,type:major?'major':'minor',side,milestone:m,tribPath,tribWidthMult,increment:major?0.9:0.4});
+
+    const y = Math.min(H * 0.92, frac * H);
+    const x = getRiverXFrac(frac) * W;
+    const major = m.type === 'major';
+
+    // Alternate tributary sides, but reset the alternation inside each
+    // same-elevation group. This makes 2+ tributaries at one elevation read
+    // as a balanced confluence cluster instead of arbitrary left/right
+    // collisions inherited from the global milestone index.
+    const group = elevationKey ? (elevationGroups.get(elevationKey) || [i]) : [i];
+    const slot = group.indexOf(i);
+    const side = slot % 2 === 0 ? 1 : -1;
+
+    // ── Width multiplier ───────────────────────────────────────
+    // major: 60–70% of mainstem; minor: 40–60%
+    const tribWidthMult = major
+      ? (0.60 + seededRand(i * 2.3) * 0.10)
+      : (0.40 + seededRand(i * 2.3) * 0.20);
+
+    // ── Route path through noise valley (Option B) ─────────────
+    const tribPath = routeTributaryByValley(W, H, x, y, side, i, major, confluences.map(c => c.tribPath).filter(Boolean));
+
+    confluences.push({
+      frac, x, y, major,
+      type:         major ? 'major' : 'minor',
+      side,
+      milestone: m,
+      elevationKey,
+      elevationGroupSize: group.length,
+      elevationGroupSlot: slot,
+      tribPath,
+      tribWidthMult,
+      increment: major ? 0.9 : 0.4,
+    });
   });
 
-  // Restore CMS/milestone ordering for all downstream consumers.
-  confluences.sort((a,b)=>a.milestone===b.milestone?0:(milestones.indexOf(a.milestone)-milestones.indexOf(b.milestone)));
-  return {confluences};
+  return { confluences };
 }
 
 function widthAtY(y, confluences) {
@@ -2230,7 +2325,7 @@ function widthAtY(y, confluences) {
   //     named milestone's confluence. Even with zero milestones the river
   //     still visibly matures from headwater trickle to a broad channel.
   const norm = baseH ? Math.min(1, Math.max(0, y / baseH)) : 0;
-  const BASE_MIN = 2.2, BASE_MAX = 5.4;
+  const BASE_MIN = 2.2, BASE_MAX = 4.5;
   let w = BASE_MIN + (BASE_MAX - BASE_MIN) * Math.pow(norm, 0.6);
   for (const c of confluences) {
     if (y <= c.y - 12) continue;
@@ -2683,57 +2778,50 @@ function drawRiverBase() {
   baseCtx.clearRect(0, 0, baseW, baseH);
   const confluences = layout.confluences;
 
-  // Tributaries — identical 4-layer pipeline as mainstem (glow, fill, core, thalweg).
-  // Width = tribWidthMult × mainstem width at the confluence elevation.
-  // major: 60–70% of mainstem; minor: 40–60% of mainstem.
-  // Growth curve: headwater tip starts at 0.22× the confluence width and grows
-  // via a power curve to 1.0× — same shape as the mainstem's source-to-mouth growth.
-  confluences.forEach(c => {
-    const steps   = c.major ? 60 : 40;
-    const pathPts = samplePath(c.tribPath, steps);
+  // ================================================================
+  // ONE CONTINUOUS WATER SURFACE
+  // ---------------------------------------------------------------
+  // Mainstem, tributaries and braid channels are first accumulated into
+  // one opaque mask. They are then painted ONCE with the river colour.
+  // This is the important distinction from the old renderer: overlapping
+  // water polygons no longer alpha-stack and become darker at junctions.
+  // The geometry remains separate; the rendered water surface is unified.
+  // ================================================================
+  const waterMask = document.createElement('canvas');
+  waterMask.width = baseW;
+  waterMask.height = baseH;
+  const maskCtx = waterMask.getContext('2d');
+  maskCtx.clearRect(0, 0, baseW, baseH);
+  maskCtx.fillStyle = '#ffffff';
 
-    // Resolve actual mainstem width at this confluence y position.
-    // We pass the already-built confluences list so widthAtY includes
-    // upstream tributaries — correctly reflecting accumulated discharge.
+  const drawMaskPath = (points, widthFn) => {
+    if (!points || points.length < 2) return;
+    fillVariableWidthPath(maskCtx, points, widthFn, '#ffffff');
+  };
+
+  // -------------------------
+  // Tributaries
+  // -------------------------
+  confluences.forEach(c => {
+    const steps = c.major ? 60 : 40;
+    const pathPts = samplePath(c.tribPath, steps);
     const mainW = widthAtY(c.y, confluences);
     const fullTribW = mainW * (c.tribWidthMult || (c.major ? 0.65 : 0.50));
 
-    // Width function: headwater is narrow, widens to fullTribW at confluence.
     const wFn = (i, len) => {
-      const progress = i / Math.max(1, len - 1); // 0 = headwater tip, 1 = confluence
-      const grow     = Math.pow(progress, 0.60);  // same power as mainstem (0.6)
-      const base     = fullTribW * (0.22 + 0.78 * grow);
-      // Seeded edge wobble — same as mainstem edgeJitter technique
-      const jitter   = 0.5 + 0.28 * Math.sin(i * 17.3 + c.y * 0.07)
+      const progress = i / Math.max(1, len - 1);
+      const grow = Math.pow(progress, 0.60);
+      const base = fullTribW * (0.22 + 0.78 * grow);
+      const jitter = 0.5 + 0.28 * Math.sin(i * 17.3 + c.y * 0.07)
                            + 0.14 * Math.sin(i * 43.1 + c.x * 0.05);
       return Math.max(0.4, base + jitter * 0.15);
     };
-
-    // Layer 1: outer soft glow
-    fillVariableWidthPath(baseCtx, pathPts,
-      (i, len) => wFn(i, len) + 2.4,
-      t.glow + (c.major ? '0.060)' : '0.040)'));
-
-    // Layer 2: water body fill
-    fillVariableWidthPath(baseCtx, pathPts,
-      (i, len) => wFn(i, len),
-      t.riverFill + '1.0)');
-
-    // Layer 3: inner core tint (0.42× of width — same ratio as mainstem)
-    fillVariableWidthPath(baseCtx, pathPts,
-      (i, len) => Math.max(0.4, wFn(i, len) * 0.42),
-      t.riverCore + '0.08)');
-
-    // Layer 4: thalweg centreline
-    // Stroke width proportional to class — major 0.65px, minor 0.45px
-    baseCtx.beginPath();
-    pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-    baseCtx.strokeStyle = t.riverCore + (c.major ? '0.24)' : '0.17)');
-    baseCtx.lineWidth   = c.major ? 0.65 : 0.45;
-    baseCtx.stroke();
+    drawMaskPath(pathPts, wFn);
   });
 
-  // Full mainstem polyline
+  // -------------------------
+  // Mainstem geometry
+  // -------------------------
   const steps = Math.max(220, Math.round(baseH / 7));
   const mainPts = [];
   for (let s = 0; s <= steps; s++) {
@@ -2742,65 +2830,42 @@ function drawRiverBase() {
     mainPts.push({ x, y });
   }
 
-  // Braid begins only after the full mainstem has carried its natural width
-  // into the separation point. The river should feel continuous first, then
-  // divide — not gradually shrink before it braids.
-  const BRAID_START = 0.72;
-  function beltWidth(y) {
-    return widthAtY(y, confluences);
-  }
-  function mainWidthAt(y) {
-    // Keep the original river width right through the separation.
-    // This is a visual treatment, not a hydraulic cross-section calculation.
-    return beltWidth(y);
-  }
-  function sideWidthAt(y, env, widthScale) {
-    // Divergent channels are the same channel class as the mainstem.
-    // Their separation is expressed by centreline geometry, not by
-    // shrinking their water-body width.
-    const full = beltWidth(y);
-    return full;
-  }
+  const beltWidth = y => widthAtY(y, confluences);
+  const mainWidthAt = y => beltWidth(y);
+  const sideWidthAt = y => beltWidth(y);
 
+  const edgeJitter = (i, len) => {
+    const n = i / Math.max(1, len - 1);
+    return 0.7 + 0.35 * Math.sin(n * 31.7 + 0.8) + 0.18 * Math.sin(n * 83.1);
+  };
+
+  // Mainstem mask: exactly the same geometry/width as the visible river.
+  drawMaskPath(mainPts,
+    (i) => mainWidthAt(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28);
+
+  // -------------------------
+  // Braided channels
+  // -------------------------
   const threads = buildBraidThreads(mainPts, baseH);
 
-  // Particle paths: main (lower stretch) + both sides
-  // Convert each divergent channel to a uniformly sampled centerline.
-  // The particle engine can therefore interpolate continuously instead of
-  // stepping over irregular source points.
   window._braidPaths = threads.map(thread => {
     const raw = thread.filter(p => p.active).map(p => ({ x: p.x, y: p.y }));
     return resamplePathUniform(raw, Math.max(1.4, baseH / 900));
   }).filter(p => p.length > 8);
 
-  // No artificial bars at the bifurcation. The channel centerlines themselves
-  // now create the separation/reconnection, keeping the junction clean.
-
-  // Side channels
   threads.forEach(thread => {
     const activePts = [];
     const flush = () => {
       if (activePts.length >= 6) {
-        // Divergent channels use the exact same water palette/opacity as the mainstem.
-        // A matching soft glow is added so they do not appear visually faded.
-        fillVariableWidthPath(baseCtx, activePts,
-          (j) => Math.max(1.2, sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale)) + 2.4,
-          t.glow + '0.060)');
-        fillVariableWidthPath(baseCtx, activePts,
-          (j) => Math.max(1.2, sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale)),
-          t.riverFill + '1.0)');
-        fillVariableWidthPath(baseCtx, activePts,
-          (j) => Math.max(0.8, sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale) * 0.42),
-          t.riverCore + '0.095)');
-        // Subtle bank edge only; the filled polygon is the river.
-        baseCtx.beginPath();
-        activePts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-        baseCtx.strokeStyle = t.riverCore + '0.16)';
-        baseCtx.lineWidth = 0.55;
-        baseCtx.stroke();
+        // Full mainstem width. Separation is expressed by geometry, not
+        // by shrinking the water body.
+        drawMaskPath(activePts,
+          (j) => Math.max(1.2,
+            sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale)));
       }
       activePts.length = 0;
     };
+
     for (let i = 0; i < thread.length; i++) {
       const bp = thread[i];
       if (!bp.active && activePts.length === 0) continue;
@@ -2810,39 +2875,108 @@ function drawRiverBase() {
     flush();
   });
 
-  // Register sampled tributary paths for the particle engine.
-  // Same uniform resampling as braid paths so particle speed is consistent.
-  window._tribPaths = (layout ? layout.confluences : []).map(c => {
-    const pts = samplePath(c.tribPath, c.major ? 60 : 40);
-    return resamplePathUniform(pts.map(p => ({x: p.x, y: p.y})), Math.max(1.4, baseH / 900));
-  }).filter(p => p.length > 8);
+  // ================================================================
+  // PAINT THE UNION ONCE
+  // ================================================================
+  // A single colour/alpha pass means:
+  //   mainstem + braid = same colour
+  //   braid + braid     = same colour
+  //   mainstem + braid  = same colour
+  //   tributary + mainstem = same colour
+  // regardless of overlap order.
+  const waterLayer = document.createElement('canvas');
+  waterLayer.width = baseW;
+  waterLayer.height = baseH;
+  const waterCtx = waterLayer.getContext('2d');
+  waterCtx.clearRect(0, 0, baseW, baseH);
+  waterCtx.fillStyle = t.riverFill + '0.54)';
+  waterCtx.fillRect(0, 0, baseW, baseH);
+  waterCtx.globalCompositeOperation = 'destination-in';
+  waterCtx.drawImage(waterMask, 0, 0);
+  waterCtx.globalCompositeOperation = 'source-over';
+  baseCtx.drawImage(waterLayer, 0, 0);
+
+  // A single soft outer glow from the same unified water mask.
+  const glowLayer = document.createElement('canvas');
+  glowLayer.width = baseW;
+  glowLayer.height = baseH;
+  const glowCtx = glowLayer.getContext('2d');
+  glowCtx.clearRect(0, 0, baseW, baseH);
+  glowCtx.fillStyle = t.glow + '0.075)';
+  glowCtx.filter = 'blur(1.6px)';
+  glowCtx.fillRect(0, 0, baseW, baseH);
+  glowCtx.filter = 'none';
+  glowCtx.globalCompositeOperation = 'destination-in';
+  glowCtx.drawImage(waterMask, 0, 0);
+  glowCtx.globalCompositeOperation = 'source-over';
+  baseCtx.drawImage(glowLayer, 0, 0);
+
+  // ---------------------------------------------------------------
+  // Interior current/core: deliberately kept as ONE subtle system.
+  // The filled water surface above is what guarantees seamless joins.
+  // ---------------------------------------------------------------
+  baseCtx.save();
+  baseCtx.strokeStyle = t.riverCore + '0.095)';
+  baseCtx.lineWidth = 0.70;
+  baseCtx.lineCap = 'round';
+  baseCtx.beginPath();
+  mainPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
+  baseCtx.stroke();
+  baseCtx.restore();
+
+  // Tributary thalwegs remain subtle, but their colour is identical to the
+  // mainstem. They fade toward the confluence so they do not sit on top of
+  // the main channel as a second dark line.
+  confluences.forEach(c => {
+    const pathPts = samplePath(c.tribPath, c.major ? 60 : 40);
+    baseCtx.save();
+    baseCtx.beginPath();
+    pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
+    const grad = baseCtx.createLinearGradient(pathPts[0].x, pathPts[0].y,
+                                               pathPts[pathPts.length-1].x,
+                                               pathPts[pathPts.length-1].y);
+    grad.addColorStop(0, t.riverCore + (c.major ? '0.16)' : '0.12)'));
+    grad.addColorStop(0.76, t.riverCore + (c.major ? '0.12)' : '0.09)'));
+    grad.addColorStop(1, t.riverCore + '0.00)');
+    baseCtx.strokeStyle = grad;
+    baseCtx.lineWidth = c.major ? 0.58 : 0.42;
+    baseCtx.lineCap = 'round';
+    baseCtx.stroke();
+    baseCtx.restore();
+  });
+
+  // Braid thalwegs: the existing envelope is used to fade their independent
+  // centreline in at bifurcation and out at reconnection. The water body itself
+  // remains unified, so no seam is introduced.
+  threads.forEach(thread => {
+    const activePts = thread.filter(p => p.active);
+    if (activePts.length < 6) return;
+    baseCtx.save();
+    baseCtx.beginPath();
+    activePts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
+    const first = activePts[0];
+    const last = activePts[activePts.length - 1];
+    const grad = baseCtx.createLinearGradient(first.x, first.y, last.x, last.y);
+    grad.addColorStop(0, t.riverCore + '0.00)');
+    grad.addColorStop(0.12, t.riverCore + '0.10)');
+    grad.addColorStop(0.50, t.riverCore + '0.12)');
+    grad.addColorStop(0.88, t.riverCore + '0.10)');
+    grad.addColorStop(1, t.riverCore + '0.00)');
+    baseCtx.strokeStyle = grad;
+    baseCtx.lineWidth = 0.62;
+    baseCtx.lineCap = 'round';
+    baseCtx.stroke();
+    baseCtx.restore();
+  });
 
   // Oxbow lake: an abandoned meander loop beside the active channel.
   drawOxbowLake(baseCtx, mainPts, t.riverFill + '0.18)', t.riverCore + '0.20)');
 
-  // Mainstem: restrained 2D water body + slightly darker inner current.
-  // Width is intentionally modest: enough to read as a river body, not a ribbon.
-  // The tiny seeded edge wobble keeps the channel from reading as a perfect vector tube.
-  const edgeJitter = (i, len) => {
-    const n = i / Math.max(1, len - 1);
-    return 0.7 + 0.35 * Math.sin(n * 31.7 + 0.8) + 0.18 * Math.sin(n * 83.1);
-  };
-  fillVariableWidthPath(baseCtx, mainPts,
-    (i) => mainWidthAt(mainPts[i].y) + 2.4 + edgeJitter(i, mainPts.length) * 0.55,
-    t.glow + '0.085)');
-  fillVariableWidthPath(baseCtx, mainPts,
-    (i) => mainWidthAt(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28,
-    t.riverFill + '1.0)');
-  fillVariableWidthPath(baseCtx, mainPts,
-    (i) => Math.max(0.8, mainWidthAt(mainPts[i].y) * 0.42),
-    t.riverCore + '0.095)');
-
-  // A restrained moving-water highlight follows the full channel centreline.
-  baseCtx.beginPath();
-  mainPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-  baseCtx.strokeStyle = t.riverCore + '0.28)';
-  baseCtx.lineWidth = 0.85;
-  baseCtx.stroke();
+  // Keep the particle engine's tributary paths in sync with the visible geometry.
+  window._tribPaths = confluences.map(c => {
+    const pts = samplePath(c.tribPath, c.major ? 60 : 40);
+    return resamplePathUniform(pts.map(p => ({x: p.x, y: p.y})), Math.max(1.4, baseH / 900));
+  }).filter(p => p.length > 8);
 }
 
 // Brief, elegant brighten of one confluence + its tributary — used by the
