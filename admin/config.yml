@@ -85,7 +85,7 @@ collections:
                 widget: "select"
                 required: false
                 default: 3000
-                hint: "Sets where the milestone sits on the river — 6500 m = glacial source, 60 m = mouth. Leave blank for auto-placement."
+                hint: "Sets where this milestone sits on the mainstem — 6500 m = glacial source, 60 m = mouth. This does not create or classify tributaries."
                 options:
                   - { label: "6500 m — Glacial Source / Summit", value: 6500 }
                   - { label: "6250 m — High Glacial", value: 6250 }
@@ -114,15 +114,6 @@ collections:
                   - { label: "500 m — Foothills / Terai Edge", value: 500 }
                   - { label: "250 m — Terai / Lowland", value: 250 }
                   - { label: "60 m — River Mouth / Floodplain", value: 60 }
-              - label: "Tributary Class"
-                name: "type"
-                widget: "select"
-                required: false
-                default: "minor"
-                hint: "Major = 60–70% of mainstem width. Minor = 40–60% of mainstem width."
-                options:
-                  - { label: "Minor tributary (40–60% mainstem width)", value: "minor" }
-                  - { label: "Major tributary (60–70% mainstem width)", value: "major" }
               - { label: "Title", name: "title", widget: "string", required: false }
               - { label: "Description", name: "description", widget: "text", required: false, hint: "Shown on the card when expanded." }
               - { label: "Subtitle / Institution", name: "sub", widget: "string", required: false, hint: "e.g. Tribhuvan University" }
