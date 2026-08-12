@@ -1264,30 +1264,34 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // ── STATS ──────────────────────────────────────────────
   const statsGrid = document.getElementById('stats-grid');
   if (statsGrid) {
-    const defaultStats = [
-      {value:'4', suffix:'+', label:'Years Experience'},
-      {value:'30', suffix:'+', label:'Districts Visited'},
-      {value:'100', prefix:'$', suffix:'K+', label:'Grants Raised'},
-      {value:'500', suffix:'+', label:'Workers Trained'},
-      {value:'30', suffix:'K+', label:'Households Mapped'},
-      {value:'19', suffix:'+', label:'Citations'}
-    ];
-    const stats = (s.stats && s.stats.length) ? s.stats : defaultStats;
-    statsGrid.innerHTML = '';
-    stats.forEach(st => {
-      const div = document.createElement('div');
-      div.className = 'stat-item reveal';
-      div.innerHTML = `<span class="stat-number"
-        data-target="${st.value||0}"
-        data-suffix="${st.suffix||''}"
-        data-prefix="${st.prefix||''}"
-        >0</span><div class="stat-label">${safe(st.label)}</div>`;
-      statsGrid.appendChild(div);
-    });
-    // Re-trigger counter observer for newly added elements
-    document.querySelectorAll('.stat-number[data-target]').forEach(el => {
-      if (window._statObserver) window._statObserver.observe(el);
-    });
+    // No hardcoded defaults — stats section only shows if CMS has entries.
+    // Enforce 2 minimum, 8 maximum.
+    let stats = Array.isArray(s.stats) ? s.stats.filter(st => st.label || st.value) : [];
+    if (stats.length > 8) stats = stats.slice(0, 8);
+
+    if (stats.length < 2) {
+      // Hide the entire stats section if fewer than 2 entries
+      const statsSec = document.getElementById('stats');
+      if (statsSec) statsSec.style.display = 'none';
+    } else {
+      const statsSec = document.getElementById('stats');
+      if (statsSec) statsSec.style.display = '';
+      statsGrid.innerHTML = '';
+      stats.forEach(st => {
+        const div = document.createElement('div');
+        div.className = 'stat-item reveal';
+        div.innerHTML = '<span class="stat-number"'
+          + ' data-target="' + (st.value||'0') + '"'
+          + ' data-suffix="' + (st.suffix||'') + '"'
+          + ' data-prefix="' + (st.prefix||'') + '"'
+          + '>0</span><div class="stat-label">' + safe(st.label) + '</div>';
+        statsGrid.appendChild(div);
+      });
+      // Re-trigger counter observer for newly added elements
+      document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+        if (window._statObserver) window._statObserver.observe(el);
+      });
+    }
   }
 
   // ── NAMES & BIO ──
@@ -2031,7 +2035,12 @@ function buildLayout(W, H, milestones) {
   const confluences = [];
   const n = milestones.length;
   milestones.forEach((m, i) => {
-    const frac = n ? ((i + 1) / (n + 1)) * 0.86 + 0.06 : 0.5;
+    // Position milestones: first one near the source (8%), last near mouth (88%).
+    // Equal spacing so each milestone claims a proportional reach of the river.
+    const TRIB_START = 0.08;  // just below headwater/source
+    const TRIB_END   = 0.88;  // approaching mouth (braid zone begins ~0.70)
+    const frac = n > 1 ? TRIB_START + (i / (n - 1)) * (TRIB_END - TRIB_START)
+               : n === 1 ? 0.48 : 0.5;
     const y = frac * H;
     const x = getRiverXFrac(frac) * W;
     const major = m.type === 'major';
@@ -2513,12 +2522,47 @@ function drawRiverBase() {
   baseCtx.clearRect(0, 0, baseW, baseH);
   const confluences = layout.confluences;
 
-  // Tributaries (upper system — unchanged)
+  // Tributaries — same 4-layer structure as mainstem, scaled to tributary width.
+  // Width grows from headwater tip (0.35×) to confluence (1.0×), mirroring how
+  // the mainstem grows from source to mouth. Edge jitter + glow + fill + core +
+  // centreline stroke — identical pipeline, just narrower.
   confluences.forEach(c => {
-    const pathPts = samplePath(c.tribPath, 40).map(p => ({ x: p.x, y: p.y }));
+    const steps = c.major ? 60 : 40;
+    const pathPts = samplePath(c.tribPath, steps);
+
+    // Width function: tapers from near-zero at source to full tribWidth at confluence
+    const wFn = (i, len) => {
+      const progress = i / Math.max(1, len - 1); // 0 = headwater, 1 = confluence
+      // Same sigmoid growth as mainstem's widthAtY
+      const grow = Math.pow(progress, 0.55);
+      const base = c.tribWidth * (0.28 + 0.72 * grow);
+      // Small seeded edge wobble — same technique as mainstem edgeJitter
+      const jitter = 0.5 + 0.28 * Math.sin(i * 17.3 + c.y * 0.07) + 0.14 * Math.sin(i * 43.1);
+      return base + jitter * 0.18;
+    };
+
+    // Layer 1: outer soft glow (same ratio as mainstem: base + 2.4 extra)
     fillVariableWidthPath(baseCtx, pathPts,
-      (i, len) => c.tribWidth * (0.35 + 0.65 * (i / len)),
-      t.tribFill + (c.major ? '0.5)' : '0.36)'));
+      (i, len) => wFn(i, len) + 2.4,
+      t.glow + (c.major ? '0.060)' : '0.040)'));
+
+    // Layer 2: water body fill
+    fillVariableWidthPath(baseCtx, pathPts,
+      (i, len) => wFn(i, len),
+      t.tribFill + (c.major ? '0.50)' : '0.38)'));
+
+    // Layer 3: inner core tint (same 0.42× ratio as mainstem)
+    fillVariableWidthPath(baseCtx, pathPts,
+      (i, len) => Math.max(0.4, wFn(i, len) * 0.42),
+      t.riverCore + '0.07)');
+
+    // Layer 4: centreline stroke — the "thalweg" (deepest thread)
+    // Thinner than mainstem (0.55px vs 0.85px) so it reads as tributary
+    baseCtx.beginPath();
+    pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
+    baseCtx.strokeStyle = t.riverCore + (c.major ? '0.22)' : '0.16)');
+    baseCtx.lineWidth = c.major ? 0.65 : 0.45;
+    baseCtx.stroke();
   });
 
   // Full mainstem polyline
@@ -2597,6 +2641,13 @@ function drawRiverBase() {
     }
     flush();
   });
+
+  // Register sampled tributary paths for the particle engine.
+  // Same uniform resampling as braid paths so particle speed is consistent.
+  window._tribPaths = (layout ? layout.confluences : []).map(c => {
+    const pts = samplePath(c.tribPath, c.major ? 60 : 40);
+    return resamplePathUniform(pts.map(p => ({x: p.x, y: p.y})), Math.max(1.4, baseH / 900));
+  }).filter(p => p.length > 8);
 
   // Oxbow lake: an abandoned meander loop beside the active channel.
   drawOxbowLake(baseCtx, mainPts, t.riverFill + '0.18)', t.riverCore + '0.20)');
@@ -2714,10 +2765,29 @@ function meanderSpeedFactor(path, index) {
 
 function spawnParticle() {
   const braids = window._braidPaths || [];
+  const tribs  = window._tribPaths  || [];
 
-  // Keep a balanced population across the separated channels. We choose the
-  // currently least-populated channel instead of randomly assigning a braid,
-  // so unequal travel times do not create a visibly lopsided braid.
+  // ── Tributary particles (15% of spawns) ──────────────────
+  // Tributaries flow headwater→confluence, so particles travel
+  // from path[0] (source) toward path[end] (confluence with mainstem).
+  if (tribs.length && Math.random() < 0.15) {
+    const path = tribs[Math.floor(Math.random() * tribs.length)];
+    if (path && path.length > 8) {
+      return {
+        pos: 0, // always start at headwater tip
+        path,
+        channelIndex: -2, // sentinel: tributary
+        isTrib: true,
+        baseSpeed: 0.55 + Math.random() * 0.25, // slightly slower than mainstem
+        alpha: 0.38 + Math.random() * 0.35,
+        size: 0.45 + Math.random() * 0.55,       // slightly smaller streaks
+        seed: Math.random() * 1000,
+        trailLen: 4
+      };
+    }
+  }
+
+  // ── Braid particles (same balanced logic as before) ───────
   if (braids.length && Math.random() < 0.45) {
     if (braidActiveCounts.length !== braids.length) {
       braidActiveCounts = Array.from({length: braids.length}, () => 0);
@@ -2747,6 +2817,7 @@ function spawnParticle() {
     }
   }
 
+  // ── Mainstem particle ─────────────────────────────────────
   const bias = Math.pow(Math.random(), 1.55);
   const pos  = bias * riverPath.length * 0.92;
   return {
