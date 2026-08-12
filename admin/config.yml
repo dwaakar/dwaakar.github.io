@@ -85,21 +85,34 @@ collections:
                 widget: "select"
                 required: false
                 default: 3000
-                hint: "Sets where the milestone sits on the river — source is 6500 m, mouth is 60 m. Leave blank for auto-placement."
+                hint: "Sets where the milestone sits on the river — 6500 m = glacial source, 60 m = mouth. Leave blank for auto-placement."
                 options:
-                  - { label: "6500 m — Summit / Glacial Source", value: 6500 }
+                  - { label: "6500 m — Glacial Source / Summit", value: 6500 }
+                  - { label: "6250 m — High Glacial", value: 6250 }
                   - { label: "6000 m — High Alpine", value: 6000 }
+                  - { label: "5750 m — Upper Glacial Zone", value: 5750 }
                   - { label: "5500 m — Glacial Zone", value: 5500 }
+                  - { label: "5250 m — High Mountain Pass", value: 5250 }
                   - { label: "5000 m — High Mountain", value: 5000 }
+                  - { label: "4750 m — Upper Alpine", value: 4750 }
                   - { label: "4500 m — Alpine Meadow", value: 4500 }
+                  - { label: "4250 m — Upper Treeline", value: 4250 }
                   - { label: "4000 m — Treeline", value: 4000 }
+                  - { label: "3750 m — Subalpine Forest Edge", value: 3750 }
                   - { label: "3500 m — Subalpine", value: 3500 }
+                  - { label: "3250 m — Upper Mid-Mountain", value: 3250 }
                   - { label: "3000 m — Mid-Mountain", value: 3000 }
+                  - { label: "2750 m — Lower Mid-Mountain", value: 2750 }
                   - { label: "2500 m — Lower Mountain", value: 2500 }
+                  - { label: "2250 m — Upper Hill Zone", value: 2250 }
                   - { label: "2000 m — Hill Zone", value: 2000 }
+                  - { label: "1750 m — Lower Hill Zone", value: 1750 }
                   - { label: "1500 m — Upper Hills", value: 1500 }
+                  - { label: "1250 m — Mid Hills", value: 1250 }
                   - { label: "1000 m — Lower Hills", value: 1000 }
+                  - { label: "750 m — Upper Foothills", value: 750 }
                   - { label: "500 m — Foothills / Terai Edge", value: 500 }
+                  - { label: "250 m — Terai / Lowland", value: 250 }
                   - { label: "60 m — River Mouth / Floodplain", value: 60 }
               - label: "Tributary Class"
                 name: "type"
