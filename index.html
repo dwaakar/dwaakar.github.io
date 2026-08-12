@@ -1865,10 +1865,24 @@ const body   = document.getElementById('jrn-body');
 const inner  = document.getElementById('jrn-inner');
 
 function setOpenHeight() {
-  // Animate max-height to the real content height, then release it to
-  // 'none' so dynamic/tall content (many milestones) isn't clipped.
+  // Measure only after the Journey engine has been sized/built.
   if (!inner || !body) return;
-  body.style.setProperty('--jrn-open-h', inner.scrollHeight + 'px');
+  const h = Math.max(inner.scrollHeight, inner.offsetHeight, 560);
+  body.style.setProperty('--jrn-open-h', h + 'px');
+}
+
+function ensureJourneyReady() {
+  // Keep the Journey independent from CMS timing and accordion visibility.
+  // Rendering errors must not prevent the section itself from opening.
+  try {
+    initEngines();
+    if (typeof window._buildRoad === 'function') window._buildRoad();
+    setOpenHeight();
+  } catch (err) {
+    console.error('[Journey] initialization failed:', err);
+    if (inner) inner.style.minHeight = '560px';
+    if (body) body.style.setProperty('--jrn-open-h', (inner ? Math.max(inner.scrollHeight, 560) : 560) + 'px');
+  }
 }
 
 if (toggle && body) {
@@ -1876,10 +1890,8 @@ if (toggle && body) {
     const opening = !body.classList.contains('open');
     const hintEl  = document.getElementById('jrn-toggle-hint');
     if (opening) {
-      // Size everything (layout, canvases, milestone spacing) BEFORE
-      // measuring scrollHeight, so the open transition targets the real
-      // final height rather than a stale collapsed one.
-      initEngines();
+      // Initialize independently of CMS timing; the accordion only controls visibility.
+      ensureJourneyReady();
       setOpenHeight();
       body.classList.add('open');
       toggle.setAttribute('aria-expanded', 'true');
@@ -2094,20 +2106,21 @@ function routeTributaryByValley(W, H, confluenceX, confluenceY, side, idx, major
   const targetNX = confluenceX / W;
   const targetNY = confluenceY / H;
 
-  // Longer source reach for majors. Keep the source inside the canvas while
-  // pushing major headwaters noticeably farther upstream than minor ones.
+  // Watershed-style tributaries: keep all tributaries relatively short.
+  // Major tributaries are only modestly longer than minor tributaries; we do
+  // not force them to originate from the extreme highlands.
   const reachFrac = major
-    ? (0.34 + 0.06 * seededRand(idx * 7.31 + 2.1))
-    : (0.18 + 0.035 * seededRand(idx * 7.31 + 2.1));
+    ? (0.235 + 0.045 * seededRand(idx * 7.31 + 2.1))
+    : (0.145 + 0.030 * seededRand(idx * 7.31 + 2.1));
   const reachY = reachFrac * H * (isMobile() ? 0.72 : 1);
-  const reachX = (major ? 0.22 : 0.12) * W * side;
+  const reachX = (major ? 0.16 : 0.11) * W * side;
 
   const hwY = Math.max(H * 0.025, confluenceY - reachY);
   // Keep the source on the requested side, but never pin it too close to an edge.
-  const rerouteShift = (seededRand(idx * 31.7 + attempt * 11.3) - 0.5) * W * (major ? 0.12 : 0.075);
+  const rerouteShift = (seededRand(idx * 31.7 + attempt * 11.3) - 0.5) * W * (major ? 0.08 : 0.055);
   const hwX = Math.max(W * 0.045, Math.min(W * 0.955, confluenceX + reachX + rerouteShift));
 
-  const NPTS = major ? 42 : 28;
+  const NPTS = major ? 34 : 24;
   const pts = [{ x: hwX, y: hwY }];
   let cx = hwX / W;
   let cy = hwY / H;
@@ -3571,10 +3584,28 @@ window._buildRoad = function() {
   if (enginesInitialised) { buildMilestones(); setOpenHeight(); }
 };
 
-// Boot the static/background layers immediately (invisible until expanded)
-initTopo();
-initRiverBase();
-initRiver();
+// Boot the static/background layers immediately. The Journey itself remains
+// collapsed, but its rendering engines are made ready before the user opens it.
+try {
+  initTopo();
+  initRiverBase();
+  initRiver();
+  initEngines();
+} catch (err) {
+  console.error('[Journey] boot failed:', err);
+}
+
+// Re-measure after fonts/layout settle; this also protects deployed builds where
+// CMS content arrives a little later than the first paint.
+window.addEventListener('load', () => {
+  try {
+    if (enginesInitialised) {
+      resizeTopo(); resizeRiverBase(); resizeRiver();
+      drawTopo();
+      setOpenHeight();
+    }
+  } catch (err) { console.error('[Journey] post-load resize failed:', err); }
+});
 
 })();
 </script>
