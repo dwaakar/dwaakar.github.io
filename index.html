@@ -297,6 +297,8 @@
     .jrn-card.jrn-side-r{transform:translateY(-50%) translateX(-8px)}
     .jrn-card.jrn-side-l{transform:translateY(-50%) translateX(8px)}
     .jrn-anchor.jrn-in-view .jrn-card{opacity:1;transform:translateY(-50%) translateX(0)}
+    .jrn-card-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
+      color:var(--accent);opacity:.7;letter-spacing:.08em;margin-bottom:.18rem}
     .jrn-card-date{font-family:'JetBrains Mono',monospace;font-size:.68rem;letter-spacing:.08em;color:var(--accent);opacity:.9;margin-bottom:.2rem}
     .jrn-card-title{font-family:'Cormorant Garamond',serif;font-weight:600;font-size:1rem;color:var(--ink);line-height:1.3;margin-bottom:.25rem}
     .jrn-anchor.jrn-major .jrn-card-title{font-size:1.14rem}
@@ -1255,7 +1257,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       type:        (m.type === 'major') ? 'major' : 'minor',
       title:       m.title || '',
       date:        m.date  || m.year   || '',
-      description: m.description || m.detail || m.sub || ''
+      description: m.description || m.detail || m.sub || '',
+      elevation:   m.elevation ? +m.elevation : null, // metres; null = auto-place
     }));
     // Rebuild the river network with CMS milestones
     if (window._buildRoad) window._buildRoad();
@@ -2031,47 +2034,82 @@ function getRiverXFrac(norm) {
 // ═══════════════════════════════════════
 let layout = null; // { total, confluences:[{frac,x,type,side,milestone,tribPath,increment}] }
 
+// Elevation → vertical fraction conversion.
+// ELEV_TOP (6500 m) = top of canvas (frac 0.0), ELEV_BOTTOM (60 m) = bottom (frac 1.0).
+// Uses a slight power curve (0.82) so mid-elevations aren't bunched — matches
+// how real Himalayan hypsometry distributes terrain.
+function elevToFrac(elev) {
+  const e = Math.max(ELEV_BOTTOM, Math.min(ELEV_TOP, +elev));
+  const norm = (ELEV_TOP - e) / (ELEV_TOP - ELEV_BOTTOM); // 0=top, 1=bottom
+  return Math.pow(norm, 0.82) * 0.80 + 0.06; // map to canvas range 0.06–0.86
+}
+
 function buildLayout(W, H, milestones) {
   const confluences = [];
   const n = milestones.length;
+
+  // Assign vertical position:
+  // – If milestone has elevation set → convert directly.
+  // – Otherwise → auto-space evenly between source (8%) and mouth (88%),
+  //   interleaving with elevation-placed milestones so nothing collides badly.
+  const AUTO_START = 0.08, AUTO_END = 0.88;
+  let autoCount = 0;
+  const autoTotal = milestones.filter(m => !m.elevation).length;
+
   milestones.forEach((m, i) => {
-    // Position milestones: first one near the source (8%), last near mouth (88%).
-    // Equal spacing so each milestone claims a proportional reach of the river.
-    const TRIB_START = 0.08;  // just below headwater/source
-    const TRIB_END   = 0.88;  // approaching mouth (braid zone begins ~0.70)
-    const frac = n > 1 ? TRIB_START + (i / (n - 1)) * (TRIB_END - TRIB_START)
-               : n === 1 ? 0.48 : 0.5;
+    let frac;
+    if (m.elevation) {
+      frac = elevToFrac(m.elevation);
+    } else {
+      // Auto-place: distribute evenly across the remaining span
+      frac = autoTotal > 1
+        ? AUTO_START + (autoCount / (autoTotal - 1)) * (AUTO_END - AUTO_START)
+        : 0.48;
+      autoCount++;
+    }
+
     const y = frac * H;
     const x = getRiverXFrac(frac) * W;
     const major = m.type === 'major';
-    const side = i % 2 === 0 ? 1 : -1; // 1 = right, -1 = left
+    const side  = i % 2 === 0 ? 1 : -1; // alternate left/right
 
-    // Tributary reach, scaled by viewport and milestone importance
-    const reachX = (major ? (0.15 + seededRand(i*3.1)*0.07) : (0.07 + seededRand(i*3.1)*0.05)) * W * side;
-    const reachY = (major ? (180 + seededRand(i*5.7)*70) : (90 + seededRand(i*5.7)*45)) * (isMobile() ? 0.62 : 1);
+    // ── Tributary dimensions ────────────────────────────────
+    // major: 60–70% of mainstem width at that elevation
+    // minor: 40–60% of mainstem width
+    // Mainstem width at this y is given by widthAtY (called after confluences built,
+    // so we store a width multiplier and resolve it during draw).
+    const tribWidthMult = major
+      ? (0.60 + seededRand(i * 2.3) * 0.10)   // 0.60–0.70 × mainstem
+      : (0.40 + seededRand(i * 2.3) * 0.20);   // 0.40–0.60 × mainstem
 
-    // Build a natural, multi-segment meandering path from origin -> confluence
+    // ── Tributary reach (how far it extends from confluence) ─
+    const reachX = (major
+      ? (0.15 + seededRand(i * 3.1) * 0.07)
+      : (0.07 + seededRand(i * 3.1) * 0.05)) * W * side;
+    const reachY = (major
+      ? (180 + seededRand(i * 5.7) * 70)
+      : (90  + seededRand(i * 5.7) * 45)) * (isMobile() ? 0.62 : 1);
+
+    // ── Catmull-Rom control points for tributary path ────────
     const segs = major ? 4 : 3;
-    const pts = [];
+    const pts  = [];
     for (let s = 0; s <= segs; s++) {
-      const t = s / segs;
+      const t  = s / segs;
       const px = x + reachX * (1 - t) * (1 - t * 0.15);
-      // small organic jitter perpendicular-ish to the general path
-      const jitter = (seededRand(i*7.3 + s*2.9) - 0.5) * reachX * 0.35 * (1 - t);
+      const jitter = (seededRand(i * 7.3 + s * 2.9) - 0.5) * reachX * 0.35 * (1 - t);
       const py = y - reachY * (1 - t) + jitter * 0.4;
-      // Clamp within the canvas so tributary origins never run off the edge
-      pts.push({ x: Math.max(W*0.02, Math.min(W*0.98, px + jitter)), y: py });
+      pts.push({ x: Math.max(W * 0.02, Math.min(W * 0.98, px + jitter)), y: py });
     }
-    pts.push({ x, y }); // confluence point itself
+    pts.push({ x, y }); // confluence point
 
     confluences.push({
       frac, x, y, major,
-      type: major ? 'major' : 'minor',
+      type:           major ? 'major' : 'minor',
       side,
-      milestone: m,
-      tribPath: pts,
-      increment: major ? 0.9 : 0.4,
-      tribWidth: major ? 2.4 : 1.3,
+      milestone:      m,
+      tribPath:       pts,
+      tribWidthMult,              // fraction of mainstem width
+      increment:      major ? 0.9 : 0.4,
     });
   });
   return { confluences };
@@ -2522,26 +2560,33 @@ function drawRiverBase() {
   baseCtx.clearRect(0, 0, baseW, baseH);
   const confluences = layout.confluences;
 
-  // Tributaries — same 4-layer structure as mainstem, scaled to tributary width.
-  // Width grows from headwater tip (0.35×) to confluence (1.0×), mirroring how
-  // the mainstem grows from source to mouth. Edge jitter + glow + fill + core +
-  // centreline stroke — identical pipeline, just narrower.
+  // Tributaries — identical 4-layer pipeline as mainstem (glow, fill, core, thalweg).
+  // Width = tribWidthMult × mainstem width at the confluence elevation.
+  // major: 60–70% of mainstem; minor: 40–60% of mainstem.
+  // Growth curve: headwater tip starts at 0.22× the confluence width and grows
+  // via a power curve to 1.0× — same shape as the mainstem's source-to-mouth growth.
   confluences.forEach(c => {
-    const steps = c.major ? 60 : 40;
+    const steps   = c.major ? 60 : 40;
     const pathPts = samplePath(c.tribPath, steps);
 
-    // Width function: tapers from near-zero at source to full tribWidth at confluence
+    // Resolve actual mainstem width at this confluence y position.
+    // We pass the already-built confluences list so widthAtY includes
+    // upstream tributaries — correctly reflecting accumulated discharge.
+    const mainW = widthAtY(c.y, confluences);
+    const fullTribW = mainW * (c.tribWidthMult || (c.major ? 0.65 : 0.50));
+
+    // Width function: headwater is narrow, widens to fullTribW at confluence.
     const wFn = (i, len) => {
-      const progress = i / Math.max(1, len - 1); // 0 = headwater, 1 = confluence
-      // Same sigmoid growth as mainstem's widthAtY
-      const grow = Math.pow(progress, 0.55);
-      const base = c.tribWidth * (0.28 + 0.72 * grow);
-      // Small seeded edge wobble — same technique as mainstem edgeJitter
-      const jitter = 0.5 + 0.28 * Math.sin(i * 17.3 + c.y * 0.07) + 0.14 * Math.sin(i * 43.1);
-      return base + jitter * 0.18;
+      const progress = i / Math.max(1, len - 1); // 0 = headwater tip, 1 = confluence
+      const grow     = Math.pow(progress, 0.60);  // same power as mainstem (0.6)
+      const base     = fullTribW * (0.22 + 0.78 * grow);
+      // Seeded edge wobble — same as mainstem edgeJitter technique
+      const jitter   = 0.5 + 0.28 * Math.sin(i * 17.3 + c.y * 0.07)
+                           + 0.14 * Math.sin(i * 43.1 + c.x * 0.05);
+      return Math.max(0.4, base + jitter * 0.15);
     };
 
-    // Layer 1: outer soft glow (same ratio as mainstem: base + 2.4 extra)
+    // Layer 1: outer soft glow
     fillVariableWidthPath(baseCtx, pathPts,
       (i, len) => wFn(i, len) + 2.4,
       t.glow + (c.major ? '0.060)' : '0.040)'));
@@ -2549,19 +2594,19 @@ function drawRiverBase() {
     // Layer 2: water body fill
     fillVariableWidthPath(baseCtx, pathPts,
       (i, len) => wFn(i, len),
-      t.tribFill + (c.major ? '0.50)' : '0.38)'));
+      t.tribFill + (c.major ? '0.52)' : '0.40)'));
 
-    // Layer 3: inner core tint (same 0.42× ratio as mainstem)
+    // Layer 3: inner core tint (0.42× of width — same ratio as mainstem)
     fillVariableWidthPath(baseCtx, pathPts,
       (i, len) => Math.max(0.4, wFn(i, len) * 0.42),
-      t.riverCore + '0.07)');
+      t.riverCore + '0.08)');
 
-    // Layer 4: centreline stroke — the "thalweg" (deepest thread)
-    // Thinner than mainstem (0.55px vs 0.85px) so it reads as tributary
+    // Layer 4: thalweg centreline
+    // Stroke width proportional to class — major 0.65px, minor 0.45px
     baseCtx.beginPath();
     pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-    baseCtx.strokeStyle = t.riverCore + (c.major ? '0.22)' : '0.16)');
-    baseCtx.lineWidth = c.major ? 0.65 : 0.45;
+    baseCtx.strokeStyle = t.riverCore + (c.major ? '0.24)' : '0.17)');
+    baseCtx.lineWidth   = c.major ? 0.65 : 0.45;
     baseCtx.stroke();
   });
 
@@ -2689,8 +2734,10 @@ function flashConfluence(c) {
     const glowT = Math.sin(p * Math.PI); // 0 -> 1 -> 0
     drawRiverBase();
     const pathPts = samplePath(c.tribPath, 40);
+    const mainW = layout ? widthAtY(c.y, layout.confluences) : 4;
+    const fullW = mainW * (c.tribWidthMult || (c.major ? 0.65 : 0.50));
     fillVariableWidthPath(baseCtx, pathPts,
-      (i, len) => c.tribWidth * (0.35 + 0.65 * (i/len)) + glowT * 2.2,
+      (i, len) => fullW * (0.22 + 0.78 * Math.pow(i/Math.max(1,len-1), 0.6)) + glowT * 2.2,
       theme().riverCore + (0.12 + glowT * 0.28).toFixed(2) + ')');
     if (p < 1) requestAnimationFrame(step);
   }
@@ -3076,7 +3123,10 @@ function buildMilestones() {
 
     const card = document.createElement('div');
     card.className = 'jrn-card jrn-side-' + side;
+    // Show elevation badge if set (e.g. "3500 m")
+    const elevLabel = m.elevation ? m.elevation + ' m' : '';
     card.innerHTML =
+      (elevLabel ? `<div class="jrn-card-elev">${esc(elevLabel)}</div>` : '') +
       (m.date ? `<div class="jrn-card-date">${esc(m.date)}</div>` : '') +
       (m.title ? `<div class="jrn-card-title">${esc(m.title)}</div>` : '') +
       (m.description ? `<div class="jrn-card-desc">${esc(m.description)}</div>` : '');
