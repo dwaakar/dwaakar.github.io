@@ -279,11 +279,11 @@
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
     /* ── Milestone connector lines + floating dialog boxes ── */
-    #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:visible}
+    #jrn-milestones{position:absolute;inset:0;z-index:20;pointer-events:none;overflow:visible;display:block}
     #jrn-ms-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 
     /* The dialog box — glass card */
-    .jrn-ms-card{position:absolute;pointer-events:none;
+    .jrn-ms-card{position:absolute;pointer-events:auto;z-index:30;opacity:1;visibility:visible;
       width:clamp(150px,28%,210px);
       background:var(--surface);
       border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));
@@ -3341,6 +3341,11 @@ function objectForElev(elev) {
 }
 
 function buildMilestones() {
+  const milestoneLayer = document.getElementById('jrn-milestones');
+  if (milestoneLayer) {
+    milestoneLayer.style.opacity = '1';
+    milestoneLayer.style.visibility = 'visible';
+  }
   const wrap = document.getElementById('jrn-milestones');
   if (!wrap || !inner) return;
   wrap.innerHTML = '';
