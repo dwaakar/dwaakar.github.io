@@ -283,24 +283,39 @@
     #jrn-ms-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 
     /* The dialog box — glass card */
-    .jrn-ms-card{position:absolute;pointer-events:none;opacity:1!important;visibility:visible;
-      width:clamp(150px,28%,210px);
+    .jrn-ms-card{position:absolute;pointer-events:auto;display:none;opacity:0;visibility:hidden;
+      width:clamp(140px,20%,170px);
+      max-height:105px;overflow:auto;
       background:var(--surface);
       border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));
       border-radius:10px;
-      padding:.65rem .85rem;
-      box-shadow:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08);
-      /* Float animation — applied per-card with unique delay via style attr */
-      animation:jrnFloat var(--fd,5s) ease-in-out infinite var(--fdelay,0s);
+      padding:.55rem .7rem;
+      box-shadow:0 4px 18px rgba(0,0,0,.11),0 1px 4px rgba(0,0,0,.07);
+      transition:opacity .2s ease,transform .2s ease;
+      z-index:40;
+    }
+    .jrn-ms-card.open{display:block;opacity:1;visibility:visible;transform:translateY(0)}
+    .jrn-ms-touch{
+      position:absolute;width:34px;height:34px;transform:translate(-50%,-50%);
+      border-radius:50%;background:transparent;border:0;padding:0;
+      cursor:pointer;pointer-events:auto;z-index:45;
+      touch-action:manipulation;
+    }
+    .jrn-ms-touch::after{
+      content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;
+      transform:translate(-50%,-50%);border-radius:50%;
+      background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 15%,transparent);
+      transition:transform .2s,box-shadow .2s;
+    }
+    .jrn-ms-touch:hover::after,.jrn-ms-touch.active::after{
+      transform:translate(-50%,-50%) scale(1.35);
+      box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 20%,transparent);
     }
     @keyframes jrnFloat{
       0%,100%{transform:translate(var(--tx,0px),0px)}
       33%    {transform:translate(calc(var(--tx,0px) + var(--fx,2px)),calc(var(--fy,-4px)))}
       66%    {transform:translate(calc(var(--tx,0px) - var(--fx,1px)),calc(var(--fy2,2px)))}
     }
-    .jrn-ms-obj{font-size:1.1rem;line-height:1;margin-bottom:.3rem}
-    .jrn-ms-elev{font-family:'JetBrains Mono',monospace;font-size:.58rem;
-      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.15rem}
     .jrn-ms-date{font-size:.65rem;color:var(--ink2);opacity:.8;margin-bottom:.15rem}
     .jrn-ms-title{font-weight:700;font-size:.8rem;color:var(--ink);line-height:1.3;margin-bottom:.2rem}
     .jrn-ms-desc{font-size:.7rem;color:var(--ink2);line-height:1.45;opacity:.9}
@@ -762,6 +777,15 @@ function esc(v) {
     '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
   }[ch]));
 }
+function externalUrl(v) {
+  if (!v) return '';
+  const s = String(v).trim();
+  if (!s) return '';
+  if (/^https?:\/\//i.test(s)) return s;
+  if (/^doi\./i.test(s)) return 'https://' + s;
+  if (/^10\.\d+\//.test(s)) return 'https://doi.org/' + s;
+  return s;
+}
 // Normalise image paths — handle both /images/ and /public/images/ and relative
 function imgPath(p) {
   if (!p) return '';
@@ -1117,7 +1141,13 @@ function openModal(cfg) {
   // Other actions at bottom
   let btns = '';
   if (show('showReport') && cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
-  if (cfg.link) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
+  if (cfg.pageType === 'publication' && cfg.doi) {
+    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.doi}" target="_blank" rel="noopener noreferrer">↗ DOI</a>`;
+  } else if (cfg.pageType === 'publication' && cfg.link) {
+    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank" rel="noopener noreferrer">↗ link</a>`;
+  } else if (cfg.link) {
+    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank" rel="noopener noreferrer">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
+  }
   const actEl = document.getElementById('modal-actions');
   actEl.innerHTML = btns;
   actEl.style.display = btns ? 'flex' : 'none';
@@ -1474,14 +1504,23 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // Publications list
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    const doiHtml=p.doi?`<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>`:'';
+    const doiUrl = externalUrl(p.doi);
+    const pubUrl = externalUrl(p.link || p.url || p.publicationLink);
+    const pubKind = String(p.category || p.type || p.kind || '').toLowerCase();
+    const isFeature = pubKind.includes('feature');
+    const doiHtml = (!isFeature && doiUrl)
+      ? `<a class="pub-doi" href="${doiUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">↗ DOI</a>`
+      : '';
+    const linkHtml = (isFeature && pubUrl)
+      ? `<a class="pub-doi" href="${pubUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">↗ link</a>`
+      : '';
     const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
     div.className='pub-card reveal';
     div.dataset.cat = p.category||'';
     const statusHtml = p.status ? `<span class="pub-status">${safe(p.status)}</span>` : '';
     const catHtml = p.category ? `<span class="pub-category-badge">${safe(p.category)}</span>` : '';
-    div.innerHTML=`<div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">${statusHtml}${catHtml}</div><div class="pub-body"><div class="pub-title">${safe(p.title)}</div><div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${safe(p.journal)}</div>${doiHtml}<div style="flex:1"></div>${hasMore?`<span class="pub-more">Read more →</span>`:''}</div>`;
+    div.innerHTML=`<div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">${statusHtml}${catHtml}</div><div class="pub-body"><div class="pub-title">${safe(p.title)}</div><div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${safe(p.journal)}</div><div style="display:flex;gap:.8rem;flex-wrap:wrap">${doiHtml}${linkHtml}</div><div style="flex:1"></div>${hasMore?`<span class="pub-more">Read more →</span>`:''}</div>`;
     if(hasMore){
       div.addEventListener('click',()=>openModal({
         title:p.title,
@@ -1490,7 +1529,9 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
         shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
-        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
+        doi:doiUrl,
+         link:pubUrl,
+         displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
         vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
         fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
       }));
@@ -3344,19 +3385,6 @@ window.addEventListener('resize', resizeRiver);
 // ═══════════════════════════════════════
 let milestoneObserver = null;
 
-// ── Elevation → object ───────────────────────────────────────────────────
-function objectForElev(elev) {
-  const e = (elev != null && elev !== '') ? +elev : -1;
-  if (e >= 5750) return { icon: '🧊', label: 'Glacier' };
-  if (e >= 4750) return { icon: '🪨', label: 'Huge Rock' };
-  if (e >= 3500) return { icon: '⛰️',  label: 'Landslide' };
-  if (e >= 2250) return { icon: '🪵', label: 'Driftwood' };
-  if (e >= 1000) return { icon: '🌿', label: 'Riparian Vegetation' };
-  if (e >=  250) return { icon: '🌉', label: 'River Crossing' };
-  if (e >=    0) return { icon: '🌊', label: 'River Mouth' };
-  return { icon: '📍', label: 'Milestone' };
-}
-
 function buildMilestones() {
   const wrap = document.getElementById('jrn-milestones');
   if (!wrap || !inner) return;
@@ -3391,7 +3419,6 @@ function buildMilestones() {
 
   layout.milestoneAnchors.forEach((anchor, i) => {
     const m   = anchor.milestone || {};
-    const obj = objectForElev(m.elevation);
 
     // ── River attachment point (on the mainstem) ─────────────────────
     const rx = anchor.x;
@@ -3433,15 +3460,14 @@ function buildMilestones() {
     const lineColor = isDk ? 'rgba(82,183,136,0.55)' : 'rgba(30,100,80,0.50)';
     const dotColor  = isDk ? 'rgba(82,183,136,0.90)' : 'rgba(30,100,80,0.85)';
 
-    // Quirky elevation-based river object marker instead of a generic dot.
-    const objectText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    objectText.setAttribute('x', rx);
-    objectText.setAttribute('y', ry);
-    objectText.setAttribute('text-anchor', 'middle');
-    objectText.setAttribute('dominant-baseline', 'central');
-    objectText.setAttribute('font-size', '22');
-    objectText.textContent = obj.icon;
-    svg.appendChild(objectText);
+    // Visual connector marker stays in the SVG; interaction is handled by
+    // an HTML touch target below so mobile/touch input is reliable.
+    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    marker.setAttribute('cx', rx);
+    marker.setAttribute('cy', ry);
+    marker.setAttribute('r', '4');
+    marker.setAttribute('fill', dotColor);
+    svg.appendChild(marker);
 
     // Bezier connector
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -3473,17 +3499,57 @@ function buildMilestones() {
     card.style.setProperty('--fy2',    floatY2);
     card.style.setProperty('--tx',     '0px');
 
-    const elev = (m.elevation != null && m.elevation !== '') ? `${esc(String(m.elevation))}\u202fm` : '';
+    // Elevation is used only to position this milestone along the river.
+    // It is intentionally not displayed in the Journey card.
     card.innerHTML = [
-      `<div class="jrn-ms-obj">${obj.icon}</div>`,
-      elev    ? `<div class="jrn-ms-elev">${elev}</div>`         : '',
       m.date  ? `<div class="jrn-ms-date">${esc(m.date)}</div>`  : '',
       m.title ? `<div class="jrn-ms-title">${esc(m.title)}</div>`: '',
       m.description ? `<div class="jrn-ms-desc">${esc(m.description)}</div>` : '',
     ].join('');
 
     wrap.appendChild(card);
+
+    const touch = document.createElement('button');
+    touch.type = 'button';
+    touch.className = 'jrn-ms-touch';
+    touch.style.left = rx + 'px';
+    touch.style.top = ry + 'px';
+    touch.setAttribute('aria-label', m.title || 'Journey milestone');
+    touch.setAttribute('aria-expanded', 'false');
+
+    touch.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      const opening = !card.classList.contains('open');
+
+      wrap.querySelectorAll('.jrn-ms-card.open').forEach(c => c.classList.remove('open'));
+      wrap.querySelectorAll('.jrn-ms-touch.active').forEach(b => {
+        b.classList.remove('active');
+        b.setAttribute('aria-expanded', 'false');
+      });
+
+      if (opening) {
+        card.classList.add('open');
+        touch.classList.add('active');
+        touch.setAttribute('aria-expanded', 'true');
+      }
+    });
+
+    wrap.appendChild(touch);
   });
+
+  // Tap/click empty Journey space to close the currently open card.
+  if (!wrap.dataset.dismissBound) {
+    wrap.dataset.dismissBound = 'true';
+    wrap.addEventListener('click', (ev) => {
+      if (ev.target === wrap || ev.target === svg) {
+        wrap.querySelectorAll('.jrn-ms-card.open').forEach(c => c.classList.remove('open'));
+        wrap.querySelectorAll('.jrn-ms-touch.active').forEach(b => {
+          b.classList.remove('active');
+          b.setAttribute('aria-expanded', 'false');
+        });
+      }
+    });
+  }
 }
 
 // ═══════════════════════════════════════
