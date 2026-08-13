@@ -2299,62 +2299,80 @@ function buildMilestonePools(W,H,milestoneAnchors,confluences){
     const p0 = { x:getRiverXFrac(f0)*W, y:f0*H };
     const p  = { x:getRiverXFrac(anchor.frac)*W, y:anchor.frac*H };
     const p1 = { x:getRiverXFrac(f1)*W, y:f1*H };
-    let tx = p1.x-p0.x, ty = p1.y-p0.y;
-    const len = Math.hypot(tx,ty) || 1;
+
+    let tx=p1.x-p0.x, ty=p1.y-p0.y;
+    const len=Math.hypot(tx,ty)||1;
     tx/=len; ty/=len;
     const nx=-ty, ny=tx;
 
-    // Keep the pool on a stable bank. If a fixed tributary is essentially at
-    // the same confluence, use that tributary's side so the two water bodies
-    // naturally merge instead of fighting for space.
-    let side = (i % 2 === 0) ? 1 : -1;
-    let nearest = null, nearestD = Infinity;
-    (confluences || []).forEach(c=>{
+    // Keep the pool on a stable bank and preserve the established position.
+    let side=(i%2===0)?1:-1;
+    let nearest=null, nearestD=Infinity;
+    (confluences||[]).forEach(c=>{
       const d=Math.abs(c.frac-anchor.frac);
-      if(d<nearestD){nearestD=d; nearest=c;}
+      if(d<nearestD){nearestD=d;nearest=c;}
     });
-    if(nearest && nearestD < 0.018) side = nearest.side || side;
+    if(nearest && nearestD<0.018) side=nearest.side||side;
 
-    const localW = Math.max(2.2, riverWidthAt(anchor.frac));
-    const halfLen = Math.max(7, Math.min(15, localW*2.6));
-    const depth = Math.max(8, Math.min(17, localW*3.2));
-    const baseOffset = Math.max(0, localW*0.18);
+    const localW=Math.max(2.2,riverWidthAt(anchor.frac));
 
-    // A compact teardrop/backwater: its mouth stays on the mainstem bank and
-    // the outer belly is only a few river-widths away. No detached ellipse.
-    const boundary=[];
-    const samples=28;
+    // The old pool was too narrow and wedge-like. Make the extension
+    // materially wider, shorter, and rounder while keeping its mouth fixed.
+    const halfLen=Math.max(9,Math.min(18,localW*3.15));
+    const depth=Math.max(11,Math.min(22,localW*4.25));
+    const mouthInset=Math.max(0.25,localW*0.10);
+    const outerWidth=Math.max(3.0,localW*0.95);
+
+    const outer=[], inner=[];
+    const samples=36;
+
     for(let j=0;j<=samples;j++){
       const q=j/samples;
       const along=-halfLen + 2*halfLen*q;
+
+      // Smooth rounded belly: zero at both ends, broadest around the middle.
       const bulge=Math.sin(Math.PI*q);
-      const lateral=side*(baseOffset + depth*bulge);
-      boundary.push({x:p.x+tx*along+nx*lateral, y:p.y+ty*along+ny*lateral});
-    }
-    // Return along a slightly inset bank curve to close the mouth cleanly.
-    for(let j=samples;j>=0;j--){
-      const q=j/samples;
-      const along=-halfLen + 2*halfLen*q;
-      const bulge=Math.sin(Math.PI*q);
-      const lateral=side*(baseOffset*0.12 + depth*0.58*bulge);
-      boundary.push({x:p.x+tx*along+nx*lateral, y:p.y+ty*along+ny*lateral});
+      const smoothBulge=bulge*bulge*(3-2*bulge);
+
+      // Outer bank: farther from the mainstem and slightly fuller near
+      // the middle, producing a pond-like lobe rather than a hook.
+      const lateral=side*(mouthInset + depth*(0.16 + 0.84*smoothBulge));
+      outer.push({
+        x:p.x+tx*along+nx*lateral,
+        y:p.y+ty*along+ny*lateral
+      });
+
+      // Inner bank stays much closer to the mainstem and opens gently
+      // into the mouth. This makes a substantial closed pool instead of
+      // two nearly parallel lines.
+      const innerLateral=side*(mouthInset*0.12 + outerWidth*(0.10+0.58*smoothBulge));
+      inner.push({
+        x:p.x+tx*along+nx*innerLateral,
+        y:p.y+ty*along+ny*innerLateral
+      });
     }
 
-    const center = {
-      x:p.x + nx*side*(baseOffset + depth*0.48),
-      y:p.y + ny*side*(baseOffset + depth*0.48)
+    // Boundary is one continuous rounded lobe.
+    const boundary=outer.concat(inner.reverse());
+
+    // Particle center follows the widest part of the pool.
+    const midOuter=outer[Math.floor(samples*.50)];
+    const midInner=inner[Math.floor(samples*.50)];
+    const center={
+      x:(midOuter.x+midInner.x)/2,
+      y:(midOuter.y+midInner.y)/2
     };
 
     pools.push({
       id:`pool-${i}`, anchor, index:i, side, tx,ty,nx,ny,
-      mouth:{x:p.x,y:p.y}, center, halfLen, depth, localW, boundary,
-      particleCount:2 + (i % 2),
-      phaseOffset:(i*1.731) % (Math.PI*2)
+      mouth:{x:p.x,y:p.y},
+      center, halfLen, depth, localW, boundary,
+      particleCount:2+(i%2),
+      phaseOffset:(i*1.731)%(Math.PI*2)
     });
   });
   return pools;
 }
-
 function buildLayout(W,H,milestones){
   buildNoiseGrid(W,H);
   const confluences=buildHardTributaries(W,H);
