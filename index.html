@@ -2929,8 +2929,8 @@ function buildOxbowFeatures(W,H,anchors){
     // Offset is modest and zero at both cutoffs, producing a former
     // channel rather than a second giant river.
     const old=[];
-    const width=Math.max(2.4,Math.min(5.2,localRiverWidth(baseH*.5)*.72));
-    const maxOffset=Math.max(5,Math.min(13,localRiverWidth(baseH*.5)*1.8));
+    const width=Math.max(2.4,Math.min(5.2,widthAtY(baseH*.5, layout ? layout.confluences : [])*.72));
+    const maxOffset=Math.max(5,Math.min(13,widthAtY(baseH*.5, layout ? layout.confluences : [])*1.8));
 
     for(let i=i0;i<=i1;i++){
       const q=river[i];
@@ -3056,7 +3056,13 @@ function drawOxbowParticles(now){
 function drawRiverBase() {
   if (!baseCtx || !baseW || !baseH || !layout) return;
   const t = theme();
-  rebuildOxbows(baseW,baseH);
+  try {
+    rebuildOxbows(baseW,baseH);
+  } catch(err) {
+    console.warn('Oxbow geometry skipped:', err);
+    oxbowFeatures=[];
+    oxbowParticles=[];
+  }
   baseCtx.clearRect(0, 0, baseW, baseH);
   const confluences = layout.confluences;
 
