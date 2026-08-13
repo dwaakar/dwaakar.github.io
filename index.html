@@ -2211,232 +2211,241 @@ function sampleNoise(nx, ny) {
 const TRIB_SAMPLES = 72;
 const TRIB_CLUSTER_FRAC = 0.022;
 const TRIB_CONFLUENCE_ZONE = 0.030;
-const TRIB_COLLISION_GAP = 8;
+const TRIB_COLLISION_GAP = 10;
+const TRIB_GRID_COLS = 76;
+const TRIB_GRID_ROWS = 96;
 
 function mainPointAt(norm, W, H){
   const n=Math.max(0,Math.min(1,norm));
   return {x:getRiverXFrac(n)*W, y:n*H};
 }
-
 function mainTangentAt(norm, W, H){
   const eps=0.0025;
   const a=mainPointAt(Math.max(0,norm-eps),W,H);
   const b=mainPointAt(Math.min(1,norm+eps),W,H);
-  const dx=b.x-a.x, dy=b.y-a.y;
-  const len=Math.hypot(dx,dy)||1;
+  const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
   return {x:dx/len,y:dy/len};
 }
-
 function mainNormalAt(norm,W,H){
   const t=mainTangentAt(norm,W,H);
   return {x:-t.y,y:t.x};
 }
-
 function pointSegDistance(p,a,b){
-  const abx=b.x-a.x, aby=b.y-a.y;
-  const d=abx*abx+aby*aby || 1;
+  const abx=b.x-a.x, aby=b.y-a.y, d=abx*abx+aby*aby||1;
   const q=Math.max(0,Math.min(1,((p.x-a.x)*abx+(p.y-a.y)*aby)/d));
   return Math.hypot(p.x-(a.x+q*abx),p.y-(a.y+q*aby));
 }
-
 function segmentsIntersect(a,b,c,d){
-  const orient=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
-  const o1=orient(a,b,c), o2=orient(a,b,d), o3=orient(c,d,a), o4=orient(c,d,b);
-  const eps=1e-7;
-  if(Math.abs(o1)<eps && Math.abs(o2)<eps && Math.abs(o3)<eps && Math.abs(o4)<eps){
-    const overlap=(u,v,w,z)=>Math.max(Math.min(u,v),Math.min(w,z)) <= Math.min(Math.max(u,v),Math.max(w,z))+eps;
-    return overlap(a.x,b.x,c.x,d.x) && overlap(a.y,b.y,c.y,d.y);
+  const orient=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x), eps=1e-7;
+  const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
+  if(Math.abs(o1)<eps&&Math.abs(o2)<eps&&Math.abs(o3)<eps&&Math.abs(o4)<eps){
+    const overlap=(u,v,w,z)=>Math.max(Math.min(u,v),Math.min(w,z))<=Math.min(Math.max(u,v),Math.max(w,z))+eps;
+    return overlap(a.x,b.x,c.x,d.x)&&overlap(a.y,b.y,c.y,d.y);
   }
-  return ((o1>eps)!==(o2>eps)) && ((o3>eps)!==(o4>eps));
+  return ((o1>eps)!==(o2>eps))&&((o3>eps)!==(o4>eps));
 }
+function pathLength(path){let d=0;for(let i=1;i<path.length;i++)d+=Math.hypot(path[i].x-path[i-1].x,path[i].y-path[i-1].y);return d;}
 
-function pathLength(path){
-  let d=0;
-  for(let i=1;i<path.length;i++) d+=Math.hypot(path[i].x-path[i-1].x,path[i].y-path[i-1].y);
-  return d;
+function sampledMainstem(W,H){
+  const out=[];
+  for(let i=0;i<=220;i++)out.push(mainPointAt(i/220,W,H));
+  return out;
 }
-
-function tribIntersectsPath(pathA,pathB,ignoreRadius=0){
-  for(let i=1;i<pathA.length;i++){
-    const a=pathA[i-1], b=pathA[i];
-    for(let j=1;j<pathB.length;j++){
-      const c=pathB[j-1], d=pathB[j];
-      if(segmentsIntersect(a,b,c,d)){
-        if(ignoreRadius){
-          const nearEnd = Math.min(
-            Math.hypot(a.x-c.x,a.y-c.y),
-            Math.hypot(a.x-d.x,a.y-d.y),
-            Math.hypot(b.x-c.x,b.y-c.y),
-            Math.hypot(b.x-d.x,b.y-d.y)
-          );
-          if(nearEnd <= ignoreRadius) continue;
-        }
+function pathHitsPath(path,other,gap,allowEnd=null){
+  for(let i=1;i<path.length;i++){
+    for(let j=1;j<other.length;j++){
+      if(segmentsIntersect(path[i-1],path[i],other[j-1],other[j])){
+        if(allowEnd && Math.min(i,path.length-i)<=allowEnd && Math.min(j,other.length-j)<=allowEnd) continue;
         return true;
       }
-      if(ignoreRadius < TRIB_COLLISION_GAP){
-        const near=Math.min(pointSegDistance(a,c,d),pointSegDistance(b,c,d));
-        if(near < TRIB_COLLISION_GAP) return true;
-      }
+      if(gap>0 && Math.min(pointSegDistance(path[i-1],other[j-1],other[j]),pointSegDistance(path[i],other[j-1],other[j]))<gap)return true;
     }
   }
   return false;
 }
 
-function generatedTributaryPath(W,H,anchor,opts){
-  const frac=anchor.frac;
-  const side=opts.side;
-  const seed=opts.seed;
-  const sourceFrac=Math.max(0.035, frac-opts.length);
-  const pts=[];
-  const n=TRIB_SAMPLES;
-
-  // Build upstream -> confluence.  The lateral offset is always measured from
-  // the actual meandering mainstem normal, so the branch follows bends rather
-  // than cutting straight across the landscape.  The final 24% is increasingly
-  // constrained toward the mainstem tangent, creating a natural confluence.
-  for(let i=0;i<n;i++){
-    const u=i/(n-1);
-    const norm=sourceFrac+(frac-sourceFrac)*u;
-    const taper=Math.pow(1-u,0.55);
-    const normal=mainNormalAt(norm,W,H);
-    const tangent=mainTangentAt(norm,W,H);
-    const wiggleAmp=opts.wiggle*(0.35+0.65*taper);
-    const wiggle=(Math.sin(u*Math.PI*(2.1+opts.variant*0.31)+seed*4.1)*wiggleAmp +
-                  Math.sin(u*Math.PI*(3.4+opts.variant*0.19)-seed*2.7)*wiggleAmp*0.45);
-    const along=(opts.along * Math.sin(u*Math.PI*(1.2+opts.variant*0.12)+seed)) * taper;
-    const lateral=opts.offset*taper + wiggle;
-    const p=mainPointAt(norm,W,H);
-
-    // Keep the tributary's final approach oblique rather than perpendicular.
-    // Along-flow drift is strongest upstream and fades before the confluence.
-    pts.push({
-      x:p.x + normal.x*side*lateral*W + tangent.x*along*W,
-      y:p.y + normal.y*side*lateral*W + tangent.y*along*W
-    });
+// Grid router. The mainstem is a hard obstacle except for the current confluence
+// gate. Existing tributaries are hard obstacles. A small deterministic noise cost
+// makes the shortest route meander instead of becoming a sterile straight line.
+function routeTributaryGrid(W,H,start,end,blocked,seed,anchors){
+  const C=TRIB_GRID_COLS,R=TRIB_GRID_ROWS;
+  const key=(x,y)=>y*C+x;
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const gx=p=>clamp(Math.round(p.x/W*(C-1)),0,C-1);
+  const gy=p=>clamp(Math.round(p.y/H*(R-1)),0,R-1);
+  const sx=gx(start),sy=gy(start),ex=gx(end),ey=gy(end);
+  const startKey=key(sx,sy), endKey=key(ex,ey);
+  const open=[{x:sx,y:sy,f:0,g:0}];
+  const came=new Map(), gScore=new Map([[startKey,0]]), closed=new Set();
+  const dirs=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
+  const heuristic=(x,y)=>Math.hypot(x-ex,y-ey);
+  while(open.length){
+    let best=0;for(let i=1;i<open.length;i++)if(open[i].f<open[best].f)best=i;
+    const cur=open.splice(best,1)[0], ck=key(cur.x,cur.y);
+    if(closed.has(ck))continue; closed.add(ck);
+    if(cur.x===ex&&cur.y===ey){
+      const cells=[];let k=ck;
+      while(k!==undefined){const y=Math.floor(k/C),x=k-y*C;cells.push({x:x/(C-1)*W,y:y/(R-1)*H});k=came.get(k);}
+      return cells.reverse();
+    }
+    for(const [dx,dy] of dirs){
+      const nx=cur.x+dx,ny=cur.y+dy;if(nx<0||ny<0||nx>=C||ny>=R)continue;
+      const nk=key(nx,ny);if(closed.has(nk)||blocked.has(nk))continue;
+      const noise=seededRand(seed+nx*17.17+ny*31.71);
+      const turnPenalty=(dx!==0&&dy!==0)?0.08:0;
+      const ng=cur.g+Math.hypot(dx,dy)*(1.0+noise*0.34)+turnPenalty;
+      if(ng<(gScore.get(nk)??Infinity)){
+        gScore.set(nk,ng);came.set(nk,ck);
+        open.push({x:nx,y:ny,g:ng,f:ng+heuristic(nx,ny)*1.04});
+      }
+    }
   }
+  return null;
+}
 
-  // Exact source and exact confluence. The source remains lateral to the
-  // mainstem; the confluence is sacred and always lands on the centreline.
-  const srcN=mainNormalAt(sourceFrac,W,H);
-  const src=mainPointAt(sourceFrac,W,H);
-  pts[0]={x:src.x+srcN.x*side*opts.offset*W,y:src.y+srcN.y*side*opts.offset*W};
-  pts[n-1]=mainPointAt(frac,W,H);
-  return pts;
+function simplifyPath(path, obstacles, W,H){
+  if(path.length<3)return path;
+  const out=[path[0]];let i=0;
+  while(i<path.length-1){
+    let best=i+1;
+    for(let j=path.length-1;j>i+1;j--){
+      let clear=true;
+      for(const obs of obstacles){if(pathHitsPath([path[i],path[j]],obs,TRIB_COLLISION_GAP)){clear=false;break;}}
+      if(clear){best=j;break;}
+    }
+    out.push(path[best]);i=best;
+  }
+  return out;
+}
+
+function smoothTributaryPath(path, obstacles){
+  if(path.length<3)return path;
+  const out=[path[0]];
+  for(let i=1;i<path.length-1;i++){
+    const a=path[i-1],b=path[i],c=path[i+1];
+    const p1={x:a.x*.2+b.x*.8,y:a.y*.2+b.y*.8};
+    const p2={x:b.x*.8+c.x*.2,y:b.y*.8+c.y*.2};
+    const candidate=[out[out.length-1],p1,p2];
+    let safe=true;for(const obs of obstacles){if(pathHitsPath(candidate,obs,TRIB_COLLISION_GAP)){safe=false;break;}}
+    if(safe)out.push(p1,p2);else out.push(b);
+  }
+  out.push(path[path.length-1]);
+  return out;
 }
 
 function clusterMilestoneAnchors(anchors){
   const clusters=[];
   anchors.forEach(a=>{
     let cluster=clusters[clusters.length-1];
-    if(!cluster || a.frac-cluster.maxFrac>TRIB_CLUSTER_FRAC){
-      cluster={items:[],minFrac:a.frac,maxFrac:a.frac};
-      clusters.push(cluster);
-    }
-    cluster.items.push(a);
-    cluster.maxFrac=Math.max(cluster.maxFrac,a.frac);
+    if(!cluster||a.frac-cluster.maxFrac>TRIB_CLUSTER_FRAC){cluster={items:[],minFrac:a.frac,maxFrac:a.frac};clusters.push(cluster);}
+    cluster.items.push(a);cluster.maxFrac=Math.max(cluster.maxFrac,a.frac);
   });
   return clusters;
 }
 
 function generateMilestoneTributaries(W,H,anchors){
-  const clusters=clusterMilestoneAnchors(anchors);
-  const out=[];
-  const accepted=[];
+  const clusters=clusterMilestoneAnchors(anchors), out=[], accepted=[];
+  const main=sampledMainstem(W,H);
+  let previousSourceY=-Infinity;
 
   clusters.forEach((cluster,clusterIndex)=>{
-    const count=cluster.items.length;
     cluster.items.forEach((anchor,localIndex)=>{
-      const seed=(anchor.index+1)*17.173 + clusterIndex*31.77;
-      const r=seededRand(seed);
-      const side = count>1
-        ? (localIndex%2===0 ? -1 : 1) * (seededRand(seed+2.4)>0.32 ? 1 : -1)
-        : (seededRand(seed+5.2)>0.5 ? 1 : -1);
-      const density=Math.min(1,(count-1)/3);
-      const lengthBase=0.055 + seededRand(seed+7.1)*0.075;
-      const length=Math.min(0.17, lengthBase + density*0.018);
-      const offset=0.045 + seededRand(seed+11.2)*0.055;
-      const variant=Math.floor(seededRand(seed+13.8)*5);
-      const optsBase={
-        side, seed, variant, length, offset,
-        wiggle:0.0045 + seededRand(seed+19.1)*0.004,
-        along:(seededRand(seed+23.4)-0.5)*0.018
-      };
+      const seed=(anchor.index+1)*17.173+clusterIndex*31.77;
+      const side=cluster.items.length>1?(localIndex%2===0?-1:1):(seededRand(seed+5.2)>0.5?1:-1);
+      const frac=anchor.frac;
+      const baseLen=0.055+seededRand(seed+7.1)*0.065;
+      // Preserve the smaller V4 footprint. Chronology is handled by source bands,
+      // not by letting each branch choose an unrelated upstream frac.
+      let sourceFrac=Math.max(0.035,frac-baseLen);
+      if(previousSourceY>-Infinity) sourceFrac=Math.max(sourceFrac,(previousSourceY/H)+0.012);
+      sourceFrac=Math.min(sourceFrac,frac-0.025);
 
-      let path=null;
-      let opts=optsBase;
-      for(let attempt=0;attempt<14;attempt++){
-        opts={...optsBase,
-          side: attempt%4===3 ? -optsBase.side : optsBase.side,
-          variant:(variant+attempt)%7,
-          offset:Math.max(0.032,Math.min(0.115,offset + (attempt%5-2)*0.009)),
-          length:Math.max(0.045,Math.min(0.18,length + ((attempt%4)-1.5)*0.008)),
-          along:optsBase.along + ((attempt%3)-1)*0.008
-        };
-        path=generatedTributaryPath(W,H,anchor,opts);
+      const sourceMain=mainPointAt(sourceFrac,W,H), sn=mainNormalAt(sourceFrac,W,H);
+      const offset=(0.040+seededRand(seed+11.2)*0.035)*W;
+      const source={x:sourceMain.x+sn.x*side*offset,y:sourceMain.y+sn.y*side*offset};
+      source.y=Math.max(source.y,previousSourceY+10);
+      source.x=Math.max(8,Math.min(W-8,source.x));
 
-        // No tributary may cross the mainstem upstream of its own confluence.
-        // Because the branch is generated from the mainstem normal, this is
-        // mostly a guard against tight bends and lateral drift.
-        let mainCross=false;
-        for(let i=1;i<path.length-5 && !mainCross;i++){
-          const p0=path[i-1], p1=path[i];
-          const norm0=sourceFracForPath(anchor,opts,i,path.length);
-          const norm1=sourceFracForPath(anchor,opts,i+1,path.length);
-          const m0=mainPointAt(norm0,W,H), m1=mainPointAt(norm1,W,H);
-          if(segmentsIntersect(p0,p1,m0,m1) || pointSegDistance(p0,m0,m1)<TRIB_COLLISION_GAP){ mainCross=true; }
+      // Obstacles include the complete mainstem, not merely the corresponding
+      // source→confluence segment. This fixes the V4 failure at deep meanders.
+      const obstacles=[main];
+      accepted.forEach(t=>obstacles.push(t.tribPath));
+      const confluence=mainPointAt(frac,W,H);
+
+      // Open a tiny gate only at this milestone's confluence.
+      const blocked=new Set();
+      for(let gy=0;gy<TRIB_GRID_ROWS;gy++)for(let gx=0;gx<TRIB_GRID_COLS;gx++){
+        const p={x:gx/(TRIB_GRID_COLS-1)*W,y:gy/(TRIB_GRID_ROWS-1)*H};
+        let bad=false;
+        for(const obs of obstacles){
+          let d=Infinity;for(let j=1;j<obs.length;j++)d=Math.min(d,pointSegDistance(p,obs[j-1],obs[j]));
+          if(d<TRIB_COLLISION_GAP+4){bad=true;break;}
         }
-        if(mainCross) continue;
+        const gate=Math.hypot(p.x-confluence.x,p.y-confluence.y)<Math.max(14,TRIB_CONFLUENCE_ZONE*H);
+        if(bad&&!gate)blocked.add(gy*TRIB_GRID_COLS+gx);
+      }
+      const raw=routeTributaryGrid(W,H,source,confluence,blocked,seed);
+      let path=raw? simplifyPath(raw,obstacles,W,H):null;
+      if(path){path=smoothTributaryPath(path,obstacles);path[0]=source;path[path.length-1]=confluence;}
 
-        const ignore=cluster.items.length>1 ? 18 : 10;
-        let collision=false;
-        for(const other of accepted){
-          if(tribIntersectsPath(path,other.tribPath,ignore)){collision=true;break;}
-        }
-        // Chronological source ordering: upstream milestones get sources
-        // higher on the canvas, downstream milestones get progressively lower
-        // sources. This is a soft constraint; if a dense cluster leaves no
-        // room, collision-free geometry wins.
-        if (!collision) {
-          const priorSources = accepted.filter(c => c.source && c.frac < anchor.frac);
-          if (priorSources.length) {
-            const last = priorSources[priorSources.length - 1];
-            if (path[0].y < last.source.y + 8) {
-              collision = true;
+      // Final invariant: if smoothing or routing ever crosses an obstacle, discard
+      // the candidate. Never fall back to accepting an invalid path.
+      let valid=!!path;
+      if(valid){
+        // The only legal intersection with the mainstem is the designated
+        // confluence. Check the complete mainstem, but exempt a small gate
+        // around this exact confluence rather than exempting the mainstem's
+        // array endpoint (the confluence is usually in the middle of it).
+        const mainHit=(p,other)=>{
+          for(let i=1;i<p.length;i++){
+            for(let j=1;j<other.length;j++){
+              const nearGate = Math.min(
+                Math.hypot(p[i-1].x-confluence.x,p[i-1].y-confluence.y),
+                Math.hypot(p[i].x-confluence.x,p[i].y-confluence.y),
+                Math.hypot(other[j-1].x-confluence.x,other[j-1].y-confluence.y),
+                Math.hypot(other[j].x-confluence.x,other[j].y-confluence.y)
+              ) < Math.max(16,TRIB_CONFLUENCE_ZONE*H);
+              if(nearGate) continue;
+              if(segmentsIntersect(p[i-1],p[i],other[j-1],other[j])) return true;
+              if(Math.min(pointSegDistance(p[i-1],other[j-1],other[j]),pointSegDistance(p[i],other[j-1],other[j]))<TRIB_COLLISION_GAP)return true;
             }
           }
-        }
-        if(!collision) break;
+          return false;
+        };
+        if(mainHit(path,main))valid=false;
+        for(const other of accepted)if(other.tribPath.length && pathHitsPath(path,other.tribPath,TRIB_COLLISION_GAP,0)){valid=false;break;}
       }
 
-      const major = !!anchor.milestone?.major;
-      const trib={
-        frac:anchor.frac,
-        x:getRiverXFrac(anchor.frac)*W,
-        y:anchor.frac*H,
-        major,
-        type:major?'major':'minor',
-        side:opts.side,
-        milestone:anchor.milestone,
-        milestoneIndex:anchor.index,
-        sourceFrac:Math.max(0.035,anchor.frac-opts.length),
-        source:path[0],
-        tribPath:path,
-        tribWidthMult:major?0.50:0.30,
-        increment:major?0.72:0.28,
-        generated:true,
-        clusterIndex,
-        clusterSize:count
-      };
-      accepted.push(trib);
-      out.push(trib);
+      // Retry with a small deterministic family of source offsets. If all fail,
+      // keep the milestone's interaction but do not draw a crossing tributary.
+      if(!valid){
+        for(let attempt=1;attempt<10&&!valid;attempt++){
+          const off=offset*(0.65+attempt*0.08), alt=attempt%2?side:-side;
+          const s2={x:Math.max(8,Math.min(W-8,sourceMain.x+sn.x*alt*off)),y:Math.max(previousSourceY+10,Math.min(H-8,sourceMain.y+sn.y*alt*off))};
+          const raw2=routeTributaryGrid(W,H,s2,confluence,blocked,seed+attempt*91.7);
+          if(!raw2)continue;
+          let p2=simplifyPath(raw2,obstacles,W,H);p2=smoothTributaryPath(p2,obstacles);p2[0]=s2;p2[p2.length-1]=confluence;
+          const mainHit2=(p,other)=>{
+            for(let ii=1;ii<p.length;ii++)for(let jj=1;jj<other.length;jj++){
+              const nearGate=Math.min(Math.hypot(p[ii-1].x-confluence.x,p[ii-1].y-confluence.y),Math.hypot(p[ii].x-confluence.x,p[ii].y-confluence.y),Math.hypot(other[jj-1].x-confluence.x,other[jj-1].y-confluence.y),Math.hypot(other[jj].x-confluence.x,other[jj].y-confluence.y))<Math.max(16,TRIB_CONFLUENCE_ZONE*H);
+              if(nearGate)continue;
+              if(segmentsIntersect(p[ii-1],p[ii],other[jj-1],other[jj]))return true;
+              if(Math.min(pointSegDistance(p[ii-1],other[jj-1],other[jj]),pointSegDistance(p[ii],other[jj-1],other[jj]))<TRIB_COLLISION_GAP)return true;
+            }
+            return false;
+          };
+          let ok=!mainHit2(p2,main);for(const other of accepted)if(other.tribPath.length&&pathHitsPath(p2,other.tribPath,TRIB_COLLISION_GAP,0)){ok=false;break;}
+          if(ok){path=p2;valid=true;break;}
+        }
+      }
+
+      if(valid) previousSourceY=path[0].y;
+      const major=!!anchor.milestone?.major;
+      const trib={frac,x:confluence.x,y:confluence.y,major,type:major?'major':'minor',side,milestone:anchor.milestone,milestoneIndex:anchor.index,sourceFrac,source:valid?path[0]:source,tribPath:valid?path:[],tribWidthMult:major?0.50:0.30,increment:major?0.72:0.28,generated:true,clusterIndex,clusterSize:cluster.items.length,valid};
+      accepted.push(trib);out.push(trib);
     });
   });
   return out;
-}
-
-function sourceFracForPath(anchor,opts,index,total){
-  const sourceFrac=Math.max(0.035,anchor.frac-opts.length);
-  return sourceFrac+(anchor.frac-sourceFrac)*(index/Math.max(1,total-1));
 }
 
 // ── buildLayout ──────────────────────────────────────────────────────────────
