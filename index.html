@@ -270,6 +270,8 @@
 
     /* Particle flow canvas — the only layer redrawn every animation frame */
     #jrn-river{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+    /* River must remain visible even if the reveal animation is interrupted. */
+    #jrn-river-base,#jrn-river{opacity:1!important;visibility:visible}
 
     /* Milestone anchor + card layer */
     #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none}
@@ -1980,11 +1982,13 @@ function refreshJourneyAfterOpen() {
         resizeTopo();
         resizeRiverBase();
         resizeRiver();
+        // Rebuild at the now-visible dimensions. buildMilestones() also rebuilds
+        // the layout, so drawRiverBase must happen after it.
+        buildMilestones();
         drawTopo();
         drawRiverBase();
-        buildMilestones();
-        setOpenHeight();
         revealSection();
+        setOpenHeight();
       } catch (err) {
         console.error('[Journey] post-open render failed:', err);
         if (inner) inner.classList.add('jrn-revealed');
@@ -3069,9 +3073,10 @@ function drawRiverBase() {
     (i) => mainWidthAt(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28);
 
   // -------------------------
-  // Braided channels
+  // No braid channels: the journey river is a single mainstem plus
+  // CMS-generated tributaries.
   // -------------------------
-  const threads = buildBraidThreads(mainPts, baseH);
+  const threads = [];
 
   window._braidPaths = threads.map(thread => {
     const raw = thread.filter(p => p.active).map(p => ({ x: p.x, y: p.y }));
@@ -3194,8 +3199,7 @@ function drawRiverBase() {
     baseCtx.restore();
   });
 
-  // Oxbow lake: an abandoned meander loop beside the active channel.
-  drawOxbowLake(baseCtx, mainPts, t.riverFill + '0.18)', t.riverCore + '0.20)');
+  // No synthetic oxbow/braid overlays in the active river renderer.
 
   // Keep the particle engine's tributary paths in sync with the visible geometry.
   window._tribPaths = confluences.map(c => {
@@ -3575,10 +3579,14 @@ function buildMilestones() {
 
   resizeTopo(); resizeRiverBase(); resizeRiver();
   layout = buildLayout(topoW || inner.clientWidth, FIXED_H, MILESTONES);
+  // Always paint the river even when the CMS currently has no milestones.
   drawTopo();
   drawRiverBase();
 
-  if (!layout || !layout.milestoneAnchors.length) return;
+  if (!layout || !layout.milestoneAnchors.length) {
+    revealSection();
+    return;
+  }
 
   // SVG interaction layer: the tributary centerlines themselves are the
   // touch/hover targets. The SVG is geometry-only and does not alter the
