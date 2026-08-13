@@ -283,40 +283,59 @@
     #jrn-ms-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 
     /* The dialog box — glass card */
-    .jrn-ms-card{position:absolute;pointer-events:auto;display:none;opacity:0;visibility:hidden;
-      width:clamp(140px,20%,170px);
-      max-height:105px;overflow:auto;
+    .jrn-ms-card{
+      position:absolute;pointer-events:auto;display:none;
+      width:max-content;max-width:min(260px,calc(100vw - 40px));
+      height:auto;max-height:none;overflow:visible;
       background:var(--surface);
-      border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));
+      border:1px solid color-mix(in srgb,var(--accent) 32%,var(--border));
       border-radius:10px;
-      padding:.55rem .7rem;
-      box-shadow:0 4px 18px rgba(0,0,0,.11),0 1px 4px rgba(0,0,0,.07);
-      transition:opacity .2s ease,transform .2s ease;
+      padding:.62rem .78rem;
+      box-shadow:0 7px 22px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);
       z-index:40;
+      opacity:0;
+      transform:translateY(3px);
+      transition:opacity .16s ease,transform .16s ease;
     }
-    .jrn-ms-card.open{display:block;opacity:1;visibility:visible;transform:translateY(0)}
+    .jrn-ms-card.open{
+      display:block;opacity:1;transform:translateY(0);
+    }
     .jrn-ms-touch{
-      position:absolute;width:34px;height:34px;transform:translate(-50%,-50%);
-      border-radius:50%;background:transparent;border:0;padding:0;
+      position:absolute;width:32px;height:32px;
+      transform:translate(-50%,-50%);
+      border:0;padding:0;background:transparent;
       cursor:pointer;pointer-events:auto;z-index:45;
       touch-action:manipulation;
     }
     .jrn-ms-touch::after{
-      content:'';position:absolute;left:50%;top:50%;width:8px;height:8px;
-      transform:translate(-50%,-50%);border-radius:50%;
-      background:var(--accent);box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 15%,transparent);
-      transition:transform .2s,box-shadow .2s;
+      content:'';position:absolute;left:50%;top:50%;
+      width:8px;height:8px;transform:translate(-50%,-50%);
+      border-radius:50%;background:var(--accent);
+      box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 13%,transparent);
+      transition:transform .16s ease,box-shadow .16s ease;
     }
-    .jrn-ms-touch:hover::after,.jrn-ms-touch.active::after{
-      transform:translate(-50%,-50%) scale(1.35);
-      box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 20%,transparent);
+    .jrn-ms-touch:hover::after,
+    .jrn-ms-touch.active::after{
+      transform:translate(-50%,-50%) scale(1.28);
+      box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent);
     }
-    @keyframes jrnFloat{
-      0%,100%{transform:translate(var(--tx,0px),0px)}
-      33%    {transform:translate(calc(var(--tx,0px) + var(--fx,2px)),calc(var(--fy,-4px)))}
-      66%    {transform:translate(calc(var(--tx,0px) - var(--fx,1px)),calc(var(--fy2,2px)))}
+    .jrn-ms-connector{
+      position:absolute;height:1px;
+      transform-origin:left center;
+      background:color-mix(in srgb,var(--accent) 65%,var(--border));
+      z-index:35;pointer-events:none;display:none;
     }
-    .jrn-ms-date{font-size:.65rem;color:var(--ink2);opacity:.8;margin-bottom:.15rem}
+    .jrn-ms-connector.open{display:block}
+    .jrn-ms-arrow{
+      position:absolute;width:0;height:0;
+      border-top:4px solid transparent;
+      border-bottom:4px solid transparent;
+      border-left:6px solid color-mix(in srgb,var(--accent) 70%,var(--border));
+      transform-origin:center;
+      z-index:36;pointer-events:none;display:none;
+    }
+    .jrn-ms-arrow.open{display:block}
+.jrn-ms-date{font-size:.65rem;color:var(--ink2);opacity:.8;margin-bottom:.15rem}
     .jrn-ms-title{font-weight:700;font-size:.8rem;color:var(--ink);line-height:1.3;margin-bottom:.2rem}
     .jrn-ms-desc{font-size:.7rem;color:var(--ink2);line-height:1.45;opacity:.9}
     @media(prefers-reduced-motion:reduce){.jrn-ms-card{animation:none!important}}
@@ -3392,6 +3411,7 @@ function buildMilestones() {
 
   const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
     ? window._timelineMilestones : [];
+
   const FIXED_H = isMobile() ? 520 : 680;
   inner.style.height = FIXED_H + 'px';
 
@@ -3402,155 +3422,172 @@ function buildMilestones() {
 
   if (!layout || !layout.milestoneAnchors.length) return;
 
-  const W = inner.clientWidth;
-  const H = FIXED_H;
-  const CARD_W = isMobile() ? 150 : 205; // must match CSS clamp approx
-  const MARGIN  = 10; // px from canvas edge
+  const states = [];
 
-  // ── SVG layer for connector lines ──────────────────────────────────────
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.id = 'jrn-ms-svg';
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.setAttribute('preserveAspectRatio', 'none');
-  wrap.appendChild(svg);
+  layout.milestoneAnchors.forEach((anchor, index)=>{
+    const m = anchor.milestone || {};
 
-  // Seeded rand helper (stable across re-renders)
-  const sr = seed => { const n = Math.sin(seed * 127.1) * 43758.5453; return n - Math.floor(n); };
+    // Find the local mainstem direction so the milestone sits beside the
+    // channel rather than directly on top of it.
+    const p0 = riverPointAtT(Math.max(0, anchor.t - 0.006));
+    const p1 = riverPointAtT(Math.min(1, anchor.t + 0.006));
+    const dx = (p1.x - p0.x) || 1;
+    const dy = (p1.y - p0.y) || 0;
+    const len = Math.hypot(dx,dy) || 1;
 
-  layout.milestoneAnchors.forEach((anchor, i) => {
-    const m   = anchor.milestone || {};
+    // Normal to the river direction. Alternate sides subtly, while preserving
+    // the local river geometry rather than using a global left/right offset.
+    const nx = -dy / len;
+    const ny =  dx / len;
+    const side = index % 2 === 0 ? 1 : -1;
+    const bankOffset = isMobile() ? 18 : 24;
 
-    // ── River attachment point (on the mainstem) ─────────────────────
-    const rx = anchor.x;
-    const ry = anchor.y;
+    const px = anchor.x + nx * bankOffset * side;
+    const py = anchor.y + ny * bankOffset * side;
 
-    // ── Card placement ────────────────────────────────────────────────
-    // Alternate left/right. Cards sit beside the river, not on top of it.
-    const side = i % 2 === 0 ? 1 : -1; // +1 = right, -1 = left
-    const LINE_LEN = 40 + sr(i * 7.3) * 30; // 40–70 px line length
-
-    // Card anchor (where the line ends = card edge midpoint)
-    let cx, cy;
-    cy = ry - 8 + sr(i * 3.1) * 16; // slight vertical jitter
-
-    if (side === 1) {
-      cx = rx + LINE_LEN; // right of river
-      if (cx + CARD_W > W - MARGIN) cx = rx - LINE_LEN - CARD_W; // flip if off edge
-    } else {
-      cx = rx - LINE_LEN - CARD_W; // left of river
-      if (cx < MARGIN) cx = rx + LINE_LEN; // flip if off edge
-    }
-
-    // Clamp vertically
-    const CARD_H_EST = 100; // estimated card height
-    cy = Math.max(MARGIN, Math.min(H - CARD_H_EST - MARGIN, cy));
-
-    // ── Connector line midpoint ───────────────────────────────────────
-    // The line goes: river point → slight elbow → card edge midpoint
-    // Using a quadratic bezier for a natural curve
-    const lineEndX = cx > rx ? cx : cx + CARD_W; // left or right edge of card
-    const lineEndY = cy + CARD_H_EST * 0.35;       // vertical centre of card (approx)
-
-    // Control point for bezier — pulls line outward slightly
-    const cpx = (rx + lineEndX) / 2 + (side) * 12;
-    const cpy = (ry + lineEndY) / 2 - 10;
-
-    // Draw SVG path: circle at river point + bezier line
-    const isDk = document.documentElement.getAttribute('data-theme') === 'dark';
-    const lineColor = isDk ? 'rgba(82,183,136,0.55)' : 'rgba(30,100,80,0.50)';
-    const dotColor  = isDk ? 'rgba(82,183,136,0.90)' : 'rgba(30,100,80,0.85)';
-
-    // Visual connector marker stays in the SVG; interaction is handled by
-    // an HTML touch target below so mobile/touch input is reliable.
-    const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    marker.setAttribute('cx', rx);
-    marker.setAttribute('cy', ry);
-    marker.setAttribute('r', '4');
-    marker.setAttribute('fill', dotColor);
-    svg.appendChild(marker);
-
-    // Bezier connector
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d', `M${rx},${ry} Q${cpx},${cpy} ${lineEndX},${lineEndY}`);
-    path.setAttribute('stroke', lineColor);
-    path.setAttribute('stroke-width', '1.2');
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-linecap', 'round');
-    svg.appendChild(path);
-
-    // ── Floating card ─────────────────────────────────────────────────
-    const card = document.createElement('div');
-    card.className = 'jrn-ms-card';
-    card.style.left = cx + 'px';
-    card.style.top  = cy + 'px';
-
-    // Float animation params — each card has unique phase + amplitude
-    const floatDur    = (4.2 + sr(i * 2.1) * 2.4).toFixed(2) + 's';
-    const floatDelay  = (sr(i * 5.3) * -3).toFixed(2) + 's'; // negative = pre-offset
-    const floatX      = (sr(i * 1.7) * 3 - 1.5).toFixed(1) + 'px'; // ±1.5px x drift
-    const floatY      = (-3 - sr(i * 4.1) * 3).toFixed(1) + 'px';  // -3 to -6px up
-    const floatY2     = (1  + sr(i * 6.2) * 2).toFixed(1) + 'px';  // +1 to +3px down
-    const floatXb     = (sr(i * 8.9) * 2).toFixed(1) + 'px';       // secondary x
-
-    card.style.setProperty('--fd',     floatDur);
-    card.style.setProperty('--fdelay', floatDelay);
-    card.style.setProperty('--fx',     floatXb);
-    card.style.setProperty('--fy',     floatY);
-    card.style.setProperty('--fy2',    floatY2);
-    card.style.setProperty('--tx',     '0px');
-
-    // Elevation is used only to position this milestone along the river.
-    // It is intentionally not displayed in the Journey card.
-    card.innerHTML = [
-      m.date  ? `<div class="jrn-ms-date">${esc(m.date)}</div>`  : '',
-      m.title ? `<div class="jrn-ms-title">${esc(m.title)}</div>`: '',
-      m.description ? `<div class="jrn-ms-desc">${esc(m.description)}</div>` : '',
-    ].join('');
-
-    wrap.appendChild(card);
-
+    // Tiny touch target on the riverbank.
     const touch = document.createElement('button');
     touch.type = 'button';
     touch.className = 'jrn-ms-touch';
-    touch.style.left = rx + 'px';
-    touch.style.top = ry + 'px';
+    touch.style.left = px + 'px';
+    touch.style.top = py + 'px';
     touch.setAttribute('aria-label', m.title || 'Journey milestone');
     touch.setAttribute('aria-expanded', 'false');
 
-    touch.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const opening = !card.classList.contains('open');
+    const card = document.createElement('div');
+    card.className = 'jrn-ms-card';
+    card.setAttribute('role','dialog');
+    card.innerHTML = [
+      m.date ? `<div class="jrn-ms-date">${esc(m.date)}</div>` : '',
+      m.title ? `<div class="jrn-ms-title">${esc(m.title)}</div>` : '',
+      m.description ? `<div class="jrn-ms-desc">${esc(m.description)}</div>` : ''
+    ].join('');
 
-      wrap.querySelectorAll('.jrn-ms-card.open').forEach(c => c.classList.remove('open'));
-      wrap.querySelectorAll('.jrn-ms-touch.active').forEach(b => {
-        b.classList.remove('active');
-        b.setAttribute('aria-expanded', 'false');
+    // Position on the same side as the bank marker initially.
+    const cardGap = 28;
+    const preferredLeft = px + (side > 0 ? cardGap : -cardGap);
+    card.style.left = preferredLeft + 'px';
+    card.style.top = (py - 14) + 'px';
+    if (side < 0) {
+      card.style.transformOrigin = 'right center';
+      card.style.transform = 'translateX(-100%) translateY(3px)';
+    }
+
+    const connector = document.createElement('div');
+    connector.className = 'jrn-ms-connector';
+    const arrow = document.createElement('div');
+    arrow.className = 'jrn-ms-arrow';
+
+    const state = { touch, card, connector, arrow, px, py, side, index };
+    states.push(state);
+
+    function positionConnector(){
+      const cardRect = card.getBoundingClientRect();
+      const innerRect = inner.getBoundingClientRect();
+
+      const cardLeft = cardRect.left - innerRect.left;
+      const cardTop = cardRect.top - innerRect.top;
+      const cardW = cardRect.width;
+      const cardH = cardRect.height;
+
+      const endX = side > 0 ? cardLeft : cardLeft + cardW;
+      const endY = cardTop + Math.min(cardH / 2, 22);
+
+      const sx = px;
+      const sy = py;
+      const vx = endX - sx;
+      const vy = endY - sy;
+      const length = Math.hypot(vx,vy);
+      if (!length) return;
+
+      const angle = Math.atan2(vy,vx) * 180 / Math.PI;
+      connector.style.left = sx + 'px';
+      connector.style.top = sy + 'px';
+      connector.style.width = Math.max(0,length - 4) + 'px';
+      connector.style.transform = `rotate(${angle}deg)`;
+
+      arrow.style.left = (endX - (side > 0 ? 0 : 6)) + 'px';
+      arrow.style.top = (endY - 4) + 'px';
+      arrow.style.transform = `rotate(${angle}deg)`;
+    }
+
+    function open(){
+      // Close all other milestones.
+      states.forEach(s=>{
+        if (s !== state) {
+          s.card.classList.remove('open');
+          s.connector.classList.remove('open');
+          s.arrow.classList.remove('open');
+          s.touch.classList.remove('active');
+          s.touch.setAttribute('aria-expanded','false');
+        }
       });
 
-      if (opening) {
-        card.classList.add('open');
-        touch.classList.add('active');
-        touch.setAttribute('aria-expanded', 'true');
-      }
+      card.classList.add('open');
+      touch.classList.add('active');
+      touch.setAttribute('aria-expanded','true');
+
+      // Wait one frame so the browser knows the card's natural dimensions.
+      requestAnimationFrame(positionConnector);
+    }
+
+    function close(){
+      card.classList.remove('open');
+      connector.classList.remove('open');
+      arrow.classList.remove('open');
+      touch.classList.remove('active');
+      touch.setAttribute('aria-expanded','false');
+    }
+
+    // Desktop: hovering the bank point opens the card. Keep it open while
+    // moving between the point and the card.
+    touch.addEventListener('mouseenter', open);
+    card.addEventListener('mouseenter', open);
+
+    const closeIfLeaving = ()=>{
+      setTimeout(()=>{
+        if (!touch.matches(':hover') && !card.matches(':hover')) close();
+      }, 120);
+    };
+    touch.addEventListener('mouseleave', closeIfLeaving);
+    card.addEventListener('mouseleave', closeIfLeaving);
+
+    // Mobile/touch and explicit mouse click: toggle expansion.
+    touch.addEventListener('click', ev=>{
+      ev.stopPropagation();
+      if (card.classList.contains('open')) close();
+      else open();
     });
 
+    // The connector exists only while the card is open.
+    const observer = new MutationObserver(()=>{
+      const isOpen = card.classList.contains('open');
+      connector.classList.toggle('open', isOpen);
+      arrow.classList.toggle('open', isOpen);
+      if (isOpen) requestAnimationFrame(positionConnector);
+    });
+    observer.observe(card, {attributes:true, attributeFilter:['class']});
+
+    wrap.appendChild(connector);
+    wrap.appendChild(arrow);
+    wrap.appendChild(card);
     wrap.appendChild(touch);
   });
 
-  // Tap/click empty Journey space to close the currently open card.
-  if (!wrap.dataset.dismissBound) {
-    wrap.dataset.dismissBound = 'true';
-    wrap.addEventListener('click', (ev) => {
-      if (ev.target === wrap || ev.target === svg) {
-        wrap.querySelectorAll('.jrn-ms-card.open').forEach(c => c.classList.remove('open'));
-        wrap.querySelectorAll('.jrn-ms-touch.active').forEach(b => {
-          b.classList.remove('active');
-          b.setAttribute('aria-expanded', 'false');
-        });
-      }
-    });
-  }
+  // Close when the user clicks/taps elsewhere in the Journey.
+  wrap.addEventListener('click', ev=>{
+    if (!ev.target.closest('.jrn-ms-touch') && !ev.target.closest('.jrn-ms-card')) {
+      states.forEach(s=>{
+        s.card.classList.remove('open');
+        s.connector.classList.remove('open');
+        s.arrow.classList.remove('open');
+        s.touch.classList.remove('active');
+        s.touch.setAttribute('aria-expanded','false');
+      });
+    }
+  }, {once:true});
 }
+
 
 // ═══════════════════════════════════════
 // SCROLL LINK
