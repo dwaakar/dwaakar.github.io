@@ -3033,6 +3033,22 @@ function drawRiverBase() {
     mainPts.push({ x, y });
   }
 
+  // The mainstem braid/side-channel system is part of the river itself, not
+  // part of the milestone tributary network. V5.1 accidentally stopped
+  // rendering these channels even though their generators were still present.
+  // Rebuild them from the current responsive mainstem geometry on every draw.
+  let braidPts = [];
+  try {
+    braidPts = buildBraidThreads(mainPts, baseH) || [];
+    window._braidPaths = braidPts
+      .map(ch => Array.isArray(ch) ? ch.filter(p => p && p.active).map(p => ({x:p.x,y:p.y})) : [])
+      .filter(path => path.length > 8);
+  } catch (err) {
+    braidPts = [];
+    window._braidPaths = [];
+    console.warn('[Journey] braid geometry skipped:', err);
+  }
+
   const beltWidth = y => widthAtY(y, confluences);
   const edgeJitter = (i, len) =>
     0.7 + 0.35 * Math.sin((i / Math.max(1, len - 1)) * 31.7 + 0.8)
@@ -3079,6 +3095,28 @@ function drawRiverBase() {
       i => beltWidth(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28,
       '#ffffff'
     );
+
+    // Include the active braid channels in the same water union. We split
+    // them into active runs so the inactive portions never create accidental
+    // straight connectors across the floodplain.
+    braidPts.forEach((channel, ci) => {
+      if (!Array.isArray(channel)) return;
+      let run = [];
+      const flush = () => {
+        if (run.length < 2) { run = []; return; }
+        const widths = run.map(p => {
+          const mainW = beltWidth(p.y);
+          return Math.max(0.8, mainW * (0.68 - ci * 0.08));
+        });
+        fillVariableWidthPath(maskCtx, run, (i) => widths[i], '#ffffff');
+        run = [];
+      };
+      channel.forEach(p => {
+        if (p && p.active) run.push({x:p.x,y:p.y});
+        else flush();
+      });
+      flush();
+    });
 
     confluences.forEach(c => {
       if (!c || !Array.isArray(c.tribPath) || c.tribPath.length < 2) return;
@@ -3132,6 +3170,47 @@ function drawRiverBase() {
     mainPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
     baseCtx.stroke();
     baseCtx.restore();
+
+    // Restore the visible mainstem braid channels after the union mask. These
+    // are deliberate main-river anabranches, not milestone tributaries. The
+    // bars keep the braid reads spatially connected without turning the whole
+    // lower reach into a dense mesh.
+    braidPts.forEach((channel, ci) => {
+      if (!Array.isArray(channel)) return;
+      let run = [];
+      const flush = () => {
+        if (run.length < 2) { run = []; return; }
+        const widths = run.map(p => {
+          const mainW = beltWidth(p.y);
+          return Math.max(0.8, mainW * (0.68 - ci * 0.08));
+        });
+        fillVariableWidthPath(baseCtx, run, (i) => widths[i], t.riverFill + '0.48)');
+        baseCtx.save();
+        baseCtx.beginPath();
+        run.forEach((p,i) => i === 0 ? baseCtx.moveTo(p.x,p.y) : baseCtx.lineTo(p.x,p.y));
+        baseCtx.strokeStyle = t.riverCore + (ci === 0 ? '0.09)' : '0.065)');
+        baseCtx.lineWidth = Math.max(0.45, 0.72 - ci * 0.08);
+        baseCtx.lineCap = 'round';
+        baseCtx.stroke();
+        baseCtx.restore();
+        run = [];
+      };
+      channel.forEach(p => {
+        if (p && p.active) run.push({x:p.x,y:p.y});
+        else flush();
+      });
+      flush();
+    });
+
+    if (braidPts.length) {
+      drawBraidBars(
+        baseCtx,
+        mainPts,
+        braidPts[0],
+        isDark() ? 'rgba(20,45,48,0.18)' : 'rgba(100,135,145,0.11)',
+        isDark() ? 'rgba(120,160,165,0.18)' : 'rgba(120,145,150,0.14)'
+      );
+    }
   } catch (err) {
     // The mainstem was already painted above. Keep it visible if optional
     // compositing fails, and report the precise subsystem that failed.
