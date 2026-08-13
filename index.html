@@ -2764,8 +2764,11 @@ function initRiverBase() {
 }
 function resizeRiverBase() {
   if (!baseCanvas) return;
-  baseW = baseCanvas.width  = baseCanvas.offsetWidth;
-  baseH = baseCanvas.height = baseCanvas.offsetHeight;
+  const host = inner || baseCanvas.parentElement;
+  const w = Math.max(1, Math.round(baseCanvas.offsetWidth || host?.clientWidth || window.innerWidth || 1));
+  const h = Math.max(1, Math.round(baseCanvas.offsetHeight || host?.clientHeight || (isMobile() ? 520 : 680)));
+  baseW = baseCanvas.width = w;
+  baseH = baseCanvas.height = h;
 }
 // ═══════════════════════════════════════════════════════════
 // OPTION A — True braid plain in the lower stretch (~70%→mouth)
@@ -3002,210 +3005,173 @@ function pathPointAt(path, pos) {
 
 
 function drawRiverBase() {
-  if (!baseCtx || !baseW || !baseH || !layout) return;
+  // The mainstem must never depend on CMS/tributary generation succeeding.
+  // V5 could leave the entire river blank when a tributary candidate was empty
+  // or when the accordion was measured while still collapsed.  Establish a
+  // valid canvas/layout first, then paint the mainstem before doing any optional
+  // tributary work.
+  if (!baseCanvas) initRiverBase();
+  if (!baseCtx && baseCanvas) baseCtx = baseCanvas.getContext('2d');
+  if (!baseCanvas || !baseCtx) return;
+
+  resizeRiverBase();
+  if (!baseW || !baseH) return;
+
   const t = theme();
   baseCtx.clearRect(0, 0, baseW, baseH);
-  const confluences = layout.confluences;
 
-  // ================================================================
-  // ONE CONTINUOUS WATER SURFACE
-  // ---------------------------------------------------------------
-  // Mainstem, tributaries and braid channels are first accumulated into
-  // one opaque mask. They are then painted ONCE with the river colour.
-  // This is the important distinction from the old renderer: overlapping
-  // water polygons no longer alpha-stack and become darker at junctions.
-  // The geometry remains separate; the rendered water surface is unified.
-  // ================================================================
-  const waterMask = document.createElement('canvas');
-  waterMask.width = baseW;
-  waterMask.height = baseH;
-  const maskCtx = waterMask.getContext('2d');
-  maskCtx.clearRect(0, 0, baseW, baseH);
-  maskCtx.fillStyle = '#ffffff';
+  const confluences = (layout && Array.isArray(layout.confluences))
+    ? layout.confluences : [];
 
-  const drawMaskPath = (points, widthFn) => {
-    if (!points || points.length < 2) return;
-    fillVariableWidthPath(maskCtx, points, widthFn, '#ffffff');
-  };
-
-  // -------------------------
-  // Tributaries
-  // -------------------------
-  confluences.forEach(c => {
-    const steps = c.major ? 60 : 40;
-    const pathPts = samplePath(c.tribPath, steps);
-    const mainW = widthAtY(c.y, confluences);
-    const fullTribW = mainW * (c.tribWidthMult || (c.major ? 0.65 : 0.50));
-
-    const wFn = (i, len) => {
-      const progress = i / Math.max(1, len - 1);
-      const grow = Math.pow(progress, 0.60);
-      const base = fullTribW * (0.22 + 0.78 * grow);
-      const jitter = 0.5 + 0.28 * Math.sin(i * 17.3 + c.y * 0.07)
-                           + 0.14 * Math.sin(i * 43.1 + c.x * 0.05);
-      return Math.max(0.4, base + jitter * 0.15);
-    };
-    drawMaskPath(pathPts, wFn);
-  });
-
-  // -------------------------
-  // Mainstem geometry
-  // -------------------------
-  const steps = Math.max(220, Math.round(baseH / 7));
+  // Build the mainstem first. This is deliberately independent of the
+  // tributary generator, so a bad/missing tributary can never hide the river.
+  const mainSteps = Math.max(220, Math.round(baseH / 7));
   const mainPts = [];
-  for (let s = 0; s <= steps; s++) {
-    const y = (s / steps) * baseH;
-    const x = getRiverXFrac(y / baseH) * baseW;
+  for (let s = 0; s <= mainSteps; s++) {
+    const y = (s / mainSteps) * baseH;
+    const x = getRiverXFrac(s / mainSteps) * baseW;
     mainPts.push({ x, y });
   }
 
   const beltWidth = y => widthAtY(y, confluences);
-  const mainWidthAt = y => beltWidth(y);
-  const sideWidthAt = y => beltWidth(y);
+  const edgeJitter = (i, len) =>
+    0.7 + 0.35 * Math.sin((i / Math.max(1, len - 1)) * 31.7 + 0.8)
+        + 0.18 * Math.sin((i / Math.max(1, len - 1)) * 83.1);
 
-  const edgeJitter = (i, len) => {
-    const n = i / Math.max(1, len - 1);
-    return 0.7 + 0.35 * Math.sin(n * 31.7 + 0.8) + 0.18 * Math.sin(n * 83.1);
-  };
+  // Always paint a visible mainstem immediately. Everything below is allowed
+  // to fail independently without removing this already-painted river.
+  try {
+    fillVariableWidthPath(
+      baseCtx,
+      mainPts,
+      i => beltWidth(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28,
+      t.riverFill + '0.54)'
+    );
 
-  // Mainstem mask: exactly the same geometry/width as the visible river.
-  drawMaskPath(mainPts,
-    (i) => mainWidthAt(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28);
-
-  // -------------------------
-  // No braid channels: the journey river is a single mainstem plus
-  // CMS-generated tributaries.
-  // -------------------------
-  const threads = [];
-
-  window._braidPaths = threads.map(thread => {
-    const raw = thread.filter(p => p.active).map(p => ({ x: p.x, y: p.y }));
-    return resamplePathUniform(raw, Math.max(1.4, baseH / 900));
-  }).filter(p => p.length > 8);
-
-  threads.forEach(thread => {
-    const activePts = [];
-    const flush = () => {
-      if (activePts.length >= 6) {
-        // Full mainstem width. Separation is expressed by geometry, not
-        // by shrinking the water body.
-        drawMaskPath(activePts,
-          (j) => Math.max(1.2,
-            sideWidthAt(activePts[j].y, activePts[j]._env, activePts[j]._widthScale)));
-      }
-      activePts.length = 0;
-    };
-
-    for (let i = 0; i < thread.length; i++) {
-      const bp = thread[i];
-      if (!bp.active && activePts.length === 0) continue;
-      activePts.push({ x: bp.x, y: bp.y, _env: bp.envelope, _widthScale: bp.widthScale || 1 });
-      if (!bp.active) flush();
-    }
-    flush();
-  });
-
-  // ================================================================
-  // PAINT THE UNION ONCE
-  // ================================================================
-  // A single colour/alpha pass means:
-  //   mainstem + braid = same colour
-  //   braid + braid     = same colour
-  //   mainstem + braid  = same colour
-  //   tributary + mainstem = same colour
-  // regardless of overlap order.
-  const waterLayer = document.createElement('canvas');
-  waterLayer.width = baseW;
-  waterLayer.height = baseH;
-  const waterCtx = waterLayer.getContext('2d');
-  waterCtx.clearRect(0, 0, baseW, baseH);
-  waterCtx.fillStyle = t.riverFill + '0.54)';
-  waterCtx.fillRect(0, 0, baseW, baseH);
-  waterCtx.globalCompositeOperation = 'destination-in';
-  waterCtx.drawImage(waterMask, 0, 0);
-  waterCtx.globalCompositeOperation = 'source-over';
-  baseCtx.drawImage(waterLayer, 0, 0);
-
-  // A single soft outer glow from the same unified water mask.
-  const glowLayer = document.createElement('canvas');
-  glowLayer.width = baseW;
-  glowLayer.height = baseH;
-  const glowCtx = glowLayer.getContext('2d');
-  glowCtx.clearRect(0, 0, baseW, baseH);
-  glowCtx.fillStyle = t.glow + '0.075)';
-  glowCtx.filter = 'blur(1.6px)';
-  glowCtx.fillRect(0, 0, baseW, baseH);
-  glowCtx.filter = 'none';
-  glowCtx.globalCompositeOperation = 'destination-in';
-  glowCtx.drawImage(waterMask, 0, 0);
-  glowCtx.globalCompositeOperation = 'source-over';
-  baseCtx.drawImage(glowLayer, 0, 0);
+    baseCtx.save();
+    baseCtx.strokeStyle = t.riverCore + '0.095)';
+    baseCtx.lineWidth = 0.70;
+    baseCtx.lineCap = 'round';
+    baseCtx.beginPath();
+    mainPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
+    baseCtx.stroke();
+    baseCtx.restore();
+  } catch (err) {
+    console.error('[Journey] mainstem paint failed:', err);
+    return;
+  }
 
   // ---------------------------------------------------------------
-  // Interior current/core: deliberately kept as ONE subtle system.
-  // The filled water surface above is what guarantees seamless joins.
+  // Optional unified water surface.
+  // Rebuild the mask from the mainstem + only valid tributaries. Invalid
+  // tributaries are skipped rather than aborting the whole river renderer.
   // ---------------------------------------------------------------
-  baseCtx.save();
-  baseCtx.strokeStyle = t.riverCore + '0.095)';
-  baseCtx.lineWidth = 0.70;
-  baseCtx.lineCap = 'round';
-  baseCtx.beginPath();
-  mainPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-  baseCtx.stroke();
-  baseCtx.restore();
+  try {
+    const waterMask = document.createElement('canvas');
+    waterMask.width = baseW;
+    waterMask.height = baseH;
+    const maskCtx = waterMask.getContext('2d');
+    maskCtx.clearRect(0, 0, baseW, baseH);
 
-  // Tributary thalwegs remain subtle, but their colour is identical to the
-  // mainstem. They fade toward the confluence so they do not sit on top of
-  // the main channel as a second dark line.
+    fillVariableWidthPath(
+      maskCtx,
+      mainPts,
+      i => beltWidth(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28,
+      '#ffffff'
+    );
+
+    confluences.forEach(c => {
+      if (!c || !Array.isArray(c.tribPath) || c.tribPath.length < 2) return;
+      const pathPts = samplePath(c.tribPath, c.major ? 60 : 40);
+      if (pathPts.length < 2) return;
+      const mainW = widthAtY(c.y, confluences);
+      const fullTribW = mainW * (c.tribWidthMult || (c.major ? 0.50 : 0.30));
+      const wFn = (i, len) => {
+        const progress = i / Math.max(1, len - 1);
+        const grow = Math.pow(progress, 0.60);
+        const base = fullTribW * (0.22 + 0.78 * grow);
+        const jitter = 0.5 + 0.28 * Math.sin(i * 17.3 + c.y * 0.07)
+                             + 0.14 * Math.sin(i * 43.1 + c.x * 0.05);
+        return Math.max(0.4, base + jitter * 0.15);
+      };
+      fillVariableWidthPath(maskCtx, pathPts, wFn, '#ffffff');
+    });
+
+    const waterLayer = document.createElement('canvas');
+    waterLayer.width = baseW;
+    waterLayer.height = baseH;
+    const waterCtx = waterLayer.getContext('2d');
+    waterCtx.fillStyle = t.riverFill + '0.54)';
+    waterCtx.fillRect(0, 0, baseW, baseH);
+    waterCtx.globalCompositeOperation = 'destination-in';
+    waterCtx.drawImage(waterMask, 0, 0);
+    waterCtx.globalCompositeOperation = 'source-over';
+    baseCtx.clearRect(0, 0, baseW, baseH);
+    baseCtx.drawImage(waterLayer, 0, 0);
+
+    // Soft edge glow from the same union mask.
+    const glowLayer = document.createElement('canvas');
+    glowLayer.width = baseW;
+    glowLayer.height = baseH;
+    const glowCtx = glowLayer.getContext('2d');
+    glowCtx.fillStyle = t.glow + '0.075)';
+    glowCtx.filter = 'blur(1.6px)';
+    glowCtx.fillRect(0, 0, baseW, baseH);
+    glowCtx.filter = 'none';
+    glowCtx.globalCompositeOperation = 'destination-in';
+    glowCtx.drawImage(waterMask, 0, 0);
+    glowCtx.globalCompositeOperation = 'source-over';
+    baseCtx.drawImage(glowLayer, 0, 0);
+
+    // Mainstem core is redrawn after the union so it remains crisp.
+    baseCtx.save();
+    baseCtx.strokeStyle = t.riverCore + '0.095)';
+    baseCtx.lineWidth = 0.70;
+    baseCtx.lineCap = 'round';
+    baseCtx.beginPath();
+    mainPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
+    baseCtx.stroke();
+    baseCtx.restore();
+  } catch (err) {
+    // The mainstem was already painted above. Keep it visible if optional
+    // compositing fails, and report the precise subsystem that failed.
+    console.error('[Journey] river surface compositing failed:', err);
+  }
+
+  // Tributary thalwegs and particle paths are optional enhancements.
   confluences.forEach(c => {
-    const pathPts = samplePath(c.tribPath, c.major ? 60 : 40);
-    baseCtx.save();
-    baseCtx.beginPath();
-    pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-    const grad = baseCtx.createLinearGradient(pathPts[0].x, pathPts[0].y,
-                                               pathPts[pathPts.length-1].x,
-                                               pathPts[pathPts.length-1].y);
-    grad.addColorStop(0, t.riverCore + (c.major ? '0.16)' : '0.12)'));
-    grad.addColorStop(0.76, t.riverCore + (c.major ? '0.12)' : '0.09)'));
-    grad.addColorStop(1, t.riverCore + '0.00)');
-    baseCtx.strokeStyle = grad;
-    baseCtx.lineWidth = c.major ? 0.58 : 0.42;
-    baseCtx.lineCap = 'round';
-    baseCtx.stroke();
-    baseCtx.restore();
+    if (!c || !Array.isArray(c.tribPath) || c.tribPath.length < 2) return;
+    try {
+      const pathPts = samplePath(c.tribPath, c.major ? 60 : 40);
+      if (pathPts.length < 2) return;
+      baseCtx.save();
+      baseCtx.beginPath();
+      pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
+      const grad = baseCtx.createLinearGradient(
+        pathPts[0].x, pathPts[0].y,
+        pathPts[pathPts.length - 1].x, pathPts[pathPts.length - 1].y
+      );
+      grad.addColorStop(0, t.riverCore + (c.major ? '0.16)' : '0.12)'));
+      grad.addColorStop(0.76, t.riverCore + (c.major ? '0.12)' : '0.09)'));
+      grad.addColorStop(1, t.riverCore + '0.00)');
+      baseCtx.strokeStyle = grad;
+      baseCtx.lineWidth = c.major ? 0.58 : 0.42;
+      baseCtx.lineCap = 'round';
+      baseCtx.stroke();
+      baseCtx.restore();
+    } catch (err) {
+      console.warn('[Journey] skipped invalid tributary render:', err);
+    }
   });
 
-  // Braid thalwegs: the existing envelope is used to fade their independent
-  // centreline in at bifurcation and out at reconnection. The water body itself
-  // remains unified, so no seam is introduced.
-  threads.forEach(thread => {
-    const activePts = thread.filter(p => p.active);
-    if (activePts.length < 6) return;
-    baseCtx.save();
-    baseCtx.beginPath();
-    activePts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
-    const first = activePts[0];
-    const last = activePts[activePts.length - 1];
-    const grad = baseCtx.createLinearGradient(first.x, first.y, last.x, last.y);
-    grad.addColorStop(0, t.riverCore + '0.00)');
-    grad.addColorStop(0.12, t.riverCore + '0.10)');
-    grad.addColorStop(0.50, t.riverCore + '0.12)');
-    grad.addColorStop(0.88, t.riverCore + '0.10)');
-    grad.addColorStop(1, t.riverCore + '0.00)');
-    baseCtx.strokeStyle = grad;
-    baseCtx.lineWidth = 0.62;
-    baseCtx.lineCap = 'round';
-    baseCtx.stroke();
-    baseCtx.restore();
-  });
-
-  // No synthetic oxbow/braid overlays in the active river renderer.
-
-  // Keep the particle engine's tributary paths in sync with the visible geometry.
+  // Keep particle flow synchronized only with valid tributary geometry.
   window._tribPaths = confluences.map(c => {
+    if (!c || !Array.isArray(c.tribPath) || c.tribPath.length < 2) return null;
     const pts = samplePath(c.tribPath, c.major ? 60 : 40);
-    return resamplePathUniform(pts.map(p => ({x: p.x, y: p.y})), Math.max(1.4, baseH / 900));
-  }).filter(p => p.length > 8);
+    return pts.length > 1
+      ? resamplePathUniform(pts.map(p => ({x:p.x, y:p.y})), Math.max(1.4, baseH / 900))
+      : null;
+  }).filter(p => p && p.length > 8);
 }
 
 // Brief, elegant brighten of one confluence + its tributary — used by the
@@ -3818,6 +3784,11 @@ window.addEventListener('load', () => {
     if (enginesInitialised) {
       resizeTopo(); resizeRiverBase(); resizeRiver();
       drawTopo();
+      drawRiverBase();
+      requestAnimationFrame(() => {
+        resizeRiverBase();
+        drawRiverBase();
+      });
       setOpenHeight();
     }
   } catch (err) { console.error('[Journey] post-load resize failed:', err); }
