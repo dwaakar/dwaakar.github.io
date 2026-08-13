@@ -2875,6 +2875,127 @@ function drawRiverBase() {
     flush();
   });
 
+  // ---------------------------------------------------------------
+  // HISTORICAL RIVER-SHIFT CHANNELS
+  // Broad, filled abandoned-channel scars derived from the actual
+  // mainstem. These are NOT active water-mask channels. Each trace
+  // leaves the modern river, migrates laterally, meanders gently, and
+  // returns toward it — like successive positions of a migrating river.
+  // ---------------------------------------------------------------
+  const shiftDefs = [
+    {start:.665, end:.785, side:-1, bulge:18, wiggle:3.2, phase:.35, alpha:.20},
+    {start:.705, end:.835, side: 1, bulge:22, wiggle:3.8, phase:1.15, alpha:.18},
+    {start:.765, end:.895, side:-1, bulge:25, wiggle:4.2, phase:2.05, alpha:.165},
+    {start:.825, end:.955, side: 1, bulge:20, wiggle:3.6, phase:.72, alpha:.145},
+    {start:.885, end:.992, side:-1, bulge:16, wiggle:3.0, phase:1.75, alpha:.12}
+  ];
+
+  function buildRiverShiftChannel(def){
+    const center=[], left=[], right=[];
+    const N=120;
+
+    for(let k=0;k<N;k++){
+      const u=k/(N-1);
+      const f=def.start+(def.end-def.start)*u;
+      const p={
+        x:getRiverXFrac(f)*baseW,
+        y:f*baseH
+      };
+
+      const eps=.0018;
+      const a={
+        x:getRiverXFrac(Math.max(.001,f-eps))*baseW,
+        y:(f-eps)*baseH
+      };
+      const b={
+        x:getRiverXFrac(Math.min(.999,f+eps))*baseW,
+        y:(f+eps)*baseH
+      };
+      const dx=b.x-a.x, dy=b.y-a.y;
+      const L=Math.hypot(dx,dy)||1;
+      const nx=-dy/L, ny=dx/L;
+
+      const mainW=Math.max(.9,widthAtY(f*baseH,confluences));
+      // The old channel begins just outside the active bank and opens
+      // into a broader abandoned course in the middle.
+      const oldW=Math.max(1.5, mainW*(.52 + .10*Math.sin(Math.PI*u)));
+
+      // Neck near the two ends, pronounced lateral migration in the middle.
+      const envelope=Math.sin(Math.PI*u);
+      const drift=
+        Math.sin(u*Math.PI*2.2 + def.phase)*def.wiggle +
+        Math.sin(u*Math.PI*5.1 + def.phase*.7)*def.wiggle*.42;
+
+      const clearance=mainW*.50 + oldW*.50 + .9;
+      const offset=clearance + def.bulge*envelope + drift;
+
+      const c={x:p.x+nx*def.side*offset, y:p.y+ny*def.side*offset};
+      center.push(c);
+
+      const prev=center[Math.max(0,center.length-2)] || c;
+      const next=c;
+      const tx=next.x-prev.x, ty=next.y-prev.y;
+      const tl=Math.hypot(tx,ty)||1;
+      const cnx=-ty/tl, cny=tx/tl;
+      const half=oldW*.5;
+
+      left.push({x:c.x+cnx*half,y:c.y+cny*half});
+      right.push({x:c.x-cnx*half,y:c.y-cny*half});
+    }
+
+    return {center,left,right};
+  }
+
+  const shiftChannels=shiftDefs.map(buildRiverShiftChannel);
+
+  // Draw these BEFORE the active water layer so the modern mainstem
+  // always wins wherever the historical course approaches it.
+  shiftChannels.forEach((ch,idx)=>{
+    const def=shiftDefs[idx];
+    baseCtx.save();
+
+    baseCtx.beginPath();
+    ch.left.forEach((p,i)=>{
+      if(i===0) baseCtx.moveTo(p.x,p.y);
+      else baseCtx.lineTo(p.x,p.y);
+    });
+    for(let i=ch.right.length-1;i>=0;i--) baseCtx.lineTo(ch.right[i].x,ch.right[i].y);
+    baseCtx.closePath();
+
+    // Pale water-like fill: broad enough to read as a former channel,
+    // restrained enough not to compete with the active river.
+    baseCtx.fillStyle=isDark()
+      ? `rgba(70,150,175,${def.alpha})`
+      : `rgba(75,125,150,${def.alpha*.78})`;
+    baseCtx.fill();
+
+    // Two soft banks make the historical channel legible without turning
+    // it into a hard outlined artificial river.
+    baseCtx.beginPath();
+    ch.left.forEach((p,i)=>{
+      if(i===0) baseCtx.moveTo(p.x,p.y);
+      else baseCtx.lineTo(p.x,p.y);
+    });
+    baseCtx.strokeStyle=isDark()
+      ? `rgba(120,175,188,${def.alpha*.72})`
+      : `rgba(80,120,135,${def.alpha*.52})`;
+    baseCtx.lineWidth=.65;
+    baseCtx.stroke();
+
+    baseCtx.beginPath();
+    ch.right.forEach((p,i)=>{
+      if(i===0) baseCtx.moveTo(p.x,p.y);
+      else baseCtx.lineTo(p.x,p.y);
+    });
+    baseCtx.strokeStyle=isDark()
+      ? `rgba(120,175,188,${def.alpha*.42})`
+      : `rgba(80,120,135,${def.alpha*.30})`;
+    baseCtx.lineWidth=.5;
+    baseCtx.stroke();
+
+    baseCtx.restore();
+  });
+
   // ================================================================
   // PAINT THE UNION ONCE
   // ================================================================
@@ -2911,47 +3032,11 @@ function drawRiverBase() {
   glowCtx.globalCompositeOperation = 'source-over';
   baseCtx.drawImage(glowLayer, 0, 0);
 
-  // ---------------------------------------------------------------
-  // SUBTLE DOWNSTREAM RIVER TRACES
-  // Faint abandoned/older channel traces in the lower floodplain.
-  // These are visual traces only: they never enter the water mask and
-  // therefore cannot interfere with flow, braids, particles, or confluences.
-  // ---------------------------------------------------------------
-  const traceDefs = [
-    {start:.705, end:.835, side:-1, amp:7.5, phase:.25, alpha:.13},
-    {start:.765, end:.905, side: 1, amp:8.5, phase:1.15, alpha:.11},
-    {start:.825, end:.965, side:-1, amp:6.5, phase:2.05, alpha:.095},
-    {start:.875, end:.995, side: 1, amp:7.0, phase:.70, alpha:.08}
-  ];
-  traceDefs.forEach((td,ti)=>{
-    const pts=[];
-    const N=72;
-    for(let k=0;k<N;k++){
-      const u=k/(N-1);
-      const f=td.start+(td.end-td.start)*u;
-      const p={x:getRiverXFrac(f)*baseW,y:f*baseH};
-      const eps=.0022;
-      const a={x:getRiverXFrac(Math.max(.001,f-eps))*baseW,y:(f-eps)*baseH};
-      const b={x:getRiverXFrac(Math.min(.999,f+eps))*baseW,y:(f+eps)*baseH};
-      const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;
-      const nx=-dy/L,ny=dx/L;
-      const envelope=Math.sin(Math.PI*u)*(.78+.22*Math.sin(u*Math.PI*2+td.phase));
-      const meander=Math.sin(u*Math.PI*2.2+td.phase)*1.8 + Math.sin(u*Math.PI*5.1+td.phase*.7)*.7;
-      pts.push({x:p.x+nx*td.side*(td.amp*envelope+meander),y:p.y+ny*td.side*(td.amp*envelope+meander)});
-    }
-    baseCtx.save();
-    baseCtx.beginPath();
-    pts.forEach((p,i)=>i===0?baseCtx.moveTo(p.x,p.y):baseCtx.lineTo(p.x,p.y));
-    baseCtx.strokeStyle=isDark()?`rgba(120,170,180,${td.alpha})`:`rgba(75,120,135,${td.alpha*.78})`;
-    baseCtx.lineWidth=.65;
-    baseCtx.setLineDash([5,7]);
-    baseCtx.lineCap='round';
-    baseCtx.stroke();
-    baseCtx.restore();
-  });
+
 
   // ---------------------------------------------------------------
-  // Interior current/core: deliberately kept as ONE subtle system.
+  // Interior current/core:
+  // deliberately kept as ONE subtle system.
   // The filled water surface above is what guarantees seamless joins.
   // ---------------------------------------------------------------
   baseCtx.save();
@@ -3411,7 +3496,7 @@ function buildMilestones() {
     const nx = -dy / len;
     const ny =  dx / len;
     const side = index % 2 === 0 ? 1 : -1;
-    const bankOffset = isMobile() ? 11 : 15;
+    const bankOffset = isMobile() ? 6.5 : 8.0;
 
     const px = anchor.x + nx * bankOffset * side;
     const py = anchor.y + ny * bankOffset * side;
