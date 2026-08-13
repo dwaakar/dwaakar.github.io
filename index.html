@@ -2205,113 +2205,78 @@ function sampleNoise(nx, ny) {
   return v00*(1-cf)*(1-rf) + v10*cf*(1-rf) + v01*(1-cf)*rf + v11*cf*rf;
 }
 
-// ── FIXED WATERSHED TRIBUTARIES ────────────────────────────────────────────
-// These are deliberately hand-authored geographic paths.  They are NOT
-// generated from milestones and they do NOT derive their intermediate X
-// coordinates from the mainstem.  Each branch has an explicit upstream
-// source, a few small bends, and a final confluence on the mainstem.
-//
-// Coordinates are normalized to the canvas (0..1).  The final point is
-// replaced at render time by the exact mainstem confluence so resizing keeps
-// the join attached to the river while the tributary's own geometry remains
-// independent.  Every control point has increasing Y, which makes the
-// upstream -> downstream direction visually unambiguous.
-const FIXED_TRIBUTARIES = [
-  { id:'t1', major:true,  frac:0.185, side:-1, width:0.64,
-    points:[
-      [0.050,0.035],[0.073,0.062],[0.060,0.092],[0.094,0.122],
-      [0.125,0.150],[0.170,0.171],[0.21746,0.185]
-    ]},
-  { id:'t2', major:false, frac:0.292, side:1, width:0.49,
-    points:[
-      [0.835,0.100],[0.802,0.128],[0.825,0.160],[0.770,0.195],
-      [0.748,0.225],[0.680,0.255],[0.590,0.292]
-    ]},
-  { id:'t3', major:false, frac:0.405, side:-1, width:0.46,
-    points:[
-      [0.225,0.238],[0.255,0.262],[0.292,0.287],[0.270,0.315],
-      [0.325,0.342],[0.390,0.365],[0.455,0.389],[0.530,0.405]
-    ]},
-  { id:'t4', major:true, frac:0.535, side:1, width:0.62,
-    points:[
-      [0.825,0.415],[0.790,0.440],[0.815,0.466],[0.760,0.490],
-      [0.700,0.508],[0.625,0.520],[0.560,0.529],[0.510,0.535]
-    ]},
-  { id:'t5', major:false, frac:0.645, side:-1, width:0.50,
-    points:[
-      [0.305,0.565],[0.335,0.582],[0.320,0.600],[0.365,0.615],
-      [0.425,0.626],[0.490,0.636],[0.550,0.642],[0.609,0.645]
-    ]},
-  { id:'t6', major:false, frac:0.755, side:1, width:0.45,
-    points:[
-      [0.860,0.660],[0.835,0.680],[0.865,0.700],[0.815,0.720],
-      [0.770,0.735],[0.700,0.748],[0.630,0.755]
-    ]},
-  { id:'t7', major:false, frac:0.845, side:1, width:0.48,
-    points:[
-      [0.975,0.775],[0.952,0.790],[0.975,0.805],[0.955,0.820],
-      [0.940,0.833],[0.90125,0.845]
-    ]}
+// ── HAND-AUTHORED WATERSHED TRIBUTARIES ────────────────────────────────────
+// The tributary network is deliberately NOT generated from CMS milestones.
+// Each branch has a small upstream catchment, its own irregular meander, and
+// a controlled confluence with the mainstem.  The geometry is expressed as a
+// smooth lateral offset from the same mainstem centreline, which makes every
+// tributary read as part of one drainage system instead of as a free-floating
+// decorative curve.
+const HARD_TRIBUTARIES = [
+  // major: longer, broader, slightly more sinuous
+  { id:'t1', major:true,  frac:0.185, source:0.035, side:-1, width:0.64,
+    offsets:[0.220,0.205,0.235,0.255,0.215,0.180,0.145,0.095,0.045,0.000] },
+  { id:'t2', major:false, frac:0.292, source:0.0600, side: 1, width:0.49,
+    offsets:[0.310,0.340,0.315,0.275,0.230,0.185,0.125,0.075,0.035,0.000] },
+  { id:'t3', major:false, frac:0.405, source:0.2337, side:-1, width:0.46,
+    offsets:[0.175,0.145,0.185,0.150,0.115,0.078,0.035,0.000] },
+  { id:'t4', major:true,  frac:0.535, source:0.4876, side: 1, width:0.62,
+    offsets:[0.205,0.235,0.195,0.225,0.165,0.120,0.075,0.035,0.000] },
+  { id:'t5', major:false, frac:0.645, source:0.60137, side:-1, width:0.50,
+    offsets:[0.300,0.270,0.285,0.240,0.190,0.135,0.085,0.040,0.000] },
+  { id:'t6', major:false, frac:0.755, source:0.675, side: 1, width:0.45,
+    offsets:[0.125,0.108,0.145,0.112,0.080,0.050,0.024,0.000] },
+  { id:'t7', major:false, frac:0.845, source:0.755, side: 1, width:0.48,
+    offsets:[0.185,0.220,0.165,0.190,0.125,0.075,0.030,0.000] }
 ];
 
-// Piecewise smooth interpolation that never overshoots the authored bends.
-// We intentionally do not use Catmull-Rom here: overshooting splines were a
-// major source of the old "jumping" / backtracking appearance.
-function fixedTributaryPoint(control, t){
-  const n=control.length;
-  if(n<2) return {x:control[0][0], y:control[0][1]};
-  const u=Math.max(0,Math.min(1,t))*(n-1);
-  const i=Math.min(n-2,Math.floor(u));
-  const f=u-i;
-  const eased=f*f*(3-2*f);
-  return {
-    x:control[i][0] + (control[i+1][0]-control[i][0])*eased,
-    y:control[i][1] + (control[i+1][1]-control[i][1])*eased
-  };
+// Smooth interpolation for the hand-authored offset profile.  Catmull-Rom
+// keeps the tributary bends flowing through the control values without the
+// angular joins that a polyline would create.
+function catmullRom(a,b,c,d,t){
+  const t2=t*t, t3=t2*t;
+  return 0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);
 }
 
-function makeFixedTributary(W,H,spec,index){
-  const samples=spec.major ? 72 : 58;
+function makeHardTributary(W,H,spec,index){
+  const source = Math.max(0.018, Math.min(spec.source, spec.frac - 0.018));
+  const n = spec.offsets.length;
   const pts=[];
+  const samples = spec.major ? 64 : 50;
+
+  // The tributary is built as a gently meandering ribbon parallel to the
+  // local mainstem.  Because its lateral offset is always on one side and
+  // fades continuously to zero, the last section naturally folds into the
+  // mainstem instead of stabbing into it.
   for(let i=0;i<samples;i++){
     const t=i/(samples-1);
-    const p=fixedTributaryPoint(spec.points,t);
+    const norm=source + (spec.frac-source)*t;
+    const u=t*(n-1);
+    const k=Math.min(n-2,Math.floor(u));
+    const f=u-k;
+    const get=j=>spec.offsets[Math.max(0,Math.min(n-1,j))];
+    let off=catmullRom(get(k-1),get(k),get(k+1),get(k+2),f);
+    off=Math.max(0,off);
 
-    // Keep the authored tributary position exactly as the backbone.  Add only
-    // a very small lateral meander to the channel itself.  The displacement
-    // is X-only because every authored Y value is already strictly downstream;
-    // this guarantees the meander can never make the tributary move upstream.
-    // The envelope is zero at source/confluence, so both anchors stay fixed.
-    const phase = (index * 0.73) + (spec.major ? 0.18 : 0.42);
-    // Make the bends clearly visible like T7, while still keeping them
-    // compact relative to the existing tributary placement.
-    const cycles = spec.major ? 2.10 : 2.35;
-    const amplitude = (spec.major ? 0.026 : 0.022) * Math.sin(Math.PI*t);
-    let xNorm = p.x + amplitude * Math.sin((Math.PI*2*cycles*t) + phase);
+    // A very low-frequency, deterministic wiggle gives each branch a
+    // slightly different natural character without creating noise-like kinks.
+    const wiggle=(Math.sin(t*Math.PI*(2.0+index*0.23)+index*1.31)*0.006 +
+                  Math.sin(t*Math.PI*(3.1+index*0.17)-0.4)*0.0035) * (1-t);
+    off=Math.max(0,off+wiggle);
 
-    // A tributary is allowed to meander, but it must remain on its authored
-    // side of the mainstem until the final confluence.  This prevents T1 (or
-    // any other branch) from wandering across the river and then re-entering.
-    if (i < samples-1) {
-      const mainX = getRiverXFrac(p.y);
-      const clearance = 0.012 + (spec.major ? 0.004 : 0.002);
-      if (spec.side < 0) xNorm = Math.min(xNorm, mainX - clearance);
-      else               xNorm = Math.max(xNorm, mainX + clearance);
-    }
-
-    pts.push({x:xNorm*W,y:p.y*H});
+    const mainX=getRiverXFrac(norm)*W;
+    pts.push({x:mainX + spec.side*off*W, y:norm*H});
   }
-  // Exact source anchor.
-  pts[0]={x:spec.points[0][0]*W,y:spec.points[0][1]*H};
-  // Exact confluence on the current mainstem. Only this endpoint depends on
-  // mainstem geometry; the rest of the branch is its own authored watershed.
-  pts[pts.length-1]={x:getRiverXFrac(spec.frac)*W,y:spec.frac*H};
+
+  // Exact source and confluence anchors.
+  pts[0]={x:getRiverXFrac(source)*W + spec.side*spec.offsets[0]*W, y:source*H};
+  pts[pts.length-1]={x:getRiverXFrac(spec.frac)*W, y:spec.frac*H};
   return pts;
 }
 
-function buildFixedTributaries(W,H){
-  return FIXED_TRIBUTARIES.map((spec,i)=>{
-    const path=makeFixedTributary(W,H,spec,i);
+function buildHardTributaries(W,H){
+  return HARD_TRIBUTARIES.map((spec,i)=>{
+    const path=makeHardTributary(W,H,spec,i);
     return {
       frac:spec.frac,
       x:getRiverXFrac(spec.frac)*W,
@@ -2335,7 +2300,7 @@ function buildFixedTributaries(W,H){
 // classifies tributaries.
 function buildLayout(W,H,milestones){
   buildNoiseGrid(W,H);
-  const confluences=buildFixedTributaries(W,H);
+  const confluences=buildHardTributaries(W,H);
   const milestoneAnchors=(milestones||[]).map((m,i)=>{
     const frac=(m.elevation!=null && m.elevation!=='')
       ? Math.max(0.06,Math.min(0.86,elevToFrac(m.elevation)))
@@ -2478,9 +2443,9 @@ function drawTopo() {
       const valleyCut      = (0.17 + ny * 0.13) * valleyInfl;
 
       // ── Tributary valley cuts ───────────────────────────────
-      // For each tributary path, build a broad-to-narrow drainage valley field.
-      // The field follows the actual meanders, so contour lines wrap around
-      // the tributary instead of reading as straight decorative strokes.
+      // For each tributary path, we apply a narrower, shallower valley cut
+      // along its route. This makes contours visibly "V" into each tributary
+      // valley — the same physical process that shapes real drainage networks.
       let tribCut = 0;
       if (layout && layout.confluences) {
         for (const conf of layout.confluences) {
@@ -2489,7 +2454,6 @@ function drawTopo() {
           // Measure against the full tributary polyline so the contour
           // valley follows the actual meanders continuously.
           let minDist = Infinity;
-          let nearestProgress = 0;
           const path = conf.tribPath;
           for (let k = 0; k < path.length - 1; k++) {
             const a = path[k], b = path[k + 1];
@@ -2499,35 +2463,14 @@ function drawTopo() {
             const wx = (nx - ax) * 1.8, wy = ny - ay;
             const vv = vx * vx + vy * vy || 1e-9;
             const q = Math.max(0, Math.min(1, (wx * vx + wy * vy) / vv));
-            const px = ax + (bx - ax) * q;
-            const py = ay + (by - ay) * q;
-            const dx = (px - nx) * 1.8;
-            const dy = py - ny;
-            const d = Math.hypot(dx, dy);
-            if (d < minDist) {
-              minDist = d;
-              nearestProgress = (k + q) / Math.max(1, path.length - 1);
-            }
+            const dx = ((ax + (bx - ax) * q) - nx) * 1.8;
+            const dy = (ay + (by - ay) * q) - ny;
+            minDist = Math.min(minDist, Math.hypot(dx, dy));
           }
-
-          // Shape a real drainage valley rather than drawing a narrow line
-          // under the tributary.  The valley is tighter near the source and
-          // gradually opens toward the confluence, so contour lines bend
-          // around the meandering channel at several scales.
-          const p0 = Math.max(0, Math.min(1, nearestProgress));
-          const taper = 0.68 + 0.72 * Math.pow(p0, 0.82);
-          const twOuter = (conf.major ? 0.050 : 0.036) * taper;
-          const twInner = (conf.major ? 0.020 : 0.015) * taper;
-          const tdOuter = conf.major ? 0.105 : 0.072;
-          const tdInner = conf.major ? 0.052 : 0.036;
-          const outer = Math.exp(-Math.pow(minDist / twOuter, 2));
-          const inner = Math.exp(-Math.pow(minDist / twInner, 2));
-
-          // Broad valley + narrow channel shoulder.  The second term gives
-          // the contour field a pronounced response to each small tributary
-          // meander instead of leaving the branch looking like a straight
-          // decorative stroke.
-          tribCut += tdOuter * outer + tdInner * inner;
+          // Majors get a slightly deeper/wider valley than minors.
+          const tw = conf.major ? 0.032 : 0.021;
+          const td = conf.major ? 0.115 : 0.078;
+          tribCut += td * Math.exp(-Math.pow(minDist / tw, 2));
         }
       }
 
@@ -2786,74 +2729,133 @@ function drawBraidBars(ctx, mainPts, braidPts, fillColor, strokeColor) {
 // A restrained abandoned meander: a cut-off loop beside the mainstem.
 // It is intentionally subtle so it reads as geomorphology, not an illustration.
 function drawOxbowLake(ctx, mainPts, fillColor, strokeColor) {
-  if (!mainPts || mainPts.length < 160) return;
+  if (!mainPts || mainPts.length < 160 || !layout || !layout.milestoneAnchors) return;
 
-  // Three abandoned meanders. They are deliberately irregular and slightly
-  // different in scale/orientation so they read as old channels rather than
-  // repeated decorative ellipses.
-  const lakes = [
-    { start: 0.70, end: 0.77, side:  1, bulge: 42, skew:  7 },
-    { start: 0.80, end: 0.87, side: -1, bulge: 48, skew: -9 },
-    { start: 0.89, end: 0.96, side:  1, bulge: 37, skew:  6 }
-  ];
+  // Oxbows are created only when two or more CMS milestones share the same
+  // backend elevation. The lake is derived from the REAL mainstem bend at
+  // that elevation; it is not an arbitrary ellipse and it never moves the
+  // active river.
+  const groups = [];
+  const byElevation = new Map();
+  layout.milestoneAnchors.forEach((a) => {
+    const raw = a.milestone && a.milestone.elevation;
+    if (raw == null || raw === '') return;
+    const key = Number(raw).toFixed(3);
+    if (!byElevation.has(key)) byElevation.set(key, []);
+    byElevation.get(key).push(a);
+  });
+  byElevation.forEach((anchors) => { if (anchors.length > 1) groups.push(anchors); });
+  if (!groups.length) return;
 
-  const lakeFill = isDark() ? 'rgba(74,125,138,0.28)' : 'rgba(120,174,190,0.22)';
-  const lakeStroke = isDark() ? 'rgba(125,165,170,0.34)' : 'rgba(120,145,150,0.30)';
-  const ghostStroke = isDark() ? 'rgba(180,190,185,0.22)' : 'rgba(135,140,135,0.28)';
+  const lakeFill = isDark() ? 'rgba(74,125,138,0.34)' : 'rgba(120,174,190,0.28)';
+  const lakeStroke = isDark() ? 'rgba(125,165,170,0.42)' : 'rgba(105,135,142,0.36)';
+  const oldChannel = isDark() ? 'rgba(190,198,190,0.30)' : 'rgba(115,125,120,0.34)';
+  const sedimentStroke = isDark() ? 'rgba(180,184,174,0.18)' : 'rgba(130,132,124,0.20)';
 
-  lakes.forEach((lake, li) => {
-    const start = Math.floor(mainPts.length * lake.start);
-    const end   = Math.floor(mainPts.length * lake.end);
-    const span  = Math.max(30, end - start);
-    const ptsA = [];
-    const ptsB = [];
+  const pointAtFrac = (frac) => {
+    const i = Math.max(0, Math.min(mainPts.length - 1, Math.round(frac * (mainPts.length - 1))));
+    return mainPts[i];
+  };
 
-    for (let j = 0; j <= 72; j++) {
-      const q = j / 72;
-      const idx = Math.min(mainPts.length - 1, Math.floor(start + q * span));
-      const p = mainPts[idx];
-      const bulge = Math.sin(q * Math.PI);
-      const wobble = Math.sin(q * Math.PI * (2.0 + li * 0.35) + lake.skew) * 4.5;
-      const forward = (q - 0.5) * lake.skew;
-      const offset = lake.side * (16 + lake.bulge * bulge + wobble);
-      ptsA.push({ x: p.x + offset + forward, y: p.y });
-      ptsB.push({ x: p.x + lake.side * (8 + lake.bulge * 0.48 * bulge) + forward, y: p.y });
+  groups.forEach((anchors, gi) => {
+    const frac = anchors.reduce((sum, a) => sum + a.frac, 0) / anchors.length;
+    // Use a compact section of the actual mainstem around the milestone.
+    const halfSpan = 0.045 + Math.min(0.018, anchors.length * 0.004);
+    const f0 = Math.max(0.10, frac - halfSpan);
+    const f1 = Math.min(0.88, frac + halfSpan);
+    const p0 = pointAtFrac(f0);
+    const pm = pointAtFrac(frac);
+    const p1 = pointAtFrac(f1);
+    if (!p0 || !pm || !p1) return;
+
+    // Determine the side of the actual bend. If the bend is nearly straight,
+    // alternate sides only as a fallback so successive oxbows don't collide.
+    const chordMidX = (p0.x + p1.x) * 0.5;
+    const bend = pm.x - chordMidX;
+    let side = Math.abs(bend) > 3 ? Math.sign(bend) : (gi % 2 ? -1 : 1);
+
+    // Local normal follows the mainstem, rather than using a global horizontal
+    // offset. This makes the abandoned channel rotate naturally with the river.
+    const dx = p1.x - p0.x;
+    const dy = p1.y - p0.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const nx = -dy / len;
+    const ny = dx / len;
+
+    const spanPts = [];
+    const returnPts = [];
+    const samples = 54;
+    const width = Math.min(82, Math.max(38, 34 + anchors.length * 7));
+    const loopDepth = Math.min(58, Math.max(26, 24 + anchors.length * 5));
+
+    for (let j = 0; j <= samples; j++) {
+      const q = j / samples;
+      const f = f0 + (f1 - f0) * q;
+      const p = pointAtFrac(f);
+      const bulge = Math.sin(Math.PI * q);
+      const localWobble = Math.sin(q * Math.PI * 2.2 + gi * 0.8) * 2.5;
+      const outward = side * (width * bulge + localWobble);
+      const inward = side * (7 + loopDepth * bulge * 0.55);
+      spanPts.push({ x: p.x + nx * outward, y: p.y + ny * outward });
+      returnPts.push({ x: p.x + nx * inward, y: p.y + ny * inward });
     }
 
-    // Ghost of the former channel: a pale, broken meander line connecting
-    // the lake to the active river's former path.
+    // Closed abandoned channel: this is the former river path, now separated
+    // from the active mainstem. The active mainstem remains untouched.
+    const lake = spanPts.concat(returnPts.slice().reverse());
     ctx.save();
-    ctx.setLineDash([3, 5]);
     ctx.beginPath();
-    ptsB.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-    ctx.strokeStyle = ghostStroke;
-    ctx.lineWidth = 1.0;
-    ctx.stroke();
-    ctx.restore();
-
-    // Irregular closed lake body.
-    ctx.beginPath();
-    ptsA.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-    for (let j = ptsB.length - 1; j >= 0; j--) ctx.lineTo(ptsB[j].x, ptsB[j].y);
+    lake.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
     ctx.closePath();
     ctx.fillStyle = lakeFill;
     ctx.fill();
     ctx.strokeStyle = lakeStroke;
-    ctx.lineWidth = 0.9;
+    ctx.lineWidth = 1.05;
     ctx.stroke();
+    ctx.restore();
 
-    // Cutoff necks: subtle remnants of where the river once connected.
-    [start, end].forEach((idx, k) => {
-      const p = mainPts[idx];
-      const dir = lake.side;
-      const n = k ? -1 : 1;
+    // The old river channel: a visible, broken remnant along the centre of the
+    // abandoned loop. It deliberately reads as a former channel, not a second
+    // active river, and remains visible at both cutoff ends.
+    const oldMid = [];
+    for (let j = 0; j <= samples; j++) {
+      const a = spanPts[j], b = returnPts[j];
+      oldMid.push({x:(a.x+b.x)*0.5, y:(a.y+b.y)*0.5});
+    }
+    ctx.save();
+    ctx.setLineDash([4, 5]);
+    ctx.beginPath();
+    oldMid.forEach((p, i) => i === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle = oldChannel;
+    ctx.lineWidth = 1.15;
+    ctx.stroke();
+    ctx.restore();
+
+    // Cutoff neck remnants: subtle sediment/vegetation scars where the old
+    // channel was separated from the active river.
+    [0, samples].forEach((j) => {
+      const active = j === 0 ? p0 : p1;
+      const old = oldMid[j];
+      ctx.save();
+      ctx.setLineDash([2, 4]);
       ctx.beginPath();
-      ctx.moveTo(p.x + dir * 4, p.y - 5 * n);
-      ctx.lineTo(p.x + dir * 17, p.y - 2 * n);
-      ctx.strokeStyle = ghostStroke;
+      ctx.moveTo(active.x, active.y);
+      ctx.lineTo(old.x, old.y);
+      ctx.strokeStyle = sedimentStroke;
       ctx.lineWidth = 1.0;
       ctx.stroke();
+      ctx.restore();
     });
+
+    // Very subtle inner-water highlight follows the old channel rather than
+    // drawing an artificial circle.
+    ctx.save();
+    ctx.beginPath();
+    oldMid.forEach((p, i) => i === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle = isDark() ? 'rgba(130,170,174,0.16)' : 'rgba(110,160,172,0.18)';
+    ctx.lineWidth = 0.7;
+    ctx.stroke();
+    ctx.restore();
   });
 }
 
@@ -3486,8 +3488,11 @@ function buildMilestones() {
 
     // Find the local mainstem direction so the milestone sits beside the
     // channel rather than directly on top of it.
-    const p0 = riverPointAtT(Math.max(0, anchor.t - 0.006));
-    const p1 = riverPointAtT(Math.min(1, anchor.t + 0.006));
+    const localEps = 0.006;
+    const f0 = Math.max(0.06, anchor.frac - localEps);
+    const f1 = Math.min(0.86, anchor.frac + localEps);
+    const p0 = { x: getRiverXFrac(f0) * (topoW || inner.clientWidth), y: f0 * FIXED_H };
+    const p1 = { x: getRiverXFrac(f1) * (topoW || inner.clientWidth), y: f1 * FIXED_H };
     const dx = (p1.x - p0.x) || 1;
     const dy = (p1.y - p0.y) || 0;
     const len = Math.hypot(dx,dy) || 1;
