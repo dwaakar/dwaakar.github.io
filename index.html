@@ -2146,7 +2146,7 @@ function getRiverXFrac(norm) {
 }
 
 // ═══════════════════════════════════════
-// LAYOUT — confluences & river growth from CMS milestone data
+// LAYOUT — fixed watershed tributaries + CMS milestone eddies
 // ═══════════════════════════════════════
 let layout = null; // { total, confluences:[{frac,x,type,side,milestone,tribPath,increment}] }
 
@@ -2204,16 +2204,18 @@ function sampleNoise(nx, ny) {
   return v00*(1-cf)*(1-rf) + v10*cf*(1-rf) + v01*(1-cf)*rf + v11*cf*rf;
 }
 
-// ── PROCEDURAL MILESTONE TRIBUTARIES ───────────────────────────────────────
-// Every CMS milestone becomes a small watershed feeding the mainstem at its
-// milestone elevation.  Geometry is generated from the mainstem outward, not
-// from free-floating decorative branches, so the confluence is always exact.
-const TRIB_SAMPLES = 72;
-const TRIB_CLUSTER_FRAC = 0.022;
-const TRIB_CONFLUENCE_ZONE = 0.030;
-const TRIB_COLLISION_GAP = 10;
-const TRIB_GRID_COLS = 76;
-const TRIB_GRID_ROWS = 96;
+// ── FIXED WATERSHED TRIBUTARIES + MILESTONE EDDIES ─────────────────────────
+// Tributaries are deliberately hard-coded as a small background watershed.
+// They are NOT coupled to CMS milestones. This keeps the mainstem stable while
+// still giving the map a few believable feeder channels.
+const FIXED_TRIBUTARY_SPECS = [
+  { frac:0.15, side:-1, length:0.105, spread:0.055, amp:0.020, phase:0.3, major:false },
+  { frac:0.27, side: 1, length:0.125, spread:0.060, amp:0.024, phase:1.7, major:true  },
+  { frac:0.40, side:-1, length:0.115, spread:0.052, amp:0.018, phase:2.6, major:false },
+  { frac:0.54, side: 1, length:0.145, spread:0.068, amp:0.026, phase:0.9, major:true  },
+  { frac:0.68, side:-1, length:0.120, spread:0.060, amp:0.020, phase:2.0, major:false },
+  { frac:0.81, side: 1, length:0.105, spread:0.055, amp:0.022, phase:3.3, major:true  }
+];
 
 function mainPointAt(norm, W, H){
   const n=Math.max(0,Math.min(1,norm));
@@ -2230,309 +2232,89 @@ function mainNormalAt(norm,W,H){
   const t=mainTangentAt(norm,W,H);
   return {x:-t.y,y:t.x};
 }
-function pointSegDistance(p,a,b){
-  const abx=b.x-a.x, aby=b.y-a.y, d=abx*abx+aby*aby||1;
-  const q=Math.max(0,Math.min(1,((p.x-a.x)*abx+(p.y-a.y)*aby)/d));
-  return Math.hypot(p.x-(a.x+q*abx),p.y-(a.y+q*aby));
-}
-function segmentsIntersect(a,b,c,d){
-  const orient=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x), eps=1e-7;
-  const o1=orient(a,b,c),o2=orient(a,b,d),o3=orient(c,d,a),o4=orient(c,d,b);
-  if(Math.abs(o1)<eps&&Math.abs(o2)<eps&&Math.abs(o3)<eps&&Math.abs(o4)<eps){
-    const overlap=(u,v,w,z)=>Math.max(Math.min(u,v),Math.min(w,z))<=Math.min(Math.max(u,v),Math.max(w,z))+eps;
-    return overlap(a.x,b.x,c.x,d.x)&&overlap(a.y,b.y,c.y,d.y);
-  }
-  return ((o1>eps)!==(o2>eps))&&((o3>eps)!==(o4>eps));
-}
 function pathLength(path){let d=0;for(let i=1;i<path.length;i++)d+=Math.hypot(path[i].x-path[i-1].x,path[i].y-path[i-1].y);return d;}
-
 function sampledMainstem(W,H){
   const out=[];
   for(let i=0;i<=220;i++)out.push(mainPointAt(i/220,W,H));
   return out;
 }
-function pathHitsPath(path,other,gap,allowEnd=null){
-  for(let i=1;i<path.length;i++){
-    for(let j=1;j<other.length;j++){
-      if(segmentsIntersect(path[i-1],path[i],other[j-1],other[j])){
-        if(allowEnd && Math.min(i,path.length-i)<=allowEnd && Math.min(j,other.length-j)<=allowEnd) continue;
-        return true;
-      }
-      if(gap>0 && Math.min(pointSegDistance(path[i-1],other[j-1],other[j]),pointSegDistance(path[i],other[j-1],other[j]))<gap)return true;
-    }
+
+function makeFixedTributary(W,H,spec,index){
+  const f=Math.max(0.06,Math.min(0.90,spec.frac));
+  const end=mainPointAt(f,W,H);
+  const tangent=mainTangentAt(f,W,H);
+  const normal=mainNormalAt(f,W,H);
+  // Move upstream from the confluence, then sideways into a small source basin.
+  const sourceT=f-spec.length;
+  const sourceBase=mainPointAt(Math.max(0.035,sourceT),W,H);
+  const lateral=W*spec.spread*spec.side;
+  const source={
+    x:sourceBase.x + normal.x*lateral,
+    y:sourceBase.y + normal.y*lateral
+  };
+  const pts=[];
+  const N=11;
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    // Monotonic downstream interpolation; meander only offsets laterally.
+    const x0=source.x+(end.x-source.x)*t;
+    const y0=source.y+(end.y-source.y)*t;
+    const envelope=Math.sin(Math.PI*t);
+    const lobes=Math.sin(t*Math.PI*(2.2+0.18*(index%3))+spec.phase);
+    const lateralMeander=normal.x*W*spec.amp*lobes*envelope;
+    const verticalMeander=normal.y*W*spec.amp*lobes*envelope;
+    pts.push({x:x0+lateralMeander,y:y0+verticalMeander});
   }
-  return false;
+  pts[0]=source;
+  pts[N-1]=end;
+  return {
+    frac:f,x:end.x,y:end.y,major:!!spec.major,
+    type:spec.major?'major':'minor',side:spec.side,
+    source,tribPath:pts,tribWidthMult:spec.major?0.50:0.30,
+    increment:spec.major?0.72:0.28,generated:false,valid:true,
+    fixed:true,fixedIndex:index
+  };
 }
 
-// Grid router. The mainstem is a hard obstacle except for the current confluence
-// gate. Existing tributaries are hard obstacles. A small deterministic noise cost
-// makes the shortest route meander instead of becoming a sterile straight line.
-function routeTributaryGrid(W,H,start,end,blocked,seed,anchors){
-  const C=TRIB_GRID_COLS,R=TRIB_GRID_ROWS;
-  const key=(x,y)=>y*C+x;
-  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
-  const gx=p=>clamp(Math.round(p.x/W*(C-1)),0,C-1);
-  const gy=p=>clamp(Math.round(p.y/H*(R-1)),0,R-1);
-  const sx=gx(start),sy=gy(start),ex=gx(end),ey=gy(end);
-  const startKey=key(sx,sy), endKey=key(ex,ey);
-  const open=[{x:sx,y:sy,f:0,g:0}];
-  const came=new Map(), gScore=new Map([[startKey,0]]), closed=new Set();
-  const dirs=[[-1,0],[1,0],[0,-1],[0,1],[-1,-1],[1,-1],[-1,1],[1,1]];
-  const heuristic=(x,y)=>Math.hypot(x-ex,y-ey);
-  while(open.length){
-    let best=0;for(let i=1;i<open.length;i++)if(open[i].f<open[best].f)best=i;
-    const cur=open.splice(best,1)[0], ck=key(cur.x,cur.y);
-    if(closed.has(ck))continue; closed.add(ck);
-    if(cur.x===ex&&cur.y===ey){
-      const cells=[];let k=ck;
-      while(k!==undefined){const y=Math.floor(k/C),x=k-y*C;cells.push({x:x/(C-1)*W,y:y/(R-1)*H});k=came.get(k);}
-      return cells.reverse();
-    }
-    for(const [dx,dy] of dirs){
-      const nx=cur.x+dx,ny=cur.y+dy;if(nx<0||ny<0||nx>=C||ny>=R)continue;
-      const nk=key(nx,ny);if(closed.has(nk)||blocked.has(nk))continue;
-      const noise=seededRand(seed+nx*17.17+ny*31.71);
-      const turnPenalty=(dx!==0&&dy!==0)?0.08:0;
-      const ng=cur.g+Math.hypot(dx,dy)*(1.0+noise*0.34)+turnPenalty;
-      if(ng<(gScore.get(nk)??Infinity)){
-        gScore.set(nk,ng);came.set(nk,ck);
-        open.push({x:nx,y:ny,g:ng,f:ng+heuristic(nx,ny)*1.04});
-      }
-    }
-  }
-  return null;
+function buildFixedTributaries(W,H){
+  return FIXED_TRIBUTARY_SPECS.map((spec,i)=>makeFixedTributary(W,H,spec,i));
 }
 
-function simplifyPath(path, obstacles, W,H){
-  if(path.length<3)return path;
-  const out=[path[0]];let i=0;
-  while(i<path.length-1){
-    let best=i+1;
-    for(let j=path.length-1;j>i+1;j--){
-      let clear=true;
-      for(const obs of obstacles){if(pathHitsPath([path[i],path[j]],obs,TRIB_COLLISION_GAP)){clear=false;break;}}
-      if(clear){best=j;break;}
-    }
-    out.push(path[best]);i=best;
-  }
-  return out;
-}
-
-function smoothTributaryPath(path, obstacles){
-  if(path.length<3)return path;
-  const out=[path[0]];
-  for(let i=1;i<path.length-1;i++){
-    const a=path[i-1],b=path[i],c=path[i+1];
-    const p1={x:a.x*.2+b.x*.8,y:a.y*.2+b.y*.8};
-    const p2={x:b.x*.8+c.x*.2,y:b.y*.8+c.y*.2};
-    const candidate=[out[out.length-1],p1,p2];
-    let safe=true;for(const obs of obstacles){if(pathHitsPath(candidate,obs,TRIB_COLLISION_GAP)){safe=false;break;}}
-    if(safe)out.push(p1,p2);else out.push(b);
-  }
-  out.push(path[path.length-1]);
-  return out;
-}
-
-function clusterMilestoneAnchors(anchors){
-  const clusters=[];
-  anchors.forEach(a=>{
-    let cluster=clusters[clusters.length-1];
-    if(!cluster||a.frac-cluster.maxFrac>TRIB_CLUSTER_FRAC){cluster={items:[],minFrac:a.frac,maxFrac:a.frac};clusters.push(cluster);}
-    cluster.items.push(a);cluster.maxFrac=Math.max(cluster.maxFrac,a.frac);
-  });
-  return clusters;
-}
-
-function generateMilestoneTributaries(W,H,anchors){
-  // V14: simple watershed tributaries. Each milestone owns one short,
-  // independent source→confluence channel. The mainstem only supplies the
-  // confluence; lateral meander never changes downstream Y progression.
-  const sorted=[...(anchors||[])].sort((a,b)=>a.frac-b.frac);
-  const main=sampledMainstem(W,H);
-  const out=[];
-  const accepted=[];
-  let previousSourceY=-Infinity;
-
-  function pathHits(path, other, gap=TRIB_COLLISION_GAP){
-    if(!path||!other||path.length<2||other.length<2) return false;
-    for(let i=1;i<path.length;i++){
-      for(let j=1;j<other.length;j++){
-        if(segmentsIntersect(path[i-1],path[i],other[j-1],other[j])) return true;
-        const d=Math.min(
-          pointSegDistance(path[i-1],other[j-1],other[j]),
-          pointSegDistance(path[i],other[j-1],other[j]),
-          pointSegDistance(other[j-1],path[i-1],path[i]),
-          pointSegDistance(other[j],path[i-1],path[i])
-        );
-        if(d<gap) return true;
-      }
-    }
-    return false;
-  }
-
-  function mainstemHitBeforeGate(path, confluence, gate){
-    if(!path||path.length<2) return true;
-    // Only the last two short segments are allowed to enter the confluence.
-    const gateStart=Math.max(1,path.length-2);
-    for(let i=1;i<gateStart;i++){
-      for(let j=1;j<main.length;j++){
-        if(segmentsIntersect(path[i-1],path[i],main[j-1],main[j])) return true;
-        const d=Math.min(
-          pointSegDistance(path[i-1],main[j-1],main[j]),
-          pointSegDistance(path[i],main[j-1],main[j])
-        );
-        if(d<gate) return true;
-      }
-    }
-    const last=path[path.length-1];
-    return Math.hypot(last.x-confluence.x,last.y-confluence.y)>0.002;
-  }
-
-  function makeCandidate(source,confluence,phase,amp,lobes){
-    const pts=[];
-    const N=Math.max(24,lobes*6);
-    const dy=confluence.y-source.y;
-    for(let i=0;i<=N;i++){
-      const t=i/N;
-      // Downstream coordinate is explicit and strictly non-decreasing.
-      const y=source.y+dy*t;
-      // Independent source→confluence axis. It does NOT follow mainstem X.
-      const eased=t*t*(3-2*t);
-      const axisX=source.x+(confluence.x-source.x)*eased;
-      const envelope=Math.sin(Math.PI*t);
-      const lobe=Math.sin(2*Math.PI*lobes*t+phase)
-                 +0.24*Math.sin(4*Math.PI*lobes*t+phase*1.31);
-      const lateral=lobe*amp*envelope;
-      pts.push({x:axisX+lateral,y});
-    }
-    pts[0]={x:source.x,y:source.y};
-    pts[pts.length-1]={x:confluence.x,y:confluence.y};
-    return pts;
-  }
-
-  sorted.forEach((anchor,index)=>{
-    const seed=(anchor.index+1)*19.731+index*47.17;
-    const major=!!anchor.milestone?.major;
-    const confluence=mainPointAt(anchor.frac,W,H);
-
-    // Short watershed reach. Keep the source close enough to the confluence
-    // that a straight independent axis cannot wander across the mainstem.
-    const reachMin=H*0.045;
-    const reachMax=H*(major?0.090:0.075);
-    let sourceY=confluence.y-(reachMin+(reachMax-reachMin)*seededRand(seed+2.1));
-    const minGap=Math.max(10,H*0.006);
-    if(previousSourceY>-Infinity) sourceY=Math.max(sourceY,previousSourceY+minGap);
-    sourceY=Math.min(sourceY,confluence.y-H*0.030);
-    sourceY=Math.max(18,sourceY);
-    if(sourceY>=confluence.y-H*0.02) sourceY=confluence.y-H*0.025;
-
-    // Start on one side of the local mainstem using its normal. This gives a
-    // real drainage source rather than a point directly beside the channel.
-    const tangent=mainTangentAt(anchor.frac,W,H);
-    const normal=mainNormalAt(anchor.frac,W,H);
-    const side=(index%2===0)?-1:1;
-    const laneBase=(major?0.035:0.028)*Math.min(W,H);
-    const laneJitter=(seededRand(seed+8.4)-0.5)*0.010*Math.min(W,H);
-    const lane=laneBase+laneJitter;
-    const verticalRise=confluence.y-sourceY;
-    const source={
-      x:confluence.x + normal.x*side*lane + tangent.x*side*lane*0.20,
-      y:sourceY
+function buildMilestoneEddies(W,H,anchors){
+  return (anchors||[]).map((a,i)=>{
+    const p=mainPointAt(a.frac,W,H);
+    const tangent=mainTangentAt(a.frac,W,H);
+    const normal=mainNormalAt(a.frac,W,H);
+    const major=!!a.milestone?.major;
+    const localWidth=widthAtY(p.y,[]) || (2.2 + (4.5-2.2)*Math.pow(a.frac,0.6));
+    // Keep the visible vortex comfortably inside the channel width.
+    const radius=Math.max(2.6,Math.min(7.5,localWidth*(major?0.72:0.58)));
+    return {
+      x:p.x + normal.x*(major?0.4:0.0),
+      y:p.y + normal.y*(major?0.4:0.0),
+      radius,
+      major,
+      strength:major?1.0:0.62,
+      direction:(i%2===0?1:-1),
+      phase:i*1.71,
+      tangent,normal,
+      milestoneIndex:a.index
     };
-    source.x=Math.max(12,Math.min(W-12,source.x));
-
-    const ampBase=(major?0.020:0.014)*Math.min(W,H);
-    let chosen=null;
-    for(let attempt=0;attempt<20&&!chosen;attempt++){
-      const phase=seed+attempt*1.618;
-      const amp=ampBase*(1-0.035*Math.min(attempt,12));
-      const sx=source.x+(seededRand(seed+attempt*11.7)-0.5)*0.008*Math.min(W,H);
-      const sy=source.y;
-      const candidate=makeCandidate({x:sx,y:sy},confluence,phase,amp,major?7:6);
-
-      let monotonic=true;
-      for(let i=1;i<candidate.length;i++){
-        if(candidate[i].y+1e-9<candidate[i-1].y){monotonic=false;break;}
-      }
-      if(!monotonic) continue;
-      if(mainstemHitBeforeGate(candidate,confluence,Math.max(6,TRIB_COLLISION_GAP))) continue;
-
-      let collision=false;
-      for(const other of accepted){
-        if(pathHits(candidate,other.tribPath,TRIB_COLLISION_GAP)){collision=true;break;}
-      }
-      if(collision) continue;
-
-      // Source itself must not sit on the mainstem.
-      let sourceTooClose=false;
-      for(let j=1;j<main.length;j++){
-        if(pointSegDistance(candidate[0],main[j-1],main[j])<TRIB_COLLISION_GAP*0.75){
-          sourceTooClose=true;break;
-        }
-      }
-      if(sourceTooClose) continue;
-      chosen={source:candidate[0],path:candidate};
-    }
-
-    // If an unusually tight milestone configuration rejects every tiny
-    // meander, make one final straight, monotonic drainage channel. This is
-    // preferable to losing the tributary entirely, and it still cannot move
-    // upstream. The mainstem renderer remains independent of this fallback.
-    if(!chosen){
-      const fallback=makeCandidate(source,confluence,0,0,1);
-      let safe=true;
-      for(const other of accepted){if(pathHits(fallback,other.tribPath,TRIB_COLLISION_GAP)){safe=false;break;}}
-      if(safe && !mainstemHitBeforeGate(fallback,confluence,Math.max(6,TRIB_COLLISION_GAP)))
-        chosen={source,path:fallback};
-    }
-
-    const valid=!!chosen;
-    const finalSource=chosen?chosen.source:source;
-    const tribPath=chosen?chosen.path:[];
-    if(valid){
-      previousSourceY=finalSource.y;
-      const item={
-        frac:anchor.frac,x:confluence.x,y:confluence.y,major,
-        type:major?'major':'minor',side,milestone:anchor.milestone,
-        milestoneIndex:anchor.index,sourceFrac:finalSource.y/H,
-        source:finalSource,tribPath,tribWidthMult:major?0.50:0.30,
-        increment:major?0.72:0.28,generated:true,valid:true
-      };
-      out.push(item); accepted.push(item);
-    }else{
-      out.push({
-        frac:anchor.frac,x:confluence.x,y:confluence.y,major,
-        type:major?'major':'minor',side,milestone:anchor.milestone,
-        milestoneIndex:anchor.index,sourceFrac:finalSource.y/H,
-        source:finalSource,tribPath:[],tribWidthMult:major?0.50:0.30,
-        increment:major?0.72:0.28,generated:true,valid:false
-      });
-    }
   });
-  return out;
 }
 
-// ── buildLayout ──────────────────────────────────────────────────────────────
-// CMS milestones are the source of truth for tributaries.  Elevation controls
-// the confluence position; the procedural generator then creates one stable,
-// collision-aware tributary per milestone.
 function buildLayout(W,H,milestones){
   buildNoiseGrid(W,H);
-  const milestoneAnchors=(milestones||[]).map((m,i)=>{
+  const list=milestones||[];
+  const milestoneAnchors=list.map((m,i)=>{
     const frac=(m.elevation!=null && m.elevation!=='')
       ? Math.max(0.06,Math.min(0.86,elevToFrac(m.elevation)))
-      : (0.10+(i/Math.max(1,(milestones.length||1)-1))*0.72);
-    return {
-      milestone:m,
-      frac,
-      x:getRiverXFrac(frac)*W,
-      y:frac*H,
-      index:i
-    };
+      : (0.10+(i/Math.max(1,(list.length||1)-1))*0.72);
+    return { milestone:m, frac, x:getRiverXFrac(frac)*W, y:frac*H, index:i };
   }).sort((a,b)=>a.frac-b.frac);
-
-  const confluences=generateMilestoneTributaries(W,H,milestoneAnchors);
-  return {confluences,milestoneAnchors};
+  const confluences=buildFixedTributaries(W,H);
+  const eddies=buildMilestoneEddies(W,H,milestoneAnchors);
+  return {confluences,milestoneAnchors,eddies};
 }
 
 function widthAtY(y, confluences) {
@@ -3263,32 +3045,25 @@ function drawRiverBase() {
   // Oxbow lake: an abandoned meander loop beside the active channel.
   drawOxbowLake(baseCtx, mainPts, t.riverFill + '0.18)', t.riverCore + '0.20)');
 
-  // Keep the particle engine's tributary paths in sync with the visible geometry.
-  window._tribPaths = confluences.filter(c => c.tribPath && c.tribPath.length > 8).map(c => {
+  // Keep the particle engine's fixed tributary paths in sync with the visible geometry.
+  window._tribPaths = confluences.filter(c => c.fixed && c.tribPath && c.tribPath.length > 8).map(c => {
     const pts = samplePath(c.tribPath, c.major ? 60 : 40);
     return resamplePathUniform(pts.map(p => ({x: p.x, y: p.y})), Math.max(1.4, baseH / 900));
   }).filter(p => p.length > 8);
+
+  // Milestone eddies are a flow effect, not another river geometry layer.
+  window._eddies = (layout && layout.eddies) ? layout.eddies.map(e => ({...e})) : [];
 }
 
-// Brief, elegant brighten of one confluence + its tributary — used by the
-// IntersectionObserver-driven "confluence pulse" when a milestone comes
-// into view (kept restrained per design spec: one soft pass, no repeats).
+// Brief brighten of a milestone eddy. The mainstem geometry is untouched.
 function flashConfluence(c) {
-  if (!baseCtx || prefersReducedMotion()) return;
-  const start = performance.now();
-  const duration = 900;
-  function step(now) {
-    const p = Math.min(1, (now - start) / duration);
-    const glowT = Math.sin(p * Math.PI); // 0 -> 1 -> 0
-    drawRiverBase();
-    if (!c.tribPath || c.tribPath.length < 2) return;
-    const pathPts = samplePath(c.tribPath, 40);
-    const mainW = layout ? widthAtY(c.y, layout.confluences) : 4;
-    const fullW = mainW * (c.tribWidthMult || (c.major ? 0.65 : 0.50));
-    fillVariableWidthPath(baseCtx, pathPts,
-      (i, len) => fullW * (0.22 + 0.78 * Math.pow(i/Math.max(1,len-1), 0.6)) + glowT * 2.2,
-      theme().riverCore + (0.12 + glowT * 0.28).toFixed(2) + ')');
-    if (p < 1) requestAnimationFrame(step);
+  if (!riverCtx || prefersReducedMotion()) return;
+  const start=performance.now(), duration=700;
+  function step(now){
+    const p=Math.min(1,(now-start)/duration);
+    const glow=Math.sin(p*Math.PI);
+    if (c) c._flash=glow;
+    if (p<1) requestAnimationFrame(step); else if(c) c._flash=0;
   }
   requestAnimationFrame(step);
 }
@@ -3485,6 +3260,52 @@ function drawWaterStreak(path, index, len, alpha, width) {
   riverCtx.stroke();
 }
 
+function drawEddies(){
+  const eddies=window._eddies||[];
+  if(!riverCtx||!eddies.length)return;
+  const now=performance.now()*0.001;
+  eddies.forEach((e,i)=>{
+    const pulse=0.55+0.45*Math.sin(now*1.15+e.phase);
+    const flash=e._flash||0;
+    const rr=e.radius*(0.82+0.10*pulse+flash*0.10);
+    const turns=e.major?1.65:1.25;
+    riverCtx.save();
+    riverCtx.translate(e.x,e.y);
+    riverCtx.rotate(Math.atan2(e.tangent.y,e.tangent.x));
+    riverCtx.beginPath();
+    for(let k=0;k<=28;k++){
+      const t=k/28;
+      const ang=e.direction*(t*Math.PI*2*turns)+now*0.55*e.direction+e.phase;
+      const rad=rr*(0.18+0.82*t);
+      const x=Math.cos(ang)*rad*1.18;
+      const y=Math.sin(ang)*rad*0.48;
+      if(k===0)riverCtx.moveTo(x,y);else riverCtx.lineTo(x,y);
+    }
+    riverCtx.strokeStyle=particleColor((0.035+0.025*e.strength)*pulse+flash*0.06);
+    riverCtx.lineWidth=e.major?0.85:0.62;
+    riverCtx.lineCap='round';
+    riverCtx.stroke();
+    riverCtx.restore();
+  });
+}
+
+function tryCaptureEddy(p, pt){
+  if(p.eddy||p.isTrib||p.channelIndex>=0)return false;
+  const eddies=window._eddies||[];
+  for(let i=0;i<eddies.length;i++){
+    const e=eddies[i];
+    const dx=pt.x-e.x, dy=pt.y-e.y;
+    const dist=Math.hypot(dx,dy);
+    const capture=e.radius*(e.major?2.5:2.1);
+    if(dist<=capture && Math.random() < 0.045*e.strength){
+      const angle=Math.atan2(dy,dx);
+      p.eddy={index:i,angle,radius:Math.max(1.8,Math.min(e.radius*0.82,dist||e.radius*0.65)),turns:0,maxTurns:e.major?(1.05+Math.random()*0.75):(0.65+Math.random()*0.65),drift:0.012+Math.random()*0.010};
+      return true;
+    }
+  }
+  return false;
+}
+
 function drawWaterRipples() {
   waterRipples = waterRipples.filter(r => {
     r.age += 1;
@@ -3582,6 +3403,34 @@ function tickRiver() {
       }
       const pt = path[index];
 
+      // Mainstem particles can be captured by a milestone eddy. The particle
+      // temporarily orbits the eddy, then rejoins the downstream mainstem.
+      if (!p.eddy) tryCaptureEddy(p, pt);
+      let renderPt = pt;
+      if (p.eddy) {
+        const e=(window._eddies||[])[p.eddy.index];
+        if (!e) { p.eddy=null; }
+        else {
+          const ed=p.eddy;
+          const angularStep=0.075*e.strength*(e.major?1.05:0.92);
+          ed.angle += angularStep*e.direction;
+          ed.turns += Math.abs(angularStep)/(Math.PI*2);
+          ed.radius *= (1-ed.drift);
+          // Slowly carry the orbit downstream while preserving a clear rotation.
+          const driftY = Math.min(riverH*0.018, riverH*0.00035*(1+e.strength));
+          renderPt={
+            x:e.x + Math.cos(ed.angle)*ed.radius*1.18,
+            y:e.y + Math.sin(ed.angle)*ed.radius*0.48 + driftY*ed.turns*8
+          };
+          if(ed.turns>=ed.maxTurns){
+            const resume=Math.max(0,Math.min(riverPath.length-1, index + Math.floor(riverPath.length*0.012)));
+            p.pos=resume;
+            p.eddy=null;
+            renderPt=riverPath[resume]||pt;
+          }
+        }
+      }
+
       let channelWidth = 6;
       if (layout && layout.confluences) {
         channelWidth = widthAtY(pt.y, layout.confluences);
@@ -3596,21 +3445,26 @@ function tickRiver() {
       riverCtx.shadowColor = isDark()
         ? 'rgba(180,230,255,0.45)'
         : 'rgba(255,255,255,0.35)';
-      for (let k = trailLen; k >= 0; k--) {
-        const trailPos = p.pos - k * 2;
-        if (trailPos < 0) continue;
-        const trailPt = pathPointAt(path, trailPos);
-        const fade = 1 - k / (trailLen + 1);
-        drawTrailParticle(
-          { x: trailPt.x + offset * (0.6 + 0.4 * fade), y: trailPt.y },
-          Math.max(0.25, p.size * (0.35 + 0.65 * fade)),
-          p.alpha * fade * 0.55
-        );
+      if (p.eddy) {
+        drawTrailParticle(renderPt, Math.max(0.3,p.size*0.9), p.alpha*0.82);
+        drawWaterStreak([{x:renderPt.x,y:renderPt.y},{x:renderPt.x+1,y:renderPt.y}],1,1,p.alpha*0.16,Math.max(0.3,p.size*0.30));
+      } else {
+        for (let k = trailLen; k >= 0; k--) {
+          const trailPos = p.pos - k * 2;
+          if (trailPos < 0) continue;
+          const trailPt = pathPointAt(path, trailPos);
+          const fade = 1 - k / (trailLen + 1);
+          drawTrailParticle(
+            { x: trailPt.x + offset * (0.6 + 0.4 * fade), y: trailPt.y },
+            Math.max(0.25, p.size * (0.35 + 0.65 * fade)),
+            p.alpha * fade * 0.55
+          );
+        }
       }
 
       // A smaller number of particles become elongated streaks, following the
       // actual local tangent so bends read as moving water rather than dots.
-      if (p.seed % 1 > 0.34) {
+      if (!p.eddy && p.seed % 1 > 0.34) {
         const streakLen = Math.max(2, Math.floor(3 + p.size * 2 + (1 - norm) * 3));
         drawWaterStreak(path, index, streakLen, p.alpha * 0.24, Math.max(0.3, p.size * 0.36));
       }
@@ -3618,6 +3472,7 @@ function tickRiver() {
       return true;
     });
 
+    drawEddies();
     drawWaterRipples();
 
     sourceParticles = sourceParticles.filter(p => {
@@ -3691,18 +3546,21 @@ function buildMilestones() {
 
   layout.milestoneAnchors.forEach((anchor, index)=>{
     const m = anchor.milestone || {};
-    const confluence = layout.confluences.find(c => c.milestoneIndex === anchor.index);
-    if (!confluence || !confluence.tribPath || confluence.tribPath.length < 3) return;
+    const eddy = (layout.eddies||[]).find(e => e.milestoneIndex === anchor.index);
+    if (!eddy) return;
 
-    const source = confluence.source || confluence.tribPath[0];
-    const px = source.x;
-    const py = source.y;
-    const side = confluence.side || (index % 2 === 0 ? 1 : -1);
+    const px = eddy.x;
+    const py = eddy.y;
+    const side = (index % 2 === 0 ? 1 : -1);
+    const r = Math.max(10, eddy.radius * (m.major ? 2.8 : 2.5));
 
-    const hit = document.createElementNS('http://www.w3.org/2000/svg','path');
+    const hit = document.createElementNS('http://www.w3.org/2000/svg','ellipse');
     hit.classList.add('jrn-ms-hitpath');
-    if (confluence.major) hit.classList.add('major');
-    hit.setAttribute('d', pathD(samplePath(confluence.tribPath, confluence.major ? 80 : 56)));
+    if (eddy.major) hit.classList.add('major');
+    hit.setAttribute('cx', px.toFixed(2));
+    hit.setAttribute('cy', py.toFixed(2));
+    hit.setAttribute('rx', (r*1.35).toFixed(2));
+    hit.setAttribute('ry', r.toFixed(2));
     hit.setAttribute('aria-label', m.title || 'Journey milestone');
     hit.setAttribute('tabindex','0');
     hit.setAttribute('role','button');
@@ -3781,7 +3639,7 @@ function buildMilestones() {
       if (window._jrnOpenMilestoneIndex === anchor.index) window._jrnOpenMilestoneIndex = null;
     }
 
-    // The entire tributary is now the interaction surface.
+    // The eddy field is the interaction surface; there is no visible milestone point.
     hit.addEventListener('mouseenter', open);
     hit.addEventListener('mouseleave', ()=>setTimeout(()=>{
       if (!hit.matches(':hover') && !card.matches(':hover')) close();
