@@ -279,11 +279,11 @@
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
     /* ── Milestone connector lines + floating dialog boxes ── */
-    #jrn-milestones{position:absolute;inset:0;z-index:20;pointer-events:none;overflow:visible;display:block}
+    #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:visible;opacity:1!important;visibility:visible}
     #jrn-ms-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
 
     /* The dialog box — glass card */
-    .jrn-ms-card{position:absolute;pointer-events:auto;z-index:30;opacity:1;visibility:visible;
+    .jrn-ms-card{position:absolute;pointer-events:none;opacity:1!important;visibility:visible;
       width:clamp(150px,28%,210px);
       background:var(--surface);
       border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));
@@ -757,6 +757,11 @@ function parseFM(text) {
   return { data, content: text.slice(m[0].length).trim() };
 }
 const safe = v => v || '';
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, ch => ({
+    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
+  }[ch]));
+}
 // Normalise image paths — handle both /images/ and /public/images/ and relative
 function imgPath(p) {
   if (!p) return '';
@@ -1262,8 +1267,15 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       elevation:   m.elevation !== undefined && m.elevation !== ''
         ? +m.elevation : null,
     }));
-    // Rebuild the river network with CMS milestones
-    if (window._buildRoad) window._buildRoad();
+    // Rebuild the river network with CMS milestones.
+    // Never let a Journey rendering error stop the rest of the CMS site.
+    if (window._buildRoad) {
+      try {
+        window._buildRoad();
+      } catch (err) {
+        console.error('[Journey] CMS milestone render failed:', err);
+      }
+    }
   }
 
   // ── STATS ──────────────────────────────────────────────
@@ -1957,7 +1969,12 @@ if (toggle && body) {
 function revealSection() {
   if (!inner) return;
   inner.classList.add('jrn-revealing');
-  requestAnimationFrame(() => inner.classList.add('jrn-revealed'));
+  inner.classList.add('jrn-revealed');
+  const ms = document.getElementById('jrn-milestones');
+  if (ms) {
+    ms.style.opacity = '1';
+    ms.style.visibility = 'visible';
+  }
 }
 
 // ═══════════════════════════════════════
@@ -3341,11 +3358,6 @@ function objectForElev(elev) {
 }
 
 function buildMilestones() {
-  const milestoneLayer = document.getElementById('jrn-milestones');
-  if (milestoneLayer) {
-    milestoneLayer.style.opacity = '1';
-    milestoneLayer.style.visibility = 'visible';
-  }
   const wrap = document.getElementById('jrn-milestones');
   if (!wrap || !inner) return;
   wrap.innerHTML = '';
@@ -3421,12 +3433,15 @@ function buildMilestones() {
     const lineColor = isDk ? 'rgba(82,183,136,0.55)' : 'rgba(30,100,80,0.50)';
     const dotColor  = isDk ? 'rgba(82,183,136,0.90)' : 'rgba(30,100,80,0.85)';
 
-    // River dot
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', rx); circle.setAttribute('cy', ry);
-    circle.setAttribute('r', '4');
-    circle.setAttribute('fill', dotColor);
-    svg.appendChild(circle);
+    // Quirky elevation-based river object marker instead of a generic dot.
+    const objectText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    objectText.setAttribute('x', rx);
+    objectText.setAttribute('y', ry);
+    objectText.setAttribute('text-anchor', 'middle');
+    objectText.setAttribute('dominant-baseline', 'central');
+    objectText.setAttribute('font-size', '22');
+    objectText.textContent = obj.icon;
+    svg.appendChild(objectText);
 
     // Bezier connector
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
