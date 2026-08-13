@@ -309,15 +309,31 @@
     }
     .jrn-ms-touch::after{
       content:'';position:absolute;left:50%;top:50%;
-      width:8px;height:8px;transform:translate(-50%,-50%);
-      border-radius:50%;background:var(--accent);
-      box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 13%,transparent);
-      transition:transform .16s ease,box-shadow .16s ease;
+      width:10px;height:6px;transform:translate(-50%,-50%) rotate(-10deg);
+      border-radius:50%;
+      background:color-mix(in srgb,var(--accent) 62%,transparent);
+      box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 10%,transparent),
+                 0 0 0 7px color-mix(in srgb,var(--accent) 7%,transparent);
+      transition:transform .22s ease,box-shadow .22s ease,opacity .22s ease;
+      opacity:.72;
     }
-    .jrn-ms-touch:hover::after,
-    .jrn-ms-touch.active::after{
-      transform:translate(-50%,-50%) scale(1.28);
-      box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent);
+    .jrn-ms-touch::before{
+      content:'';position:absolute;left:50%;top:50%;
+      width:18px;height:9px;transform:translate(-50%,-50%) rotate(-10deg);
+      border:1px solid color-mix(in srgb,var(--accent) 22%,transparent);
+      border-left-color:transparent;border-right-color:transparent;
+      border-radius:50%;opacity:.38;
+      transition:transform .3s ease,opacity .3s ease;
+    }
+    .jrn-ms-touch:hover::after,.jrn-ms-touch.active::after{
+      transform:translate(-50%,-50%) rotate(-10deg) scale(1.18);
+      box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 14%,transparent),
+                 0 0 0 10px color-mix(in srgb,var(--accent) 8%,transparent);
+      opacity:1;
+    }
+    .jrn-ms-touch:hover::before,.jrn-ms-touch.active::before{
+      transform:translate(-50%,-50%) rotate(-10deg) scale(1.18);
+      opacity:.7;
     }
     .jrn-ms-connector{
       position:absolute;height:1px;
@@ -2205,102 +2221,234 @@ function sampleNoise(nx, ny) {
   return v00*(1-cf)*(1-rf) + v10*cf*(1-rf) + v01*(1-cf)*rf + v11*cf*rf;
 }
 
-// ── HAND-AUTHORED WATERSHED TRIBUTARIES ────────────────────────────────────
-// The tributary network is deliberately NOT generated from CMS milestones.
-// Each branch has a small upstream catchment, its own irregular meander, and
-// a controlled confluence with the mainstem.  The geometry is expressed as a
-// smooth lateral offset from the same mainstem centreline, which makes every
-// tributary read as part of one drainage system instead of as a free-floating
-// decorative curve.
-const HARD_TRIBUTARIES = [
-  // major: longer, broader, slightly more sinuous
-  { id:'t1', major:true,  frac:0.185, source:0.035, side:-1, width:0.64,
-    offsets:[0.220,0.205,0.235,0.255,0.215,0.180,0.145,0.095,0.045,0.000] },
-  { id:'t2', major:false, frac:0.292, source:0.0600, side: 1, width:0.49,
-    offsets:[0.310,0.340,0.315,0.275,0.230,0.185,0.125,0.075,0.035,0.000] },
-  { id:'t3', major:false, frac:0.405, source:0.2337, side:-1, width:0.46,
-    offsets:[0.175,0.145,0.185,0.150,0.115,0.078,0.035,0.000] },
-  { id:'t4', major:true,  frac:0.535, source:0.4876, side: 1, width:0.62,
-    offsets:[0.205,0.235,0.195,0.225,0.165,0.120,0.075,0.035,0.000] },
-  { id:'t5', major:false, frac:0.645, source:0.60137, side:-1, width:0.50,
-    offsets:[0.300,0.270,0.285,0.240,0.190,0.135,0.085,0.040,0.000] },
-  { id:'t6', major:false, frac:0.755, source:0.675, side: 1, width:0.45,
-    offsets:[0.125,0.108,0.145,0.112,0.080,0.050,0.024,0.000] },
-  { id:'t7', major:false, frac:0.845, source:0.755, side: 1, width:0.48,
-    offsets:[0.185,0.220,0.165,0.190,0.125,0.075,0.030,0.000] }
-];
+// ── PROCEDURAL MILESTONE TRIBUTARIES ───────────────────────────────────────
+// Every CMS milestone becomes a small watershed feeding the mainstem at its
+// milestone elevation.  Geometry is generated from the mainstem outward, not
+// from free-floating decorative branches, so the confluence is always exact.
+const TRIB_SAMPLES = 72;
+const TRIB_CLUSTER_FRAC = 0.022;
+const TRIB_CONFLUENCE_ZONE = 0.030;
+const TRIB_COLLISION_GAP = 8;
 
-// Smooth interpolation for the hand-authored offset profile.  Catmull-Rom
-// keeps the tributary bends flowing through the control values without the
-// angular joins that a polyline would create.
-function catmullRom(a,b,c,d,t){
-  const t2=t*t, t3=t2*t;
-  return 0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);
+function mainPointAt(norm, W, H){
+  const n=Math.max(0,Math.min(1,norm));
+  return {x:getRiverXFrac(n)*W, y:n*H};
 }
 
-function makeHardTributary(W,H,spec,index){
-  const source = Math.max(0.018, Math.min(spec.source, spec.frac - 0.018));
-  const n = spec.offsets.length;
+function mainTangentAt(norm, W, H){
+  const eps=0.0025;
+  const a=mainPointAt(Math.max(0,norm-eps),W,H);
+  const b=mainPointAt(Math.min(1,norm+eps),W,H);
+  const dx=b.x-a.x, dy=b.y-a.y;
+  const len=Math.hypot(dx,dy)||1;
+  return {x:dx/len,y:dy/len};
+}
+
+function mainNormalAt(norm,W,H){
+  const t=mainTangentAt(norm,W,H);
+  return {x:-t.y,y:t.x};
+}
+
+function pointSegDistance(p,a,b){
+  const abx=b.x-a.x, aby=b.y-a.y;
+  const d=abx*abx+aby*aby || 1;
+  const q=Math.max(0,Math.min(1,((p.x-a.x)*abx+(p.y-a.y)*aby)/d));
+  return Math.hypot(p.x-(a.x+q*abx),p.y-(a.y+q*aby));
+}
+
+function segmentsIntersect(a,b,c,d){
+  const orient=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+  const o1=orient(a,b,c), o2=orient(a,b,d), o3=orient(c,d,a), o4=orient(c,d,b);
+  const eps=1e-7;
+  if(Math.abs(o1)<eps && Math.abs(o2)<eps && Math.abs(o3)<eps && Math.abs(o4)<eps){
+    const overlap=(u,v,w,z)=>Math.max(Math.min(u,v),Math.min(w,z)) <= Math.min(Math.max(u,v),Math.max(w,z))+eps;
+    return overlap(a.x,b.x,c.x,d.x) && overlap(a.y,b.y,c.y,d.y);
+  }
+  return ((o1>eps)!==(o2>eps)) && ((o3>eps)!==(o4>eps));
+}
+
+function pathLength(path){
+  let d=0;
+  for(let i=1;i<path.length;i++) d+=Math.hypot(path[i].x-path[i-1].x,path[i].y-path[i-1].y);
+  return d;
+}
+
+function tribIntersectsPath(pathA,pathB,ignoreRadius=0){
+  for(let i=1;i<pathA.length;i++){
+    const a=pathA[i-1], b=pathA[i];
+    for(let j=1;j<pathB.length;j++){
+      const c=pathB[j-1], d=pathB[j];
+      if(segmentsIntersect(a,b,c,d)){
+        if(ignoreRadius){
+          const nearEnd = Math.min(
+            Math.hypot(a.x-c.x,a.y-c.y),
+            Math.hypot(a.x-d.x,a.y-d.y),
+            Math.hypot(b.x-c.x,b.y-c.y),
+            Math.hypot(b.x-d.x,b.y-d.y)
+          );
+          if(nearEnd <= ignoreRadius) continue;
+        }
+        return true;
+      }
+      if(ignoreRadius < TRIB_COLLISION_GAP){
+        const near=Math.min(pointSegDistance(a,c,d),pointSegDistance(b,c,d));
+        if(near < TRIB_COLLISION_GAP) return true;
+      }
+    }
+  }
+  return false;
+}
+
+function generatedTributaryPath(W,H,anchor,opts){
+  const frac=anchor.frac;
+  const side=opts.side;
+  const seed=opts.seed;
+  const sourceFrac=Math.max(0.035, frac-opts.length);
   const pts=[];
-  const samples = spec.major ? 64 : 50;
+  const n=TRIB_SAMPLES;
 
-  // The tributary is built as a gently meandering ribbon parallel to the
-  // local mainstem.  Because its lateral offset is always on one side and
-  // fades continuously to zero, the last section naturally folds into the
-  // mainstem instead of stabbing into it.
-  for(let i=0;i<samples;i++){
-    const t=i/(samples-1);
-    const norm=source + (spec.frac-source)*t;
-    const u=t*(n-1);
-    const k=Math.min(n-2,Math.floor(u));
-    const f=u-k;
-    const get=j=>spec.offsets[Math.max(0,Math.min(n-1,j))];
-    let off=catmullRom(get(k-1),get(k),get(k+1),get(k+2),f);
-    off=Math.max(0,off);
+  // Build upstream -> confluence.  The lateral offset is always measured from
+  // the actual meandering mainstem normal, so the branch follows bends rather
+  // than cutting straight across the landscape.  The final 24% is increasingly
+  // constrained toward the mainstem tangent, creating a natural confluence.
+  for(let i=0;i<n;i++){
+    const u=i/(n-1);
+    const norm=sourceFrac+(frac-sourceFrac)*u;
+    const taper=Math.pow(1-u,0.55);
+    const normal=mainNormalAt(norm,W,H);
+    const tangent=mainTangentAt(norm,W,H);
+    const wiggleAmp=opts.wiggle*(0.35+0.65*taper);
+    const wiggle=(Math.sin(u*Math.PI*(2.1+opts.variant*0.31)+seed*4.1)*wiggleAmp +
+                  Math.sin(u*Math.PI*(3.4+opts.variant*0.19)-seed*2.7)*wiggleAmp*0.45);
+    const along=(opts.along * Math.sin(u*Math.PI*(1.2+opts.variant*0.12)+seed)) * taper;
+    const lateral=opts.offset*taper + wiggle;
+    const p=mainPointAt(norm,W,H);
 
-    // A very low-frequency, deterministic wiggle gives each branch a
-    // slightly different natural character without creating noise-like kinks.
-    const wiggle=(Math.sin(t*Math.PI*(2.0+index*0.23)+index*1.31)*0.006 +
-                  Math.sin(t*Math.PI*(3.1+index*0.17)-0.4)*0.0035) * (1-t);
-    off=Math.max(0,off+wiggle);
-
-    const mainX=getRiverXFrac(norm)*W;
-    pts.push({x:mainX + spec.side*off*W, y:norm*H});
+    // Keep the tributary's final approach oblique rather than perpendicular.
+    // Along-flow drift is strongest upstream and fades before the confluence.
+    pts.push({
+      x:p.x + normal.x*side*lateral*W + tangent.x*along*W,
+      y:p.y + normal.y*side*lateral*W + tangent.y*along*W
+    });
   }
 
-  // Exact source and confluence anchors.
-  pts[0]={x:getRiverXFrac(source)*W + spec.side*spec.offsets[0]*W, y:source*H};
-  pts[pts.length-1]={x:getRiverXFrac(spec.frac)*W, y:spec.frac*H};
+  // Exact source and exact confluence. The source remains lateral to the
+  // mainstem; the confluence is sacred and always lands on the centreline.
+  const srcN=mainNormalAt(sourceFrac,W,H);
+  const src=mainPointAt(sourceFrac,W,H);
+  pts[0]={x:src.x+srcN.x*side*opts.offset*W,y:src.y+srcN.y*side*opts.offset*W};
+  pts[n-1]=mainPointAt(frac,W,H);
   return pts;
 }
 
-function buildHardTributaries(W,H){
-  return HARD_TRIBUTARIES.map((spec,i)=>{
-    const path=makeHardTributary(W,H,spec,i);
-    return {
-      frac:spec.frac,
-      x:getRiverXFrac(spec.frac)*W,
-      y:spec.frac*H,
-      major:spec.major,
-      type:spec.major?'major':'minor',
-      side:spec.side,
-      milestone:null,
-      tribPath:path,
-      tribWidthMult:spec.width,
-      increment:spec.major?0.75:0.30,
-      hardcoded:true
-    };
+function clusterMilestoneAnchors(anchors){
+  const clusters=[];
+  anchors.forEach(a=>{
+    let cluster=clusters[clusters.length-1];
+    if(!cluster || a.frac-cluster.maxFrac>TRIB_CLUSTER_FRAC){
+      cluster={items:[],minFrac:a.frac,maxFrac:a.frac};
+      clusters.push(cluster);
+    }
+    cluster.items.push(a);
+    cluster.maxFrac=Math.max(cluster.maxFrac,a.frac);
   });
+  return clusters;
+}
+
+function generateMilestoneTributaries(W,H,anchors){
+  const clusters=clusterMilestoneAnchors(anchors);
+  const out=[];
+  const accepted=[];
+
+  clusters.forEach((cluster,clusterIndex)=>{
+    const count=cluster.items.length;
+    cluster.items.forEach((anchor,localIndex)=>{
+      const seed=(anchor.index+1)*17.173 + clusterIndex*31.77;
+      const r=seededRand(seed);
+      const side = count>1
+        ? (localIndex%2===0 ? -1 : 1) * (seededRand(seed+2.4)>0.32 ? 1 : -1)
+        : (seededRand(seed+5.2)>0.5 ? 1 : -1);
+      const density=Math.min(1,(count-1)/3);
+      const lengthBase=0.055 + seededRand(seed+7.1)*0.075;
+      const length=Math.min(0.17, lengthBase + density*0.018);
+      const offset=0.045 + seededRand(seed+11.2)*0.055;
+      const variant=Math.floor(seededRand(seed+13.8)*5);
+      const optsBase={
+        side, seed, variant, length, offset,
+        wiggle:0.0045 + seededRand(seed+19.1)*0.004,
+        along:(seededRand(seed+23.4)-0.5)*0.018
+      };
+
+      let path=null;
+      let opts=optsBase;
+      for(let attempt=0;attempt<14;attempt++){
+        opts={...optsBase,
+          side: attempt%4===3 ? -optsBase.side : optsBase.side,
+          variant:(variant+attempt)%7,
+          offset:Math.max(0.032,Math.min(0.115,offset + (attempt%5-2)*0.009)),
+          length:Math.max(0.045,Math.min(0.18,length + ((attempt%4)-1.5)*0.008)),
+          along:optsBase.along + ((attempt%3)-1)*0.008
+        };
+        path=generatedTributaryPath(W,H,anchor,opts);
+
+        // No tributary may cross the mainstem upstream of its own confluence.
+        // Because the branch is generated from the mainstem normal, this is
+        // mostly a guard against tight bends and lateral drift.
+        let mainCross=false;
+        for(let i=1;i<path.length-5 && !mainCross;i++){
+          const p0=path[i-1], p1=path[i];
+          const norm0=sourceFracForPath(anchor,opts,i,path.length);
+          const norm1=sourceFracForPath(anchor,opts,i+1,path.length);
+          const m0=mainPointAt(norm0,W,H), m1=mainPointAt(norm1,W,H);
+          if(segmentsIntersect(p0,p1,m0,m1) || pointSegDistance(p0,m0,m1)<TRIB_COLLISION_GAP){ mainCross=true; }
+        }
+        if(mainCross) continue;
+
+        const ignore=cluster.items.length>1 ? 18 : 10;
+        let collision=false;
+        for(const other of accepted){
+          if(tribIntersectsPath(path,other.tribPath,ignore)){collision=true;break;}
+        }
+        if(!collision) break;
+      }
+
+      const major = !!anchor.milestone?.major;
+      const trib={
+        frac:anchor.frac,
+        x:getRiverXFrac(anchor.frac)*W,
+        y:anchor.frac*H,
+        major,
+        type:major?'major':'minor',
+        side:opts.side,
+        milestone:anchor.milestone,
+        milestoneIndex:anchor.index,
+        sourceFrac:Math.max(0.035,anchor.frac-opts.length),
+        source:path[0],
+        tribPath:path,
+        tribWidthMult:major?0.64:0.48,
+        increment:major?0.72:0.28,
+        generated:true,
+        clusterIndex,
+        clusterSize:count
+      };
+      accepted.push(trib);
+      out.push(trib);
+    });
+  });
+  return out;
+}
+
+function sourceFracForPath(anchor,opts,index,total){
+  const sourceFrac=Math.max(0.035,anchor.frac-opts.length);
+  return sourceFrac+(anchor.frac-sourceFrac)*(index/Math.max(1,total-1));
 }
 
 // ── buildLayout ──────────────────────────────────────────────────────────────
-// The river network is fixed: mainstem + hard-coded tributaries.
-// CMS milestones are separate clickable anchors on the mainstem.
-// Elevation controls only milestone placement; CMS never creates or
-// classifies tributaries.
+// CMS milestones are the source of truth for tributaries.  Elevation controls
+// the confluence position; the procedural generator then creates one stable,
+// collision-aware tributary per milestone.
 function buildLayout(W,H,milestones){
   buildNoiseGrid(W,H);
-  const confluences=buildHardTributaries(W,H);
   const milestoneAnchors=(milestones||[]).map((m,i)=>{
     const frac=(m.elevation!=null && m.elevation!=='')
       ? Math.max(0.06,Math.min(0.86,elevToFrac(m.elevation)))
@@ -2313,6 +2461,8 @@ function buildLayout(W,H,milestones){
       index:i
     };
   }).sort((a,b)=>a.frac-b.frac);
+
+  const confluences=generateMilestoneTributaries(W,H,milestoneAnchors);
   return {confluences,milestoneAnchors};
 }
 
@@ -3427,27 +3577,14 @@ function buildMilestones() {
   layout.milestoneAnchors.forEach((anchor, index)=>{
     const m = anchor.milestone || {};
 
-    // Derive the local mainstem direction from the same geometry used by
-    // buildLayout(). Milestone anchors expose `frac`, not `t`.
-    const localFrac = anchor.frac;
-    const t0 = Math.max(0, localFrac - 0.006);
-    const t1 = Math.min(1, localFrac + 0.006);
-    const layoutW = topoW || inner.clientWidth;
-    const p0 = { x:getRiverXFrac(t0) * layoutW, y:t0 * FIXED_H };
-    const p1 = { x:getRiverXFrac(t1) * layoutW, y:t1 * FIXED_H };
-    const dx = (p1.x - p0.x) || 1;
-    const dy = (p1.y - p0.y) || 0;
-    const len = Math.hypot(dx,dy) || 1;
-
-    // Normal to the river direction. Alternate sides subtly, while preserving
-    // the local river geometry rather than using a global left/right offset.
-    const nx = -dy / len;
-    const ny =  dx / len;
-    const side = index % 2 === 0 ? 1 : -1;
-    const bankOffset = isMobile() ? 18 : 24;
-
-    const px = anchor.x + nx * bankOffset * side;
-    const py = anchor.y + ny * bankOffset * side;
+    // The milestone's tributary is now the visual anchor.  Its source is
+    // where the story card lives; the tributary then leads the eye downstream
+    // into the exact mainstem confluence.
+    const confluence = layout.confluences.find(c => c.milestoneIndex === anchor.index);
+    const source = confluence && confluence.source ? confluence.source : {x:anchor.x,y:anchor.y};
+    const px = source.x;
+    const py = source.y;
+    const side = confluence ? confluence.side : (index % 2 === 0 ? 1 : -1);
 
     // Tiny touch target on the riverbank.
     const touch = document.createElement('button');
@@ -3467,16 +3604,12 @@ function buildMilestones() {
       m.description ? `<div class="jrn-ms-desc">${esc(m.description)}</div>` : ''
     ].join('');
 
-    // Position on the same side as the bank marker without an inline
-    // transform. The card's base/open transforms are owned by CSS, so the
-    // `.open` state cannot be overridden by left-side positioning.
-    const cardGap = 28;
+    // Let CSS own the open-state transform.  Position the card on the
+    // appropriate side of the tributary source using left/right only.
+    const cardGap = isMobile() ? 18 : 26;
     card.style.top = (py - 14) + 'px';
-    if (side > 0) {
-      card.style.left = (px + cardGap) + 'px';
-    } else {
-      card.style.right = (layoutW - px + cardGap) + 'px';
-    }
+    if (side > 0) card.style.left = (px + cardGap) + 'px';
+    else card.style.right = ((topoW || inner.clientWidth) - px + cardGap) + 'px';
 
     const connector = document.createElement('div');
     connector.className = 'jrn-ms-connector';
