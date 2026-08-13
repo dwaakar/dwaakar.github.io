@@ -301,24 +301,14 @@
       display:block;opacity:1;transform:translateY(0);
     }
     .jrn-ms-touch{
-      position:absolute;width:32px;height:32px;
+      position:absolute;width:46px;height:38px;
       transform:translate(-50%,-50%);
       border:0;padding:0;background:transparent;
       cursor:pointer;pointer-events:auto;z-index:45;
       touch-action:manipulation;
+      outline:none;
     }
-    .jrn-ms-touch::after{
-      content:'';position:absolute;left:50%;top:50%;
-      width:8px;height:8px;transform:translate(-50%,-50%);
-      border-radius:50%;background:var(--accent);
-      box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 13%,transparent);
-      transition:transform .16s ease,box-shadow .16s ease;
-    }
-    .jrn-ms-touch:hover::after,
-    .jrn-ms-touch.active::after{
-      transform:translate(-50%,-50%) scale(1.28);
-      box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent);
-    }
+    .jrn-ms-touch::after{ content:none; }
     .jrn-ms-connector{
       position:absolute;height:1px;
       transform-origin:left center;
@@ -2298,6 +2288,73 @@ function buildHardTributaries(W,H){
 // CMS milestones are separate clickable anchors on the mainstem.
 // Elevation controls only milestone placement; CMS never creates or
 // classifies tributaries.
+function buildMilestonePools(W,H,milestoneAnchors,confluences){
+  const pools = [];
+  const riverWidthAt = (frac) => widthAtY(frac * H, confluences);
+
+  (milestoneAnchors || []).forEach((anchor, i) => {
+    const eps = 0.0045;
+    const f0 = Math.max(0.03, anchor.frac - eps);
+    const f1 = Math.min(0.90, anchor.frac + eps);
+    const p0 = { x:getRiverXFrac(f0)*W, y:f0*H };
+    const p  = { x:getRiverXFrac(anchor.frac)*W, y:anchor.frac*H };
+    const p1 = { x:getRiverXFrac(f1)*W, y:f1*H };
+    let tx = p1.x-p0.x, ty = p1.y-p0.y;
+    const len = Math.hypot(tx,ty) || 1;
+    tx/=len; ty/=len;
+    const nx=-ty, ny=tx;
+
+    // Keep the pool on a stable bank. If a fixed tributary is essentially at
+    // the same confluence, use that tributary's side so the two water bodies
+    // naturally merge instead of fighting for space.
+    let side = (i % 2 === 0) ? 1 : -1;
+    let nearest = null, nearestD = Infinity;
+    (confluences || []).forEach(c=>{
+      const d=Math.abs(c.frac-anchor.frac);
+      if(d<nearestD){nearestD=d; nearest=c;}
+    });
+    if(nearest && nearestD < 0.018) side = nearest.side || side;
+
+    const localW = Math.max(2.2, riverWidthAt(anchor.frac));
+    const halfLen = Math.max(7, Math.min(15, localW*2.6));
+    const depth = Math.max(8, Math.min(17, localW*3.2));
+    const baseOffset = Math.max(0, localW*0.18);
+
+    // A compact teardrop/backwater: its mouth stays on the mainstem bank and
+    // the outer belly is only a few river-widths away. No detached ellipse.
+    const boundary=[];
+    const samples=28;
+    for(let j=0;j<=samples;j++){
+      const q=j/samples;
+      const along=-halfLen + 2*halfLen*q;
+      const bulge=Math.sin(Math.PI*q);
+      const lateral=side*(baseOffset + depth*bulge);
+      boundary.push({x:p.x+tx*along+nx*lateral, y:p.y+ty*along+ny*lateral});
+    }
+    // Return along a slightly inset bank curve to close the mouth cleanly.
+    for(let j=samples;j>=0;j--){
+      const q=j/samples;
+      const along=-halfLen + 2*halfLen*q;
+      const bulge=Math.sin(Math.PI*q);
+      const lateral=side*(baseOffset*0.12 + depth*0.58*bulge);
+      boundary.push({x:p.x+tx*along+nx*lateral, y:p.y+ty*along+ny*lateral});
+    }
+
+    const center = {
+      x:p.x + nx*side*(baseOffset + depth*0.48),
+      y:p.y + ny*side*(baseOffset + depth*0.48)
+    };
+
+    pools.push({
+      id:`pool-${i}`, anchor, index:i, side, tx,ty,nx,ny,
+      mouth:{x:p.x,y:p.y}, center, halfLen, depth, localW, boundary,
+      particleCount:2 + (i % 2),
+      phaseOffset:(i*1.731) % (Math.PI*2)
+    });
+  });
+  return pools;
+}
+
 function buildLayout(W,H,milestones){
   buildNoiseGrid(W,H);
   const confluences=buildHardTributaries(W,H);
@@ -2313,7 +2370,8 @@ function buildLayout(W,H,milestones){
       index:i
     };
   }).sort((a,b)=>a.frac-b.frac);
-  return {confluences,milestoneAnchors};
+  const milestonePools=buildMilestonePools(W,H,milestoneAnchors,confluences);
+  return {confluences,milestoneAnchors,milestonePools};
 }
 
 function widthAtY(y, confluences) {
@@ -2728,136 +2786,6 @@ function drawBraidBars(ctx, mainPts, braidPts, fillColor, strokeColor) {
 
 // A restrained abandoned meander: a cut-off loop beside the mainstem.
 // It is intentionally subtle so it reads as geomorphology, not an illustration.
-function drawOxbowLake(ctx, mainPts, fillColor, strokeColor) {
-  if (!mainPts || mainPts.length < 160 || !layout || !layout.milestoneAnchors) return;
-
-  // Oxbows are created only when two or more CMS milestones share the same
-  // backend elevation. The lake is derived from the REAL mainstem bend at
-  // that elevation; it is not an arbitrary ellipse and it never moves the
-  // active river.
-  const groups = [];
-  const byElevation = new Map();
-  layout.milestoneAnchors.forEach((a) => {
-    const raw = a.milestone && a.milestone.elevation;
-    if (raw == null || raw === '') return;
-    const key = Number(raw).toFixed(3);
-    if (!byElevation.has(key)) byElevation.set(key, []);
-    byElevation.get(key).push(a);
-  });
-  byElevation.forEach((anchors) => { if (anchors.length > 1) groups.push(anchors); });
-  if (!groups.length) return;
-
-  const lakeFill = isDark() ? 'rgba(74,125,138,0.34)' : 'rgba(120,174,190,0.28)';
-  const lakeStroke = isDark() ? 'rgba(125,165,170,0.42)' : 'rgba(105,135,142,0.36)';
-  const oldChannel = isDark() ? 'rgba(190,198,190,0.30)' : 'rgba(115,125,120,0.34)';
-  const sedimentStroke = isDark() ? 'rgba(180,184,174,0.18)' : 'rgba(130,132,124,0.20)';
-
-  const pointAtFrac = (frac) => {
-    const i = Math.max(0, Math.min(mainPts.length - 1, Math.round(frac * (mainPts.length - 1))));
-    return mainPts[i];
-  };
-
-  groups.forEach((anchors, gi) => {
-    const frac = anchors.reduce((sum, a) => sum + a.frac, 0) / anchors.length;
-    // Use a compact section of the actual mainstem around the milestone.
-    const halfSpan = 0.045 + Math.min(0.018, anchors.length * 0.004);
-    const f0 = Math.max(0.10, frac - halfSpan);
-    const f1 = Math.min(0.88, frac + halfSpan);
-    const p0 = pointAtFrac(f0);
-    const pm = pointAtFrac(frac);
-    const p1 = pointAtFrac(f1);
-    if (!p0 || !pm || !p1) return;
-
-    // Determine the side of the actual bend. If the bend is nearly straight,
-    // alternate sides only as a fallback so successive oxbows don't collide.
-    const chordMidX = (p0.x + p1.x) * 0.5;
-    const bend = pm.x - chordMidX;
-    let side = Math.abs(bend) > 3 ? Math.sign(bend) : (gi % 2 ? -1 : 1);
-
-    // Local normal follows the mainstem, rather than using a global horizontal
-    // offset. This makes the abandoned channel rotate naturally with the river.
-    const dx = p1.x - p0.x;
-    const dy = p1.y - p0.y;
-    const len = Math.hypot(dx, dy) || 1;
-    const nx = -dy / len;
-    const ny = dx / len;
-
-    const spanPts = [];
-    const returnPts = [];
-    const samples = 54;
-    const width = Math.min(82, Math.max(38, 34 + anchors.length * 7));
-    const loopDepth = Math.min(58, Math.max(26, 24 + anchors.length * 5));
-
-    for (let j = 0; j <= samples; j++) {
-      const q = j / samples;
-      const f = f0 + (f1 - f0) * q;
-      const p = pointAtFrac(f);
-      const bulge = Math.sin(Math.PI * q);
-      const localWobble = Math.sin(q * Math.PI * 2.2 + gi * 0.8) * 2.5;
-      const outward = side * (width * bulge + localWobble);
-      const inward = side * (7 + loopDepth * bulge * 0.55);
-      spanPts.push({ x: p.x + nx * outward, y: p.y + ny * outward });
-      returnPts.push({ x: p.x + nx * inward, y: p.y + ny * inward });
-    }
-
-    // Closed abandoned channel: this is the former river path, now separated
-    // from the active mainstem. The active mainstem remains untouched.
-    const lake = spanPts.concat(returnPts.slice().reverse());
-    ctx.save();
-    ctx.beginPath();
-    lake.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
-    ctx.closePath();
-    ctx.fillStyle = lakeFill;
-    ctx.fill();
-    ctx.strokeStyle = lakeStroke;
-    ctx.lineWidth = 1.05;
-    ctx.stroke();
-    ctx.restore();
-
-    // The old river channel: a visible, broken remnant along the centre of the
-    // abandoned loop. It deliberately reads as a former channel, not a second
-    // active river, and remains visible at both cutoff ends.
-    const oldMid = [];
-    for (let j = 0; j <= samples; j++) {
-      const a = spanPts[j], b = returnPts[j];
-      oldMid.push({x:(a.x+b.x)*0.5, y:(a.y+b.y)*0.5});
-    }
-    ctx.save();
-    ctx.setLineDash([4, 5]);
-    ctx.beginPath();
-    oldMid.forEach((p, i) => i === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
-    ctx.strokeStyle = oldChannel;
-    ctx.lineWidth = 1.15;
-    ctx.stroke();
-    ctx.restore();
-
-    // Cutoff neck remnants: subtle sediment/vegetation scars where the old
-    // channel was separated from the active river.
-    [0, samples].forEach((j) => {
-      const active = j === 0 ? p0 : p1;
-      const old = oldMid[j];
-      ctx.save();
-      ctx.setLineDash([2, 4]);
-      ctx.beginPath();
-      ctx.moveTo(active.x, active.y);
-      ctx.lineTo(old.x, old.y);
-      ctx.strokeStyle = sedimentStroke;
-      ctx.lineWidth = 1.0;
-      ctx.stroke();
-      ctx.restore();
-    });
-
-    // Very subtle inner-water highlight follows the old channel rather than
-    // drawing an artificial circle.
-    ctx.save();
-    ctx.beginPath();
-    oldMid.forEach((p, i) => i === 0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
-    ctx.strokeStyle = isDark() ? 'rgba(130,170,174,0.16)' : 'rgba(110,160,172,0.18)';
-    ctx.lineWidth = 0.7;
-    ctx.stroke();
-    ctx.restore();
-  });
-}
 
 // Resample a polyline at approximately uniform physical spacing. This keeps
 // particle motion smooth even when a divergent channel has long/short segments.
@@ -2901,9 +2829,234 @@ function pathPointAt(path, pos) {
 }
 
 
+
+/* ============================================================
+   STEP 2 — OXBOWS FOR MULTIPLE MILESTONES AT THE SAME ELEVATION
+   Complete abandoned-meander architecture:
+   - group same-elevation milestones
+   - locate a genuine local mainstem bend
+   - use two cutoff points
+   - trace the old channel from the real river geometry
+   - keep the active mainstem as the active route
+   - refuse unsafe/intersecting candidates
+   ============================================================ */
+function buildSameElevationGroups(anchors){
+  const groups = new Map();
+  (anchors || []).forEach(a=>{
+    const e = a && a.milestone ? a.milestone.elevation : a.elevation;
+    if(e === undefined || e === null || e === '') return;
+    const key = String(e);
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(a);
+  });
+  return [...groups.values()].filter(g=>g.length>=2);
+}
+
+function riverGeomPoint(frac){
+  return {x:getRiverXFrac(frac)*baseW, y:frac*baseH};
+}
+
+function riverGeomTangent(frac){
+  const d=.0025;
+  const a=riverGeomPoint(Math.max(.001,frac-d));
+  const b=riverGeomPoint(Math.min(.999,frac+d));
+  const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1;
+  return {x:dx/L,y:dy/L};
+}
+
+function polylineLength(points){
+  let L=0;
+  for(let i=1;i<points.length;i++) L+=Math.hypot(points[i].x-points[i-1].x,points[i].y-points[i-1].y);
+  return L;
+}
+
+function segmentsIntersect(a,b,c,d){
+  const cross=(p,q,r)=>(q.x-p.x)*(r.y-p.y)-(q.y-p.y)*(r.x-p.x);
+  const o1=cross(a,b,c), o2=cross(a,b,d), o3=cross(c,d,a), o4=cross(c,d,b);
+  return ((o1>0&&o2<0)||(o1<0&&o2>0)) && ((o3>0&&o4<0)||(o3<0&&o4>0));
+}
+
+function selfIntersects(points){
+  for(let i=1;i<points.length;i++){
+    for(let j=i+2;j<points.length-1;j++){
+      if(i===j || i+1===j) continue;
+      if(segmentsIntersect(points[i-1],points[i],points[j-1],points[j])) return true;
+    }
+  }
+  return false;
+}
+
+function buildOxbowFeatures(W,H,anchors){
+  const groups=buildSameElevationGroups(anchors);
+  const features=[];
+
+  for(const group of groups){
+    const frac=group.reduce((s,a)=>s+(Number(a.frac)||0),0)/group.length;
+
+    // Search a wider but still local corridor for a pronounced bend.
+    const searchSpan=.070;
+    const samples=61;
+    const river=[];
+    for(let i=0;i<samples;i++){
+      const f=Math.max(.045,Math.min(.94,frac-searchSpan/2+searchSpan*i/(samples-1)));
+      river.push({f,...riverGeomPoint(f),t:riverGeomTangent(f)});
+    }
+
+    let best=null;
+    for(let i=4;i<samples-4;i++){
+      const a=river[i-4].t, b=river[i+4].t;
+      const turn=Math.abs(a.x*b.y-a.y*b.x);
+      if(!best || turn>best.turn) best={i,turn};
+    }
+
+    // A weak bend should remain a normal pool rather than becoming a fake oxbow.
+    if(!best || best.turn<.075) continue;
+
+    const mid=best.i;
+    const cutoffHalf=7; // samples between the two cutoff points
+    const i0=Math.max(2,mid-cutoffHalf);
+    const i1=Math.min(samples-3,mid+cutoffHalf);
+    if(i1-i0<8) continue;
+
+    const p0=river[i0], p1=river[i1], pm=river[mid];
+
+    // Determine outward side of the bend.
+    const chord={x:p1.x-p0.x,y:p1.y-p0.y};
+    const cm={x:pm.x-(p0.x+p1.x)/2,y:pm.y-(p0.y+p1.y)/2};
+    const sideSign=((chord.x*cm.y-chord.y*cm.x)>=0)?1:-1;
+
+    // Build the old channel by offsetting the ACTUAL meander arc.
+    // Offset is modest and zero at both cutoffs, producing a former
+    // channel rather than a second giant river.
+    const old=[];
+    const width=Math.max(2.4,Math.min(5.2,localRiverWidth(baseH*.5)*.72));
+    const maxOffset=Math.max(5,Math.min(13,localRiverWidth(baseH*.5)*1.8));
+
+    for(let i=i0;i<=i1;i++){
+      const q=river[i];
+      const u=(i-i0)/(i1-i0);
+      const envelope=Math.sin(Math.PI*u);
+      const n={x:-q.t.y,y:q.t.x};
+      old.push({
+        x:q.x+n.x*sideSign*maxOffset*envelope,
+        y:q.y+n.y*sideSign*maxOffset*envelope
+      });
+    }
+
+    // Require a genuine loop-like separation from the active channel.
+    const sep0=Math.hypot(old[0].x-p0.x,old[0].y-p0.y);
+    const sepm=Math.hypot(old[Math.floor(old.length/2)].x-pm.x,old[Math.floor(old.length/2)].y-pm.y);
+    const sep1=Math.hypot(old[old.length-1].x-p1.x,old[old.length-1].y-p1.y);
+    if(sep0>maxOffset*1.25 || sep1>maxOffset*1.25 || sepm<maxOffset*.65) continue;
+
+    // Close the old channel as a narrow water body without filling the
+    // active mainstem. The closure uses short cross-bank necks.
+    const boundary=[];
+    for(const q of old) boundary.push(q);
+    for(let i=old.length-1;i>=0;i--){
+      const q=old[i], ri=river[i0+(i1-i)];
+      const tt=riverGeomTangent(ri.f);
+      const nn={x:-tt.y,y:tt.x};
+      boundary.push({x:q.x+nn.x*sideSign*width, y:q.y+nn.y*sideSign*width});
+    }
+
+    if(selfIntersects(old)) continue;
+
+    // Prevent overlap with another oxbow created in this pass.
+    const tooClose=features.some(f=>{
+      const c=f.center;
+      const d=Math.hypot(c.x-pm.x,c.y-pm.y);
+      return d<Math.min(W,H)*.035;
+    });
+    if(tooClose) continue;
+
+    features.push({
+      id:`oxbow-${group[0].index ?? features.length}`,
+      group,
+      riverArc:river.slice(i0,i1+1),
+      old,
+      boundary,
+      channelW:width,
+      center:old[Math.floor(old.length/2)],
+      cutoff0:p0,
+      cutoff1:p1
+    });
+  }
+  return features;
+}
+
+let oxbowFeatures=[];
+let oxbowParticles=[];
+
+function rebuildOxbows(W,H){
+  oxbowFeatures=buildOxbowFeatures(W,H,layout ? layout.milestoneAnchors : []);
+  oxbowParticles=[];
+  oxbowFeatures.forEach((o,oi)=>{
+    for(let i=0;i<3;i++){
+      oxbowParticles.push({
+        oxbowId:o.id,
+        phase:i*Math.PI*2/3+oi*.41,
+        speed:.20+i*.035,
+        rx:Math.max(3,o.channelW*1.15+i*.7),
+        ry:Math.max(2.2,o.channelW*.72+i*.35)
+      });
+    }
+  });
+}
+
+function drawOxbowFeatures(maskCtx,ctx){
+  oxbowFeatures.forEach(o=>{
+    // Water mask for the abandoned channel.
+    maskCtx.save();
+    maskCtx.beginPath();
+    o.boundary.forEach((p,i)=>i===0?maskCtx.moveTo(p.x,p.y):maskCtx.lineTo(p.x,p.y));
+    maskCtx.closePath();
+    maskCtx.fill();
+    maskCtx.restore();
+
+    // Old-channel edge/trace. The two ends visibly terminate at the
+    // cutoff points, while the active mainstem remains continuous.
+    ctx.save();
+    ctx.beginPath();
+    o.old.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle=isDark()?'rgba(125,175,188,.26)':'rgba(80,130,145,.20)';
+    ctx.lineWidth=Math.max(.8,o.channelW*.42);
+    ctx.setLineDash([2.5,4]);
+    ctx.stroke();
+
+    // Subtle cutoff-neck indicators.
+    [o.cutoff0,o.cutoff1].forEach(p=>{
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,Math.max(1.2,o.channelW*.42),0,Math.PI*2);
+      ctx.fillStyle=isDark()?'rgba(145,190,198,.20)':'rgba(90,140,150,.16)';
+      ctx.fill();
+    });
+    ctx.restore();
+  });
+}
+
+function drawOxbowParticles(now){
+  if(!riverCtx || prefersReducedMotion()) return;
+  const t=now*.001;
+  oxbowParticles.forEach(ps=>{
+    const o=oxbowFeatures.find(x=>x.id===ps.oxbowId);
+    if(!o) return;
+    const c=o.center;
+    const a=t*ps.speed+ps.phase;
+    const x=c.x+Math.cos(a)*ps.rx;
+    const y=c.y+Math.sin(a)*ps.ry;
+    riverCtx.save();
+    riverCtx.shadowBlur=3.5;
+    riverCtx.shadowColor=isDark()?'rgba(190,235,255,.38)':'rgba(255,255,255,.30)';
+    drawTrailParticle({x,y},1.0,.48);
+    riverCtx.restore();
+  });
+}
+
 function drawRiverBase() {
   if (!baseCtx || !baseW || !baseH || !layout) return;
   const t = theme();
+  rebuildOxbows(baseW,baseH);
   baseCtx.clearRect(0, 0, baseW, baseH);
   const confluences = layout.confluences;
 
@@ -2973,6 +3126,21 @@ function drawRiverBase() {
     (i) => mainWidthAt(mainPts[i].y) + edgeJitter(i, mainPts.length) * 0.28);
 
   // -------------------------
+  // CMS milestone pools — same water surface as the mainstem.
+  // Each milestone gets its own compact bank-connected pool.
+  // -------------------------
+  (layout.milestonePools || []).forEach(pool => {
+    if (!pool.boundary || pool.boundary.length < 3) return;
+    maskCtx.beginPath();
+    pool.boundary.forEach((pt,i)=> i===0 ? maskCtx.moveTo(pt.x,pt.y) : maskCtx.lineTo(pt.x,pt.y));
+    maskCtx.closePath();
+    maskCtx.fill();
+  });
+
+  // Step 2: abandoned channels use the same water mask as the river.
+  drawOxbowFeatures(maskCtx, baseCtx);
+
+  // -------------------------
   // Braided channels
   // -------------------------
   const threads = buildBraidThreads(mainPts, baseH);
@@ -3040,6 +3208,33 @@ function drawRiverBase() {
   glowCtx.globalCompositeOperation = 'source-over';
   baseCtx.drawImage(glowLayer, 0, 0);
 
+  // Step 2: visible trace of the former river channel.
+  if (oxbowFeatures.length) {
+    oxbowFeatures.forEach(o=>{
+      baseCtx.save();
+      baseCtx.beginPath();
+      o.points.forEach((p,i)=>i===0?baseCtx.moveTo(p.x,p.y):baseCtx.lineTo(p.x,p.y));
+      baseCtx.strokeStyle=isDark()?'rgba(125,175,188,.22)':'rgba(80,130,145,.18)';
+      baseCtx.lineWidth=Math.max(.8,o.channelW*.45);
+      baseCtx.setLineDash([2.5,4]);
+      baseCtx.stroke();
+      baseCtx.restore();
+    });
+  }
+
+  // Subtle pool edges: the pool is water, not a separate object. The outline
+  // only helps the eye read the bank widening around a milestone.
+  (layout.milestonePools || []).forEach(pool => {
+    baseCtx.save();
+    baseCtx.beginPath();
+    pool.boundary.forEach((pt,i)=> i===0 ? baseCtx.moveTo(pt.x,pt.y) : baseCtx.lineTo(pt.x,pt.y));
+    baseCtx.closePath();
+    baseCtx.strokeStyle = isDark() ? 'rgba(130,180,190,0.20)' : 'rgba(90,145,155,0.18)';
+    baseCtx.lineWidth = 0.65;
+    baseCtx.stroke();
+    baseCtx.restore();
+  });
+
   // ---------------------------------------------------------------
   // Interior current/core: deliberately kept as ONE subtle system.
   // The filled water surface above is what guarantees seamless joins.
@@ -3098,8 +3293,8 @@ function drawRiverBase() {
     baseCtx.restore();
   });
 
-  // Oxbow lake: an abandoned meander loop beside the active channel.
-  drawOxbowLake(baseCtx, mainPts, t.riverFill + '0.18)', t.riverCore + '0.20)');
+  // Oxbows are intentionally disabled in this first milestone pass.
+  // Step 1 is only the reusable single-milestone pool system.
 
   // Keep the particle engine's tributary paths in sync with the visible geometry.
   window._tribPaths = confluences.map(c => {
@@ -3342,6 +3537,48 @@ function drawWaterRipples() {
   });
 }
 
+let milestonePoolParticles = [];
+
+function rebuildMilestonePoolParticles() {
+  milestonePoolParticles = [];
+  (layout && layout.milestonePools || []).forEach(pool => {
+    for (let i=0;i<pool.particleCount;i++) {
+      milestonePoolParticles.push({
+        poolId:pool.id,
+        phase:pool.phaseOffset + (i / pool.particleCount) * Math.PI * 2,
+        speed:0.010 + (i % 3) * 0.0017,
+        radius:0.54 + i*0.055,
+        wobble:0.11 + (i%2)*0.035,
+        seed:i*17.31 + pool.index*5.7
+      });
+    }
+  });
+}
+
+function drawMilestonePoolParticles(now) {
+  if (!riverCtx || !layout || !layout.milestonePools || prefersReducedMotion()) return;
+  if (!milestonePoolParticles.length) rebuildMilestonePoolParticles();
+  const time = now * 0.001;
+  milestonePoolParticles.forEach(ps => {
+    const pool = layout.milestonePools.find(p => p.id === ps.poolId);
+    if (!pool) return;
+    const a = time * ps.speed * Math.PI * 2 + ps.phase;
+    // Elliptical circulation aligned to the local river tangent. A small
+    // secondary wobble keeps the particles from looking mechanically circular.
+    const ex = Math.cos(a) * pool.halfLen * 0.72 * ps.radius;
+    const ey = Math.sin(a) * pool.depth * 0.38 * ps.radius;
+    const wob = Math.sin(a*2.0 + ps.seed) * pool.depth * ps.wobble * 0.18;
+    const x = pool.center.x + pool.tx*ex + pool.nx*pool.side*(ey + wob);
+    const y = pool.center.y + pool.ty*ex + pool.ny*pool.side*(ey + wob);
+    const r = 1.0 + 0.28*Math.sin(a + ps.seed);
+    riverCtx.save();
+    riverCtx.shadowBlur = 4;
+    riverCtx.shadowColor = isDark() ? 'rgba(190,235,255,0.42)' : 'rgba(255,255,255,0.34)';
+    drawTrailParticle({x,y}, r, 0.52);
+    riverCtx.restore();
+  });
+}
+
 function tickRiver() {
   if (!riverCtx || !riverW || !riverH) {
     requestAnimationFrame(tickRiver);
@@ -3349,6 +3586,9 @@ function tickRiver() {
   }
   riverCtx.clearRect(0, 0, riverW, riverH);
   if (!prefersReducedMotion()) {
+    const nowRiver=performance.now();
+    drawMilestonePoolParticles(nowRiver);
+    drawOxbowParticles(nowRiver);
     if (particles.length < MAX_PARTICLES && Math.random() < 0.24) {
       particles.push(spawnParticle());
     }
@@ -3478,6 +3718,7 @@ function buildMilestones() {
   layout = buildLayout(topoW || inner.clientWidth, FIXED_H, MILESTONES);
   drawTopo();
   drawRiverBase();
+  rebuildMilestonePoolParticles();
 
   if (!layout || !layout.milestoneAnchors.length) return;
 
@@ -3540,7 +3781,7 @@ function buildMilestones() {
     const arrow = document.createElement('div');
     arrow.className = 'jrn-ms-arrow';
 
-    const state = { touch, card, connector, arrow, px, py, side, index };
+    const state = { touch, card, connector, arrow, px, py, side, index, pool: pool || null };
     states.push(state);
 
     function positionConnector(){
@@ -3609,7 +3850,7 @@ function buildMilestones() {
     const closeIfLeaving = ()=>{
       setTimeout(()=>{
         if (!touch.matches(':hover') && !card.matches(':hover')) close();
-      }, 120);
+      }, 260);
     };
     touch.addEventListener('mouseleave', closeIfLeaving);
     card.addEventListener('mouseleave', closeIfLeaving);
