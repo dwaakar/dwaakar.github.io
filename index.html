@@ -2344,12 +2344,9 @@ function clusterMilestoneAnchors(anchors){
 }
 
 function generateMilestoneTributaries(W,H,anchors){
-  // V13: deliberately simple watershed geometry.
-  // Each milestone owns one short tributary. The mainstem is used ONLY to
-  // locate the confluence; the tributary then follows its own source->
-  // confluence axis. Downstream progress is the longitudinal coordinate;
-  // meandering is lateral only. Collision tests are a final safety check,
-  // never a path-finding system.
+  // V14: simple watershed tributaries. Each milestone owns one short,
+  // independent source→confluence channel. The mainstem only supplies the
+  // confluence; lateral meander never changes downstream Y progression.
   const sorted=[...(anchors||[])].sort((a,b)=>a.frac-b.frac);
   const main=sampledMainstem(W,H);
   const out=[];
@@ -2375,46 +2372,37 @@ function generateMilestoneTributaries(W,H,anchors){
 
   function mainstemHitBeforeGate(path, confluence, gate){
     if(!path||path.length<2) return true;
-    // Only the final short approach may enter the confluence gate.
-    const lastGateIndex=Math.max(1,path.length-4);
-    for(let i=1;i<path.length;i++){
-      const allowed=(i>=lastGateIndex);
-      if(allowed) continue;
+    // Only the last two short segments are allowed to enter the confluence.
+    const gateStart=Math.max(1,path.length-2);
+    for(let i=1;i<gateStart;i++){
       for(let j=1;j<main.length;j++){
         if(segmentsIntersect(path[i-1],path[i],main[j-1],main[j])) return true;
         const d=Math.min(
           pointSegDistance(path[i-1],main[j-1],main[j]),
           pointSegDistance(path[i],main[j-1],main[j])
         );
-        if(d<TRIB_COLLISION_GAP) return true;
+        if(d<gate) return true;
       }
     }
-    // The final point must be the designated confluence, not merely near it.
     const last=path[path.length-1];
-    if(Math.hypot(last.x-confluence.x,last.y-confluence.y)>0.01) return true;
-    return false;
+    return Math.hypot(last.x-confluence.x,last.y-confluence.y)>0.002;
   }
 
-  function makeCandidate(source, confluence, phase, amp, lobes){
+  function makeCandidate(source,confluence,phase,amp,lobes){
     const pts=[];
-    const N=Math.max(24,lobes*7);
-    const dx=confluence.x-source.x;
+    const N=Math.max(24,lobes*6);
     const dy=confluence.y-source.y;
-    // Source is always above confluence. This is enforced before generation.
-    const lateralX=Math.abs(dx)>1 ? Math.sign(dx) : 1;
     for(let i=0;i<=N;i++){
       const t=i/N;
-      // Strictly monotonic downstream coordinate. No spline and no normal
-      // vector can alter Y, so the tributary can never move upstream.
-      const y=source.y+(confluence.y-source.y)*t;
+      // Downstream coordinate is explicit and strictly non-decreasing.
+      const y=source.y+dy*t;
+      // Independent source→confluence axis. It does NOT follow mainstem X.
       const eased=t*t*(3-2*t);
       const axisX=source.x+(confluence.x-source.x)*eased;
       const envelope=Math.sin(Math.PI*t);
-      const l1=Math.sin(2*Math.PI*lobes*t+phase);
-      const l2=0.32*Math.sin(4*Math.PI*lobes*t+phase*1.37);
-      // Small watershed-style lobes. The sign/phase is deterministic per
-      // milestone; amplitude is intentionally modest.
-      const lateral=(l1+l2)*amp*envelope;
+      const lobe=Math.sin(2*Math.PI*lobes*t+phase)
+                 +0.24*Math.sin(4*Math.PI*lobes*t+phase*1.31);
+      const lateral=lobe*amp*envelope;
       pts.push({x:axisX+lateral,y});
     }
     pts[0]={x:source.x,y:source.y};
@@ -2426,97 +2414,101 @@ function generateMilestoneTributaries(W,H,anchors){
     const seed=(anchor.index+1)*19.731+index*47.17;
     const major=!!anchor.milestone?.major;
     const confluence=mainPointAt(anchor.frac,W,H);
-    const minReach=H*0.055;
-    const maxReach=H*(major?0.105:0.085);
-    let reach=minReach+(maxReach-minReach)*seededRand(seed+2.1);
-    let sourceY=Math.max(18,confluence.y-reach);
-    // Chronological source ordering: later milestones never get a source
-    // above an earlier source. If crowded, shorten the tributary rather than
-    // reversing its direction or making a giant lateral detour.
-    if(previousSourceY>-Infinity){
-      sourceY=Math.max(sourceY,previousSourceY+Math.max(12,H*0.008));
-      sourceY=Math.min(sourceY,confluence.y-H*0.035);
-    }
 
+    // Short watershed reach. Keep the source close enough to the confluence
+    // that a straight independent axis cannot wander across the mainstem.
+    const reachMin=H*0.045;
+    const reachMax=H*(major?0.090:0.075);
+    let sourceY=confluence.y-(reachMin+(reachMax-reachMin)*seededRand(seed+2.1));
+    const minGap=Math.max(10,H*0.006);
+    if(previousSourceY>-Infinity) sourceY=Math.max(sourceY,previousSourceY+minGap);
+    sourceY=Math.min(sourceY,confluence.y-H*0.030);
+    sourceY=Math.max(18,sourceY);
+    if(sourceY>=confluence.y-H*0.02) sourceY=confluence.y-H*0.025;
+
+    // Start on one side of the local mainstem using its normal. This gives a
+    // real drainage source rather than a point directly beside the channel.
+    const tangent=mainTangentAt(anchor.frac,W,H);
+    const normal=mainNormalAt(anchor.frac,W,H);
     const side=(index%2===0)?-1:1;
-    const baseLane=(major?0.060:0.050)*W;
-    const laneStep=(major?0.018:0.014)*W;
-    const laneOffset=baseLane+Math.min(index,5)*laneStep;
-    const laneJitter=(seededRand(seed+8.4)-0.5)*0.018*W;
-    const baseSourceX=confluence.x+side*laneOffset+laneJitter;
+    const laneBase=(major?0.035:0.028)*Math.min(W,H);
+    const laneJitter=(seededRand(seed+8.4)-0.5)*0.010*Math.min(W,H);
+    const lane=laneBase+laneJitter;
+    const verticalRise=confluence.y-sourceY;
+    const source={
+      x:confluence.x + normal.x*side*lane + tangent.x*side*lane*0.20,
+      y:sourceY
+    };
+    source.x=Math.max(12,Math.min(W-12,source.x));
 
-    const ampBase=(major?0.028:0.020)*Math.min(W,H);
+    const ampBase=(major?0.020:0.014)*Math.min(W,H);
     let chosen=null;
-
-    // We do not path-find. We try only nearby source-lane/meander variations.
-    // If none is safe, progressively shrink the meander until the simple
-    // watershed path fits its corridor.
-    for(let attempt=0;attempt<18&&!chosen;attempt++){
+    for(let attempt=0;attempt<20&&!chosen;attempt++){
       const phase=seed+attempt*1.618;
-      const amp=ampBase*(0.25+0.07*(attempt%8));
-      const sx=Math.max(10,Math.min(W-10,
-        baseSourceX+(seededRand(seed+attempt*13.1)-0.5)*0.018*W));
-      let sy=sourceY-((attempt%3)-1)*H*0.004;
-      sy=Math.max(18,Math.min(confluence.y-H*0.035,sy));
-      if(previousSourceY>-Infinity && sy<previousSourceY+Math.max(12,H*0.008)) continue;
-      if(!(sy<confluence.y)) continue;
-      const source={x:sx,y:sy};
-      const candidate=makeCandidate(source,confluence,phase,amp,major?7:6);
+      const amp=ampBase*(1-0.035*Math.min(attempt,12));
+      const sx=source.x+(seededRand(seed+attempt*11.7)-0.5)*0.008*Math.min(W,H);
+      const sy=source.y;
+      const candidate=makeCandidate({x:sx,y:sy},confluence,phase,amp,major?7:6);
 
-      // Hard downstream invariant.
       let monotonic=true;
       for(let i=1;i<candidate.length;i++){
-        if(candidate[i].y+1e-6<candidate[i-1].y){monotonic=false;break;}
+        if(candidate[i].y+1e-9<candidate[i-1].y){monotonic=false;break;}
       }
       if(!monotonic) continue;
+      if(mainstemHitBeforeGate(candidate,confluence,Math.max(6,TRIB_COLLISION_GAP))) continue;
 
-      // Mainstem: only the final approach may touch the confluence gate.
-      if(mainstemHitBeforeGate(candidate,confluence,Math.max(8,TRIB_CONFLUENCE_ZONE*H))) continue;
-
-      // Other tributaries are protected obstacles. No fallback path is used.
       let collision=false;
       for(const other of accepted){
         if(pathHits(candidate,other.tribPath,TRIB_COLLISION_GAP)){collision=true;break;}
       }
       if(collision) continue;
 
-      // Source must begin outside the mainstem safety zone.
-      let tooClose=false;
+      // Source itself must not sit on the mainstem.
+      let sourceTooClose=false;
       for(let j=1;j<main.length;j++){
-        if(pointSegDistance(source,main[j-1],main[j])<Math.max(10,TRIB_COLLISION_GAP*1.5)){
-          tooClose=true;break;
+        if(pointSegDistance(candidate[0],main[j-1],main[j])<TRIB_COLLISION_GAP*0.75){
+          sourceTooClose=true;break;
         }
       }
-      if(tooClose) continue;
+      if(sourceTooClose) continue;
+      chosen={source:candidate[0],path:candidate};
+    }
 
-      chosen={source,path:candidate};
+    // If an unusually tight milestone configuration rejects every tiny
+    // meander, make one final straight, monotonic drainage channel. This is
+    // preferable to losing the tributary entirely, and it still cannot move
+    // upstream. The mainstem renderer remains independent of this fallback.
+    if(!chosen){
+      const fallback=makeCandidate(source,confluence,0,0,1);
+      let safe=true;
+      for(const other of accepted){if(pathHits(fallback,other.tribPath,TRIB_COLLISION_GAP)){safe=false;break;}}
+      if(safe && !mainstemHitBeforeGate(fallback,confluence,Math.max(6,TRIB_COLLISION_GAP)))
+        chosen={source,path:fallback};
     }
 
     const valid=!!chosen;
-    const source=chosen?chosen.source:{x:baseSourceX,y:sourceY};
-    const tribPath=valid?chosen.path:[];
-    if(valid) previousSourceY=source.y;
-
-    out.push({
-      frac:anchor.frac,
-      x:confluence.x,
-      y:confluence.y,
-      major,
-      type:major?'major':'minor',
-      side,
-      milestone:anchor.milestone,
-      milestoneIndex:anchor.index,
-      sourceFrac:source.y/H,
-      source,
-      tribPath,
-      tribWidthMult:major?0.50:0.30,
-      increment:major?0.72:0.28,
-      generated:true,
-      valid
-    });
-    if(valid) accepted.push(out[out.length-1]);
+    const finalSource=chosen?chosen.source:source;
+    const tribPath=chosen?chosen.path:[];
+    if(valid){
+      previousSourceY=finalSource.y;
+      const item={
+        frac:anchor.frac,x:confluence.x,y:confluence.y,major,
+        type:major?'major':'minor',side,milestone:anchor.milestone,
+        milestoneIndex:anchor.index,sourceFrac:finalSource.y/H,
+        source:finalSource,tribPath,tribWidthMult:major?0.50:0.30,
+        increment:major?0.72:0.28,generated:true,valid:true
+      };
+      out.push(item); accepted.push(item);
+    }else{
+      out.push({
+        frac:anchor.frac,x:confluence.x,y:confluence.y,major,
+        type:major?'major':'minor',side,milestone:anchor.milestone,
+        milestoneIndex:anchor.index,sourceFrac:finalSource.y/H,
+        source:finalSource,tribPath:[],tribWidthMult:major?0.50:0.30,
+        increment:major?0.72:0.28,generated:true,valid:false
+      });
+    }
   });
-
   return out;
 }
 
