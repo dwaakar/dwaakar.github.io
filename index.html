@@ -278,25 +278,82 @@
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    .jrn-milestone-dot{position:absolute;width:13px;height:13px;padding:0;border-radius:50%;transform:translate(-50%,-50%);background:var(--surface);border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.16);pointer-events:auto;transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
-    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%) scale(1.28);background:var(--accent);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 12px rgba(0,0,0,.18)}
-    .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:10px;padding:.75rem .95rem;width:200px;
-      box-shadow:0 8px 32px rgba(0,0,0,.14);
-      opacity:0;transition:opacity .15s;font-size:.8rem}
-    .jrn-popup.show{opacity:1}
-    .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
-      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
-    .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
-    .jrn-popup-title{font-weight:700;font-size:.85rem;color:var(--ink);
-      line-height:1.3;margin-bottom:.25rem}
-    .jrn-popup-desc{font-size:.75rem;color:var(--ink2);line-height:1.5}
-    .jrn-popup-badge{display:inline-block;margin-top:.4rem;padding:.12rem .5rem;
-      border-radius:6px;font-size:.62rem;font-weight:600;letter-spacing:.06em;
-      background:var(--accent);color:#fff;opacity:.85}
-    .jrn-popup-badge.jrn-minor-badge{background:var(--ink2);opacity:.55}
+    /* Quirky milestone objects: the river carries a different object as
+       elevation changes. Each object is a real DOM element, not a transient
+       popup, so the interaction remains reliable on touch devices. */
+    .jrn-object{
+      position:absolute;transform:translate(-50%,-50%);
+      width:44px;height:44px;padding:0;border:0;background:transparent;
+      pointer-events:auto;cursor:pointer;z-index:7;
+      display:flex;align-items:center;justify-content:center;
+      transition:transform .25s cubic-bezier(.2,.8,.2,1),filter .25s;
+    }
+    .jrn-object:hover,.jrn-object.active{
+      transform:translate(-50%,-50%) scale(1.13) rotate(-2deg);
+      filter:drop-shadow(0 4px 8px rgba(0,0,0,.16));
+    }
+    .jrn-object-glyph{
+      display:flex;align-items:center;justify-content:center;
+      width:38px;height:32px;
+      font-size:1.7rem;line-height:1;
+      filter:drop-shadow(0 2px 2px rgba(0,0,0,.14));
+      user-select:none;
+    }
+    .jrn-object-glacier .jrn-object-glyph{font-size:2rem}
+    .jrn-object-rock .jrn-object-glyph{font-size:2rem}
+    .jrn-object-landslide .jrn-object-glyph{font-size:1.85rem}
+    .jrn-object-driftwood .jrn-object-glyph{font-size:1.9rem}
+    .jrn-object-vegetation .jrn-object-glyph{font-size:1.85rem}
+    .jrn-object-bridge .jrn-object-glyph{font-size:1.75rem}
+    .jrn-object-mouth .jrn-object-glyph{font-size:1.9rem}
+
+    .jrn-object-card{
+      position:absolute;z-index:8;pointer-events:none;
+      width:min(255px,calc(100vw - 48px));
+      background:color-mix(in srgb,var(--surface) 94%,transparent);
+      border:1px solid var(--border);border-radius:12px;
+      padding:.78rem .9rem .85rem;
+      box-shadow:0 10px 28px rgba(0,0,0,.13);
+      backdrop-filter:blur(8px);
+      opacity:.72;
+      transform:translateY(4px) scale(.98);
+      transform-origin:left center;
+      transition:opacity .22s,transform .22s,box-shadow .22s;
+    }
+    .jrn-object-card.open{
+      opacity:1;transform:translateY(0) scale(1);
+      box-shadow:0 12px 34px rgba(0,0,0,.17);
+    }
+    .jrn-object-card-kicker{
+      font-family:'JetBrains Mono',monospace;font-size:.58rem;
+      color:var(--accent);letter-spacing:.1em;text-transform:uppercase;
+      margin-bottom:.2rem;
+    }
+    .jrn-object-card-date{
+      font-size:.68rem;color:var(--ink2);opacity:.8;margin-bottom:.16rem;
+    }
+    .jrn-object-card-title{
+      font-weight:700;font-size:.84rem;color:var(--ink);
+      line-height:1.3;margin-bottom:.25rem;
+    }
+    .jrn-object-card-desc{
+      font-size:.73rem;color:var(--ink2);line-height:1.48;
+    }
+    .jrn-object-card::before{
+      content:"";position:absolute;left:-7px;top:15px;width:12px;height:12px;
+      background:color-mix(in srgb,var(--surface) 94%,transparent);
+      border-left:1px solid var(--border);border-bottom:1px solid var(--border);
+      transform:rotate(45deg);
+    }
+    .jrn-object-card.closed{
+      display:none;
+    }
+    @media(max-width:700px){
+      .jrn-object-card{width:min(230px,calc(100vw - 42px))}
+      .jrn-object{width:40px;height:40px}
+      .jrn-object-glyph{font-size:1.55rem!important}
+    }
+
     @media(prefers-reduced-motion:reduce){
       .jrn-body{transition:none}
       .jrn-toggle-icon{transition:none}
@@ -525,7 +582,7 @@
       <!-- Layer 2: Flow particles, redrawn every frame -->
       <canvas id="jrn-river" class="jrn-layer"></canvas>
 
-      <!-- Layer 3: CMS milestone anchors on the mainstem + expandable cards -->
+      <!-- Layer 3: CMS milestones represented by quirky river objects + persistent cards -->
       <div id="jrn-milestones" class="jrn-layer"></div>
 
     </div>
@@ -1233,8 +1290,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   }
 
   // ── JOURNEY / RIVER TIMELINE ─────────────────────────────
-  // Milestone content is CMS-driven; elevation controls placement on
-  // the mainstem. Tributaries are fixed visual geometry in the Journey.
+  // Every visible piece of the Journey section is CMS-driven: the
+  // milestones themselves (type/title/date/description) and the
   // surrounding labels. Old field names (year/sub/detail) are kept as
   // fallbacks so existing CMS entries keep working.
   document.getElementById('jrn-toggle-label-text').textContent = safe(s.journeyLabel || 'Explore My Journey');
@@ -1247,11 +1304,11 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   if (s.milestones && s.milestones.length) {
     window._timelineMilestones = s.milestones.map(m => ({
+      type:        (m.type === 'major') ? 'major' : 'minor',
       title:       m.title || '',
       date:        m.date  || m.year   || '',
       description: m.description || m.detail || m.sub || '',
-      elevation:   m.elevation !== undefined && m.elevation !== ''
-        ? +m.elevation : null,
+      elevation:   m.elevation ? +m.elevation : null, // metres; null = auto-place
     }));
     // Rebuild the river network with CMS milestones
     if (window._buildRoad) window._buildRoad();
@@ -2208,10 +2265,9 @@ function buildHardTributaries(W,H){
 }
 
 // ── buildLayout ──────────────────────────────────────────────────────────────
-// The river network is fixed: mainstem + hard-coded tributaries.
-// CMS milestones are separate clickable anchors on the mainstem.
-// Elevation controls only milestone placement; CMS never creates or
-// classifies tributaries.
+// The river network is fixed; CMS milestones are represented separately as
+// clickable anchors on the mainstem.  Their elevation controls only vertical
+// placement of the anchor, never tributary generation.
 function buildLayout(W,H,milestones){
   buildNoiseGrid(W,H);
   const confluences=buildHardTributaries(W,H);
@@ -3318,6 +3374,18 @@ window.addEventListener('resize', resizeRiver);
 // ═══════════════════════════════════════
 let milestoneObserver = null;
 
+function milestoneObjectForElevation(elevation){
+  const e = Number(elevation);
+  if (!Number.isFinite(e)) return { cls:'jrn-object-rock', glyph:'🪨', label:'River stone' };
+  if (e >= 5750) return { cls:'jrn-object-glacier', glyph:'🧊', label:'Glacier' };
+  if (e >= 4750) return { cls:'jrn-object-rock', glyph:'🪨', label:'Huge rock' };
+  if (e >= 3500) return { cls:'jrn-object-landslide', glyph:'⛰️', label:'Landslide' };
+  if (e >= 2250) return { cls:'jrn-object-driftwood', glyph:'🪵', label:'Driftwood' };
+  if (e >= 1000) return { cls:'jrn-object-vegetation', glyph:'🌿', label:'Riparian life' };
+  if (e >= 250)  return { cls:'jrn-object-bridge', glyph:'🌉', label:'River crossing' };
+  return { cls:'jrn-object-mouth', glyph:'🌊', label:'River mouth' };
+}
+
 function buildMilestones() {
   const wrap = document.getElementById('jrn-milestones');
   if (!wrap || !inner) return;
@@ -3335,55 +3403,75 @@ function buildMilestones() {
 
   if (!layout || !layout.milestoneAnchors.length) return;
 
-  const popup=document.createElement('div');
-  popup.id='jrn-popup';
-  popup.className='jrn-popup';
-  wrap.appendChild(popup);
+  layout.milestoneAnchors.forEach((anchor, index)=>{
+    const m = anchor.milestone || {};
+    const obj = milestoneObjectForElevation(m.elevation);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = `jrn-object ${obj.cls}`;
+    button.style.left = anchor.x + 'px';
+    button.style.top = anchor.y + 'px';
+    button.setAttribute('aria-label',
+      `${obj.label}${m.elevation ? ` at ${m.elevation} metres` : ''}${m.title ? `: ${m.title}` : ''}`);
 
-  let active=null;
-  const closePopup=()=>{
-    popup.classList.remove('show');
-    if(active) active.classList.remove('active');
-    active=null;
-  };
+    const glyph = document.createElement('span');
+    glyph.className = 'jrn-object-glyph';
+    glyph.textContent = obj.glyph;
+    glyph.setAttribute('aria-hidden','true');
+    button.appendChild(glyph);
 
-  const showPopup=(anchor,button)=>{
-    if(active===button){ closePopup(); return; }
-    if(active) active.classList.remove('active');
-    active=button;
-    button.classList.add('active');
-    const m=anchor.milestone||{};
-    const elev=m.elevation ? `${esc(m.elevation)} m` : '';
-    popup.innerHTML=[
-      elev ? `<div class="jrn-popup-elev">${elev}</div>` : '',
-      m.date ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
-      m.title ? `<div class="jrn-popup-title">${esc(m.title)}</div>` : '',
-      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : ''
+    // The dialog/card is created immediately and remains in the DOM.
+    const card = document.createElement('div');
+    card.className = 'jrn-object-card closed';
+    card.setAttribute('role','dialog');
+    card.setAttribute('aria-label', m.title || obj.label);
+    card.innerHTML = [
+      m.elevation !== undefined && m.elevation !== null && m.elevation !== ''
+        ? `<div class="jrn-object-card-kicker">${esc(m.elevation)} m · ${esc(obj.label)}</div>` : '',
+      m.date ? `<div class="jrn-object-card-date">${esc(m.date)}</div>` : '',
+      m.title ? `<div class="jrn-object-card-title">${esc(m.title)}</div>` : '',
+      m.description ? `<div class="jrn-object-card-desc">${esc(m.description)}</div>` : ''
     ].join('');
-    popup.classList.add('show');
-    const r=button.getBoundingClientRect();
-    const ir=inner.getBoundingClientRect();
-    let px=r.left-ir.left+18;
-    let py=r.top-ir.top-18;
-    if(px+210>inner.clientWidth) px=r.left-ir.left-220;
-    if(py<6) py=r.bottom-ir.top+10;
-    popup.style.left=px+'px';
-    popup.style.top=py+'px';
-  };
 
-  layout.milestoneAnchors.forEach(anchor=>{
-    const b=document.createElement('button');
-    b.type='button';
-    b.className='jrn-milestone-dot';
-    b.setAttribute('aria-label', anchor.milestone.title || `Milestone at ${anchor.milestone.elevation||''} m`);
-    b.style.left=anchor.x+'px';
-    b.style.top=anchor.y+'px';
-    b.addEventListener('click',e=>{e.stopPropagation();showPopup(anchor,b);});
-    wrap.appendChild(b);
+    // Cards live close to their object, but the side flips when necessary.
+    const cardOffset = anchor.x < (inner.clientWidth * .58) ? 34 : -289;
+    card.style.left = (anchor.x + cardOffset) + 'px';
+    card.style.top = Math.max(10, anchor.y - 18) + 'px';
+
+    const toggle = (event)=>{
+      event.stopPropagation();
+      const wasOpen = card.classList.contains('open');
+      // Keep only one information card expanded at a time.
+      wrap.querySelectorAll('.jrn-object-card.open').forEach(c=>c.classList.remove('open'));
+      wrap.querySelectorAll('.jrn-object.active').forEach(b=>b.classList.remove('active'));
+      if (!wasOpen) {
+        card.classList.remove('closed');
+        card.classList.add('open');
+        button.classList.add('active');
+        button.setAttribute('aria-expanded','true');
+      }
+    };
+
+    button.setAttribute('aria-expanded','false');
+    button.addEventListener('click', toggle);
+    card.addEventListener('click', e=>e.stopPropagation());
+
+    wrap.appendChild(card);
+    wrap.appendChild(button);
   });
 
-  wrap.addEventListener('click',closePopup);
+  wrap.addEventListener('click', ()=>{
+    wrap.querySelectorAll('.jrn-object-card.open').forEach(c=>{
+      c.classList.remove('open');
+      c.classList.add('closed');
+    });
+    wrap.querySelectorAll('.jrn-object.active').forEach(b=>{
+      b.classList.remove('active');
+      b.setAttribute('aria-expanded','false');
+    });
+  }, { once:false });
 }
+
 
 // ═══════════════════════════════════════
 // SCROLL LINK
