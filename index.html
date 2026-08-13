@@ -3427,10 +3427,14 @@ function buildMilestones() {
   layout.milestoneAnchors.forEach((anchor, index)=>{
     const m = anchor.milestone || {};
 
-    // Find the local mainstem direction so the milestone sits beside the
-    // channel rather than directly on top of it.
-    const p0 = riverPointAtT(Math.max(0, anchor.t - 0.006));
-    const p1 = riverPointAtT(Math.min(1, anchor.t + 0.006));
+    // Derive the local mainstem direction from the same geometry used by
+    // buildLayout(). Milestone anchors expose `frac`, not `t`.
+    const localFrac = anchor.frac;
+    const t0 = Math.max(0, localFrac - 0.006);
+    const t1 = Math.min(1, localFrac + 0.006);
+    const layoutW = topoW || inner.clientWidth;
+    const p0 = { x:getRiverXFrac(t0) * layoutW, y:t0 * FIXED_H };
+    const p1 = { x:getRiverXFrac(t1) * layoutW, y:t1 * FIXED_H };
     const dx = (p1.x - p0.x) || 1;
     const dy = (p1.y - p0.y) || 0;
     const len = Math.hypot(dx,dy) || 1;
@@ -3463,14 +3467,15 @@ function buildMilestones() {
       m.description ? `<div class="jrn-ms-desc">${esc(m.description)}</div>` : ''
     ].join('');
 
-    // Position on the same side as the bank marker initially.
+    // Position on the same side as the bank marker without an inline
+    // transform. The card's base/open transforms are owned by CSS, so the
+    // `.open` state cannot be overridden by left-side positioning.
     const cardGap = 28;
-    const preferredLeft = px + (side > 0 ? cardGap : -cardGap);
-    card.style.left = preferredLeft + 'px';
     card.style.top = (py - 14) + 'px';
-    if (side < 0) {
-      card.style.transformOrigin = 'right center';
-      card.style.transform = 'translateX(-100%) translateY(3px)';
+    if (side > 0) {
+      card.style.left = (px + cardGap) + 'px';
+    } else {
+      card.style.right = (layoutW - px + cardGap) + 'px';
     }
 
     const connector = document.createElement('div');
@@ -3547,7 +3552,7 @@ function buildMilestones() {
     const closeIfLeaving = ()=>{
       setTimeout(()=>{
         if (!touch.matches(':hover') && !card.matches(':hover')) close();
-      }, 120);
+      }, 320);
     };
     touch.addEventListener('mouseleave', closeIfLeaving);
     card.addEventListener('mouseleave', closeIfLeaving);
