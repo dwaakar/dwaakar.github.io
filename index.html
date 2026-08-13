@@ -278,9 +278,24 @@
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    .jrn-milestone-dot{position:absolute;width:13px;height:13px;padding:0;border-radius:50%;transform:translate(-50%,-50%);background:var(--surface);border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.16);pointer-events:auto;transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
-    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%) scale(1.28);background:var(--accent);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 12px rgba(0,0,0,.18)}
-    .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+    /* Milestone dot — sized for emoji icon */
+    .jrn-milestone-dot{position:absolute;width:28px;height:28px;padding:0;
+      border-radius:50%;transform:translate(-50%,-50%);
+      background:var(--surface);border:2px solid var(--accent);
+      box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.18);
+      pointer-events:auto;cursor:pointer;
+      font-size:1rem;line-height:1;
+      display:flex;align-items:center;justify-content:center;
+      transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
+    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{
+      transform:translate(-50%,-50%) scale(1.22);
+      background:color-mix(in srgb,var(--accent) 12%,var(--surface));
+      box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 14px rgba(0,0,0,.2)}
+    .jrn-milestone-dot:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    /* Popup object row */
+    .jrn-popup-obj{display:flex;align-items:center;gap:.4rem;font-size:.95rem;
+      margin-bottom:.3rem;font-weight:600;color:var(--ink)}
+    .jrn-popup-obj span{font-size:.75rem;font-weight:500;color:var(--ink2)}
     .jrn-popup{position:absolute;z-index:10;pointer-events:none;
       background:var(--surface);border:1px solid var(--border);
       border-radius:10px;padding:.75rem .95rem;width:200px;
@@ -3318,6 +3333,19 @@ window.addEventListener('resize', resizeRiver);
 // ═══════════════════════════════════════
 let milestoneObserver = null;
 
+// ── Elevation → river object ──────────────────────────────────────────────
+function objectForElev(elev) {
+  const e = (elev != null && elev !== '') ? +elev : -1;
+  if (e >= 5750) return { icon: '🧊', label: 'Glacier' };
+  if (e >= 4750) return { icon: '🪨', label: 'Huge Rock' };
+  if (e >= 3500) return { icon: '⛰️',  label: 'Landslide' };
+  if (e >= 2250) return { icon: '🪵', label: 'Driftwood' };
+  if (e >= 1000) return { icon: '🌿', label: 'Riparian Vegetation' };
+  if (e >=  250) return { icon: '🌉', label: 'River Crossing' };
+  if (e >=    0) return { icon: '🌊', label: 'River Mouth' };
+  return { icon: '📍', label: 'Milestone' };
+}
+
 function buildMilestones() {
   const wrap = document.getElementById('jrn-milestones');
   if (!wrap || !inner) return;
@@ -3335,54 +3363,89 @@ function buildMilestones() {
 
   if (!layout || !layout.milestoneAnchors.length) return;
 
-  const popup=document.createElement('div');
-  popup.id='jrn-popup';
-  popup.className='jrn-popup';
+  // Popup
+  const popup = document.createElement('div');
+  popup.id = 'jrn-popup';
+  popup.className = 'jrn-popup';
+  popup.style.pointerEvents = 'none';
   wrap.appendChild(popup);
 
-  let active=null;
-  const closePopup=()=>{
-    popup.classList.remove('show');
-    if(active) active.classList.remove('active');
-    active=null;
-  };
+  let active = null;
 
-  const showPopup=(anchor,button)=>{
-    if(active===button){ closePopup(); return; }
-    if(active) active.classList.remove('active');
-    active=button;
+  function closePopup() {
+    popup.classList.remove('show');
+    if (active) active.classList.remove('active');
+    active = null;
+  }
+
+  function showPopup(anchor, button) {
+    if (active === button) { closePopup(); return; }
+    if (active) active.classList.remove('active');
+    active = button;
     button.classList.add('active');
-    const m=anchor.milestone||{};
-    const elev=m.elevation ? `${esc(m.elevation)} m` : '';
-    popup.innerHTML=[
-      elev ? `<div class="jrn-popup-elev">${elev}</div>` : '',
-      m.date ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
+    const m   = anchor.milestone || {};
+    const obj = objectForElev(m.elevation);
+    const elev = (m.elevation != null && m.elevation !== '')
+      ? `${esc(String(m.elevation))} m` : '';
+    popup.innerHTML = [
+      `<div class="jrn-popup-obj">${obj.icon} <span>${esc(obj.label)}</span></div>`,
+      elev    ? `<div class="jrn-popup-elev">${elev}</div>` : '',
+      m.date  ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
       m.title ? `<div class="jrn-popup-title">${esc(m.title)}</div>` : '',
-      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : ''
+      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : '',
     ].join('');
     popup.classList.add('show');
-    const r=button.getBoundingClientRect();
-    const ir=inner.getBoundingClientRect();
-    let px=r.left-ir.left+18;
-    let py=r.top-ir.top-18;
-    if(px+210>inner.clientWidth) px=r.left-ir.left-220;
-    if(py<6) py=r.bottom-ir.top+10;
-    popup.style.left=px+'px';
-    popup.style.top=py+'px';
-  };
+    const br = button.getBoundingClientRect();
+    const ir = inner.getBoundingClientRect();
+    const bx = br.left - ir.left, by = br.top - ir.top;
+    const PW = 215, PH = 140;
+    let px = bx + 22, py = by - PH / 2;
+    if (px + PW > inner.clientWidth)  px = bx - PW - 12;
+    if (px < 4)                        px = 4;
+    if (py < 4)                        py = by + 22;
+    if (py + PH > inner.clientHeight) py = by - PH - 8;
+    popup.style.left = px + 'px';
+    popup.style.top  = py + 'px';
+  }
 
-  layout.milestoneAnchors.forEach(anchor=>{
-    const b=document.createElement('button');
-    b.type='button';
-    b.className='jrn-milestone-dot';
-    b.setAttribute('aria-label', anchor.milestone.title || `Milestone at ${anchor.milestone.elevation||''} m`);
-    b.style.left=anchor.x+'px';
-    b.style.top=anchor.y+'px';
-    b.addEventListener('click',e=>{e.stopPropagation();showPopup(anchor,b);});
+  // Build dots
+  layout.milestoneAnchors.forEach(anchor => {
+    const obj = objectForElev(anchor.milestone.elevation);
+    const b   = document.createElement('button');
+    b.type = 'button';
+    b.className = 'jrn-milestone-dot';
+    b.setAttribute('aria-label',
+      (anchor.milestone.title || obj.label) +
+      (anchor.milestone.elevation != null ? ` (${anchor.milestone.elevation} m)` : ''));
+    b.style.left = anchor.x + 'px';
+    b.style.top  = anchor.y + 'px';
+    b.textContent = obj.icon;
+
+    // Desktop click
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      showPopup(anchor, b);
+    });
+
+    // Mobile touch — touchend is more reliable than click on canvas overlays
+    b.addEventListener('touchend', e => {
+      e.preventDefault();
+      e.stopPropagation();
+      showPopup(anchor, b);
+    }, { passive: false });
+
     wrap.appendChild(b);
   });
 
-  wrap.addEventListener('click',closePopup);
+  // Close when clicking/touching outside any dot
+  inner.addEventListener('click', e => {
+    if (!e.target.classList.contains('jrn-milestone-dot')) closePopup();
+  });
+  inner.addEventListener('touchend', e => {
+    if (!e.target.classList.contains('jrn-milestone-dot')) closePopup();
+  }, { passive: true });
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
 }
 
 // ═══════════════════════════════════════
