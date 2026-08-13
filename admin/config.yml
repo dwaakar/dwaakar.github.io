@@ -85,7 +85,7 @@ collections:
                 widget: "select"
                 required: false
                 default: 3000
-                hint: "Sets where this milestone sits on the mainstem — 6500 m = glacial source, 60 m = mouth. This does not create or classify tributaries."
+                hint: "Position on the river AND the icon: ≥5750m=🧊Glacier, 4750-5749m=🪨Huge Rock, 3500-4749m=⛰️Landslide, 2250-3499m=🪵Driftwood, 1000-2249m=🌿Riparian Vegetation, 250-999m=🌉River Crossing, <250m=🌊River Mouth."
                 options:
                   - { label: "6500 m — Glacial Source / Summit", value: 6500 }
                   - { label: "6250 m — High Glacial", value: 6250 }
