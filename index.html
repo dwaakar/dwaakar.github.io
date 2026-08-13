@@ -278,40 +278,34 @@
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    /* Milestone dot — sized for emoji icon */
-    .jrn-milestone-dot{position:absolute;width:28px;height:28px;padding:0;
-      border-radius:50%;transform:translate(-50%,-50%);
-      background:var(--surface);border:2px solid var(--accent);
-      box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.18);
-      pointer-events:auto;cursor:pointer;
-      font-size:1rem;line-height:1;
-      display:flex;align-items:center;justify-content:center;
-      transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
-    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{
-      transform:translate(-50%,-50%) scale(1.22);
-      background:color-mix(in srgb,var(--accent) 12%,var(--surface));
-      box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 14px rgba(0,0,0,.2)}
-    .jrn-milestone-dot:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-    /* Popup object row */
-    .jrn-popup-obj{display:flex;align-items:center;gap:.4rem;font-size:.95rem;
-      margin-bottom:.3rem;font-weight:600;color:var(--ink)}
-    .jrn-popup-obj span{font-size:.75rem;font-weight:500;color:var(--ink2)}
-    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:10px;padding:.75rem .95rem;width:200px;
-      box-shadow:0 8px 32px rgba(0,0,0,.14);
-      opacity:0;transition:opacity .15s;font-size:.8rem}
-    .jrn-popup.show{opacity:1}
-    .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
-      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
-    .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
-    .jrn-popup-title{font-weight:700;font-size:.85rem;color:var(--ink);
-      line-height:1.3;margin-bottom:.25rem}
-    .jrn-popup-desc{font-size:.75rem;color:var(--ink2);line-height:1.5}
-    .jrn-popup-badge{display:inline-block;margin-top:.4rem;padding:.12rem .5rem;
-      border-radius:6px;font-size:.62rem;font-weight:600;letter-spacing:.06em;
-      background:var(--accent);color:#fff;opacity:.85}
-    .jrn-popup-badge.jrn-minor-badge{background:var(--ink2);opacity:.55}
+    /* ── Milestone connector lines + floating dialog boxes ── */
+    #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:visible}
+    #jrn-ms-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
+
+    /* The dialog box — glass card */
+    .jrn-ms-card{position:absolute;pointer-events:none;
+      width:clamp(150px,28%,210px);
+      background:var(--surface);
+      border:1px solid color-mix(in srgb,var(--accent) 35%,var(--border));
+      border-radius:10px;
+      padding:.65rem .85rem;
+      box-shadow:0 4px 24px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.08);
+      /* Float animation — applied per-card with unique delay via style attr */
+      animation:jrnFloat var(--fd,5s) ease-in-out infinite var(--fdelay,0s);
+    }
+    @keyframes jrnFloat{
+      0%,100%{transform:translate(var(--tx,0px),0px)}
+      33%    {transform:translate(calc(var(--tx,0px) + var(--fx,2px)),calc(var(--fy,-4px)))}
+      66%    {transform:translate(calc(var(--tx,0px) - var(--fx,1px)),calc(var(--fy2,2px)))}
+    }
+    .jrn-ms-obj{font-size:1.1rem;line-height:1;margin-bottom:.3rem}
+    .jrn-ms-elev{font-family:'JetBrains Mono',monospace;font-size:.58rem;
+      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.15rem}
+    .jrn-ms-date{font-size:.65rem;color:var(--ink2);opacity:.8;margin-bottom:.15rem}
+    .jrn-ms-title{font-weight:700;font-size:.8rem;color:var(--ink);line-height:1.3;margin-bottom:.2rem}
+    .jrn-ms-desc{font-size:.7rem;color:var(--ink2);line-height:1.45;opacity:.9}
+    @media(prefers-reduced-motion:reduce){.jrn-ms-card{animation:none!important}}
+    @media(max-width:640px){.jrn-ms-card{width:clamp(120px,36%,170px);padding:.5rem .65rem}}
     @media(prefers-reduced-motion:reduce){
       .jrn-body{transition:none}
       .jrn-toggle-icon{transition:none}
@@ -3333,7 +3327,7 @@ window.addEventListener('resize', resizeRiver);
 // ═══════════════════════════════════════
 let milestoneObserver = null;
 
-// ── Elevation → river object ──────────────────────────────────────────────
+// ── Elevation → object ───────────────────────────────────────────────────
 function objectForElev(elev) {
   const e = (elev != null && elev !== '') ? +elev : -1;
   if (e >= 5750) return { icon: '🧊', label: 'Glacier' };
@@ -3363,89 +3357,113 @@ function buildMilestones() {
 
   if (!layout || !layout.milestoneAnchors.length) return;
 
-  // Popup
-  const popup = document.createElement('div');
-  popup.id = 'jrn-popup';
-  popup.className = 'jrn-popup';
-  popup.style.pointerEvents = 'none';
-  wrap.appendChild(popup);
+  const W = inner.clientWidth;
+  const H = FIXED_H;
+  const CARD_W = isMobile() ? 150 : 205; // must match CSS clamp approx
+  const MARGIN  = 10; // px from canvas edge
 
-  let active = null;
+  // ── SVG layer for connector lines ──────────────────────────────────────
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'jrn-ms-svg';
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  wrap.appendChild(svg);
 
-  function closePopup() {
-    popup.classList.remove('show');
-    if (active) active.classList.remove('active');
-    active = null;
-  }
+  // Seeded rand helper (stable across re-renders)
+  const sr = seed => { const n = Math.sin(seed * 127.1) * 43758.5453; return n - Math.floor(n); };
 
-  function showPopup(anchor, button) {
-    if (active === button) { closePopup(); return; }
-    if (active) active.classList.remove('active');
-    active = button;
-    button.classList.add('active');
+  layout.milestoneAnchors.forEach((anchor, i) => {
     const m   = anchor.milestone || {};
     const obj = objectForElev(m.elevation);
-    const elev = (m.elevation != null && m.elevation !== '')
-      ? `${esc(String(m.elevation))} m` : '';
-    popup.innerHTML = [
-      `<div class="jrn-popup-obj">${obj.icon} <span>${esc(obj.label)}</span></div>`,
-      elev    ? `<div class="jrn-popup-elev">${elev}</div>` : '',
-      m.date  ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
-      m.title ? `<div class="jrn-popup-title">${esc(m.title)}</div>` : '',
-      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : '',
+
+    // ── River attachment point (on the mainstem) ─────────────────────
+    const rx = anchor.x;
+    const ry = anchor.y;
+
+    // ── Card placement ────────────────────────────────────────────────
+    // Alternate left/right. Cards sit beside the river, not on top of it.
+    const side = i % 2 === 0 ? 1 : -1; // +1 = right, -1 = left
+    const LINE_LEN = 40 + sr(i * 7.3) * 30; // 40–70 px line length
+
+    // Card anchor (where the line ends = card edge midpoint)
+    let cx, cy;
+    cy = ry - 8 + sr(i * 3.1) * 16; // slight vertical jitter
+
+    if (side === 1) {
+      cx = rx + LINE_LEN; // right of river
+      if (cx + CARD_W > W - MARGIN) cx = rx - LINE_LEN - CARD_W; // flip if off edge
+    } else {
+      cx = rx - LINE_LEN - CARD_W; // left of river
+      if (cx < MARGIN) cx = rx + LINE_LEN; // flip if off edge
+    }
+
+    // Clamp vertically
+    const CARD_H_EST = 100; // estimated card height
+    cy = Math.max(MARGIN, Math.min(H - CARD_H_EST - MARGIN, cy));
+
+    // ── Connector line midpoint ───────────────────────────────────────
+    // The line goes: river point → slight elbow → card edge midpoint
+    // Using a quadratic bezier for a natural curve
+    const lineEndX = cx > rx ? cx : cx + CARD_W; // left or right edge of card
+    const lineEndY = cy + CARD_H_EST * 0.35;       // vertical centre of card (approx)
+
+    // Control point for bezier — pulls line outward slightly
+    const cpx = (rx + lineEndX) / 2 + (side) * 12;
+    const cpy = (ry + lineEndY) / 2 - 10;
+
+    // Draw SVG path: circle at river point + bezier line
+    const isDk = document.documentElement.getAttribute('data-theme') === 'dark';
+    const lineColor = isDk ? 'rgba(82,183,136,0.55)' : 'rgba(30,100,80,0.50)';
+    const dotColor  = isDk ? 'rgba(82,183,136,0.90)' : 'rgba(30,100,80,0.85)';
+
+    // River dot
+    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    circle.setAttribute('cx', rx); circle.setAttribute('cy', ry);
+    circle.setAttribute('r', '4');
+    circle.setAttribute('fill', dotColor);
+    svg.appendChild(circle);
+
+    // Bezier connector
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M${rx},${ry} Q${cpx},${cpy} ${lineEndX},${lineEndY}`);
+    path.setAttribute('stroke', lineColor);
+    path.setAttribute('stroke-width', '1.2');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    svg.appendChild(path);
+
+    // ── Floating card ─────────────────────────────────────────────────
+    const card = document.createElement('div');
+    card.className = 'jrn-ms-card';
+    card.style.left = cx + 'px';
+    card.style.top  = cy + 'px';
+
+    // Float animation params — each card has unique phase + amplitude
+    const floatDur    = (4.2 + sr(i * 2.1) * 2.4).toFixed(2) + 's';
+    const floatDelay  = (sr(i * 5.3) * -3).toFixed(2) + 's'; // negative = pre-offset
+    const floatX      = (sr(i * 1.7) * 3 - 1.5).toFixed(1) + 'px'; // ±1.5px x drift
+    const floatY      = (-3 - sr(i * 4.1) * 3).toFixed(1) + 'px';  // -3 to -6px up
+    const floatY2     = (1  + sr(i * 6.2) * 2).toFixed(1) + 'px';  // +1 to +3px down
+    const floatXb     = (sr(i * 8.9) * 2).toFixed(1) + 'px';       // secondary x
+
+    card.style.setProperty('--fd',     floatDur);
+    card.style.setProperty('--fdelay', floatDelay);
+    card.style.setProperty('--fx',     floatXb);
+    card.style.setProperty('--fy',     floatY);
+    card.style.setProperty('--fy2',    floatY2);
+    card.style.setProperty('--tx',     '0px');
+
+    const elev = (m.elevation != null && m.elevation !== '') ? `${esc(String(m.elevation))}\u202fm` : '';
+    card.innerHTML = [
+      `<div class="jrn-ms-obj">${obj.icon}</div>`,
+      elev    ? `<div class="jrn-ms-elev">${elev}</div>`         : '',
+      m.date  ? `<div class="jrn-ms-date">${esc(m.date)}</div>`  : '',
+      m.title ? `<div class="jrn-ms-title">${esc(m.title)}</div>`: '',
+      m.description ? `<div class="jrn-ms-desc">${esc(m.description)}</div>` : '',
     ].join('');
-    popup.classList.add('show');
-    const br = button.getBoundingClientRect();
-    const ir = inner.getBoundingClientRect();
-    const bx = br.left - ir.left, by = br.top - ir.top;
-    const PW = 215, PH = 140;
-    let px = bx + 22, py = by - PH / 2;
-    if (px + PW > inner.clientWidth)  px = bx - PW - 12;
-    if (px < 4)                        px = 4;
-    if (py < 4)                        py = by + 22;
-    if (py + PH > inner.clientHeight) py = by - PH - 8;
-    popup.style.left = px + 'px';
-    popup.style.top  = py + 'px';
-  }
 
-  // Build dots
-  layout.milestoneAnchors.forEach(anchor => {
-    const obj = objectForElev(anchor.milestone.elevation);
-    const b   = document.createElement('button');
-    b.type = 'button';
-    b.className = 'jrn-milestone-dot';
-    b.setAttribute('aria-label',
-      (anchor.milestone.title || obj.label) +
-      (anchor.milestone.elevation != null ? ` (${anchor.milestone.elevation} m)` : ''));
-    b.style.left = anchor.x + 'px';
-    b.style.top  = anchor.y + 'px';
-    b.textContent = obj.icon;
-
-    // Desktop click
-    b.addEventListener('click', e => {
-      e.stopPropagation();
-      showPopup(anchor, b);
-    });
-
-    // Mobile touch — touchend is more reliable than click on canvas overlays
-    b.addEventListener('touchend', e => {
-      e.preventDefault();
-      e.stopPropagation();
-      showPopup(anchor, b);
-    }, { passive: false });
-
-    wrap.appendChild(b);
+    wrap.appendChild(card);
   });
-
-  // Close when clicking/touching outside any dot
-  inner.addEventListener('click', e => {
-    if (!e.target.classList.contains('jrn-milestone-dot')) closePopup();
-  });
-  inner.addEventListener('touchend', e => {
-    if (!e.target.classList.contains('jrn-milestone-dot')) closePopup();
-  }, { passive: true });
-
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closePopup(); });
 }
 
 // ═══════════════════════════════════════
