@@ -2226,8 +2226,7 @@ const HARD_TRIBUTARIES = [
     offsets:[0.300,0.270,0.285,0.240,0.190,0.135,0.085,0.040,0.000] },
   { id:'t6', major:false, frac:0.755, source:0.675, side: 1, width:0.45,
     offsets:[0.125,0.108,0.145,0.112,0.080,0.050,0.024,0.000] },
-  { id:'t7', major:false, frac:0.845, source:0.755, side: 1, width:0.48,
-    offsets:[0.185,0.220,0.165,0.190,0.125,0.075,0.030,0.000] }
+  
 ];
 
 // Smooth interpolation for the hand-authored offset profile.  Catmull-Rom
@@ -2997,6 +2996,97 @@ function drawRiverBase() {
   });
 
   // ================================================================
+  // OPTIONAL IRREGULAR OXBOW-LIKE FEATURE
+  // Decorative only. It is drawn on a separate layer and clipped OUT of
+  // the active water mask, so it can never hide or alter the river.
+  // ================================================================
+  function drawIrregularOxbowSafely(){
+    try{
+      const def=shiftDefs[2];
+      if(!def) return;
+
+      const layer=document.createElement('canvas');
+      layer.width=baseW; layer.height=baseH;
+      const ctx=layer.getContext('2d');
+      const pts=[];
+      const N=96;
+      const f0=def.start+(def.end-def.start)*.42;
+      const f1=def.start+(def.end-def.start)*.72;
+
+      for(let i=0;i<N;i++){
+        const u=i/(N-1), th=u*Math.PI*2;
+        const f=f0+(f1-f0)*u;
+        const p={x:getRiverXFrac(f)*baseW,y:f*baseH};
+        const e=.0018;
+        const a={x:getRiverXFrac(Math.max(.001,f-e))*baseW,y:(f-e)*baseH};
+        const b={x:getRiverXFrac(Math.min(.999,f+e))*baseW,y:(f+e)*baseH};
+        const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;
+        const nx=-dy/L,ny=dx/L,tx=dx/L,ty=dy/L;
+        const sideR=7.5+2.1*Math.sin(th*3+.5);
+        const alongR=16+3.2*Math.sin(th*2+1.1);
+        pts.push({
+          x:p.x+nx*def.side*Math.sin(th)*sideR+tx*Math.cos(th)*alongR,
+          y:p.y+ny*def.side*Math.sin(th)*sideR+ty*Math.cos(th)*alongR
+        });
+      }
+
+      ctx.beginPath();
+      pts.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));
+      ctx.closePath();
+      ctx.fillStyle=isDark()?'rgba(70,150,175,.16)':'rgba(75,125,150,.11)';
+      ctx.fill();
+      ctx.strokeStyle=isDark()?'rgba(120,175,188,.22)':'rgba(80,120,135,.15)';
+      ctx.lineWidth=.65;
+      ctx.stroke();
+
+      // Remove any portion that overlaps active water. The active river is
+      // therefore guaranteed to remain visible and unchanged.
+      ctx.globalCompositeOperation='destination-out';
+      ctx.drawImage(waterMask,0,0);
+      ctx.globalCompositeOperation='source-over';
+      baseCtx.drawImage(layer,0,0);
+    }catch(e){
+      console.warn('Optional oxbow skipped:',e);
+    }
+  }
+
+
+  // ---------------------------------------------------------------
+  // FORMER T7: MAINSTEM BIFURCATION / RECONNECTION
+  // ---------------------------------------------------------------
+  // T7 is no longer treated as a tributary. This branch leaves the
+  // mainstem and reconnects downstream, so it reads as a braid.
+  const formerT7BraidDef={start:.755,end:.825,side:1,amplitude:18};
+
+  function buildFormerT7Braid(def){
+    const pts=[],N=72;
+    for(let i=0;i<N;i++){
+      const u=i/(N-1), f=def.start+(def.end-def.start)*u;
+      const p={x:getRiverXFrac(f)*baseW,y:f*baseH};
+      const eps=.0018;
+      const a={x:getRiverXFrac(Math.max(.001,f-eps))*baseW,y:(f-eps)*baseH};
+      const b={x:getRiverXFrac(Math.min(.999,f+eps))*baseW,y:(f+eps)*baseH};
+      const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1;
+      const nx=-dy/L,ny=dx/L;
+      const envelope=Math.sin(Math.PI*u);
+      const meander=Math.sin(u*Math.PI*2.2+.7)*3+Math.sin(u*Math.PI*4.8+1.3)*1.2;
+      const off=(def.amplitude*envelope+meander)*def.side;
+      pts.push({x:p.x+nx*off,y:p.y+ny*off});
+    }
+    return pts;
+  }
+
+  const formerT7Braid=buildFormerT7Braid(formerT7BraidDef);
+
+  // Add it to the existing braid collection when one exists.
+  if(typeof braidPaths!=='undefined' && Array.isArray(braidPaths))
+    braidPaths.push(formerT7Braid);
+  else if(typeof braidedChannels!=='undefined' && Array.isArray(braidedChannels))
+    braidedChannels.push(formerT7Braid);
+  else if(typeof braids!=='undefined' && Array.isArray(braids))
+    braids.push(formerT7Braid);
+
+  // ================================================================
   // PAINT THE UNION ONCE
   // ================================================================
   // A single colour/alpha pass means:
@@ -3016,6 +3106,8 @@ function drawRiverBase() {
   waterCtx.drawImage(waterMask, 0, 0);
   waterCtx.globalCompositeOperation = 'source-over';
   baseCtx.drawImage(waterLayer, 0, 0);
+
+  drawIrregularOxbowSafely();
 
   // A single soft outer glow from the same unified water mask.
   const glowLayer = document.createElement('canvas');
@@ -3450,6 +3542,23 @@ function tickRiver() {
 }
 
 window.addEventListener('resize', resizeRiver);
+if (typeof ResizeObserver !== 'undefined') {
+  const jrnJourneyResizeObserver = new ResizeObserver(() => {
+    try {
+      if (!enginesInitialised) return;
+      resizeTopo();
+      resizeRiverBase();
+      resizeRiver();
+      buildMilestones();
+      drawTopo();
+    } catch (err) {
+      console.warn('[Journey] responsive resize skipped:', err);
+    }
+  });
+  const jrnJourneyInner = document.getElementById('jrn-inner');
+  if (jrnJourneyInner) jrnJourneyResizeObserver.observe(jrnJourneyInner);
+}
+
 
 
 // ═══════════════════════════════════════
@@ -3465,7 +3574,7 @@ function buildMilestones() {
   const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
     ? window._timelineMilestones : [];
 
-  const FIXED_H = isMobile() ? 520 : 680;
+  const FIXED_H = isMobile() ? 680 : 680;
   inner.style.height = FIXED_H + 'px';
 
   resizeTopo(); resizeRiverBase(); resizeRiver();
@@ -3711,6 +3820,22 @@ try {
 
 // Re-measure after fonts/layout settle; this also protects deployed builds where
 // CMS content arrives a little later than the first paint.
+
+window.addEventListener('orientationchange', () => {
+  setTimeout(() => {
+    try {
+      if (!enginesInitialised) return;
+      resizeTopo();
+      resizeRiverBase();
+      resizeRiver();
+      buildMilestones();
+      drawTopo();
+    } catch (err) {
+      console.warn('[Journey] orientation resize skipped:', err);
+    }
+  }, 120);
+});
+
 window.addEventListener('load', () => {
   try {
     if (enginesInitialised) {
