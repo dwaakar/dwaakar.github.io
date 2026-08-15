@@ -278,68 +278,25 @@
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    /* ── Milestone connector lines + floating dialog boxes ── */
-    #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none;overflow:visible;opacity:1!important;visibility:visible}
-    #jrn-ms-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible}
-
-    /* The dialog box — glass card */
-    .jrn-ms-card{
-      position:absolute;pointer-events:auto;display:none;
-      width:max-content;max-width:min(260px,calc(100vw - 40px));
-      height:auto;max-height:none;overflow:visible;
-      background:var(--surface);
-      border:1px solid color-mix(in srgb,var(--accent) 32%,var(--border));
-      border-radius:10px;
-      padding:.62rem .78rem;
-      box-shadow:0 7px 22px rgba(0,0,0,.12),0 1px 4px rgba(0,0,0,.06);
-      z-index:40;
-      opacity:0;
-      transform:translateY(3px);
-      transition:opacity .16s ease,transform .16s ease;
-    }
-    .jrn-ms-card.open{
-      display:block;opacity:1;transform:translateY(0);
-    }
-    .jrn-ms-touch{
-      position:absolute;width:32px;height:32px;
-      transform:translate(-50%,-50%);
-      border:0;padding:0;background:transparent;
-      cursor:pointer;pointer-events:auto;z-index:45;
-      touch-action:manipulation;
-    }
-    .jrn-ms-touch::after{
-      content:'';position:absolute;left:50%;top:50%;
-      width:8px;height:8px;transform:translate(-50%,-50%);
-      border-radius:50%;background:var(--accent);
-      box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 13%,transparent);
-      transition:transform .16s ease,box-shadow .16s ease;
-    }
-    .jrn-ms-touch:hover::after,
-    .jrn-ms-touch.active::after{
-      transform:translate(-50%,-50%) scale(1.28);
-      box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent);
-    }
-    .jrn-ms-connector{
-      position:absolute;height:1px;
-      transform-origin:left center;
-      background:color-mix(in srgb,var(--accent) 65%,var(--border));
-      z-index:35;pointer-events:none;display:none;
-    }
-    .jrn-ms-connector.open{display:block}
-    .jrn-ms-arrow{
-      position:absolute;width:0;height:0;
-      border-top:4px solid transparent;
-      border-bottom:4px solid transparent;
-      border-left:6px solid color-mix(in srgb,var(--accent) 70%,var(--border));
-      transform-origin:center;
-      z-index:36;pointer-events:none;display:none;
-    }
-    .jrn-ms-arrow.open{display:block}
-.jrn-ms-date{font-size:.65rem;color:var(--ink2);opacity:.8;margin-bottom:.15rem}
-    .jrn-ms-title{font-weight:700;font-size:.8rem;color:var(--ink);line-height:1.3;margin-bottom:.2rem}
-    .jrn-ms-desc{font-size:.7rem;color:var(--ink2);line-height:1.45;opacity:.9}
-    @media(prefers-reduced-motion:reduce){.jrn-ms-card{animation:none!important}}
-    @media(max-width:640px){.jrn-ms-card{width:clamp(120px,36%,170px);padding:.5rem .65rem}}
+    .jrn-milestone-dot{position:absolute;width:26px;height:26px;padding:0;border:0;border-radius:50%;transform:translate(-50%,-50%);background:transparent;pointer-events:auto;z-index:6;opacity:0}
+    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%);background:transparent;box-shadow:none}
+    .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:10px;padding:.75rem .95rem;width:200px;
+      box-shadow:0 8px 32px rgba(0,0,0,.14);
+      opacity:0;transition:opacity .15s;font-size:.8rem}
+    .jrn-popup.show{opacity:1}
+    .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
+      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
+    .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
+    .jrn-popup-title{font-weight:700;font-size:.85rem;color:var(--ink);
+      line-height:1.3;margin-bottom:.25rem}
+    .jrn-popup-desc{font-size:.75rem;color:var(--ink2);line-height:1.5}
+    .jrn-popup-badge{display:inline-block;margin-top:.4rem;padding:.12rem .5rem;
+      border-radius:6px;font-size:.62rem;font-weight:600;letter-spacing:.06em;
+      background:var(--accent);color:#fff;opacity:.85}
+    .jrn-popup-badge.jrn-minor-badge{background:var(--ink2);opacity:.55}
     @media(prefers-reduced-motion:reduce){
       .jrn-body{transition:none}
       .jrn-toggle-icon{transition:none}
@@ -791,20 +748,6 @@ function parseFM(text) {
   return { data, content: text.slice(m[0].length).trim() };
 }
 const safe = v => v || '';
-function esc(v) {
-  return String(v ?? '').replace(/[&<>"']/g, ch => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'
-  }[ch]));
-}
-function externalUrl(v) {
-  if (!v) return '';
-  const s = String(v).trim();
-  if (!s) return '';
-  if (/^https?:\/\//i.test(s)) return s;
-  if (/^doi\./i.test(s)) return 'https://' + s;
-  if (/^10\.\d+\//.test(s)) return 'https://doi.org/' + s;
-  return s;
-}
 // Normalise image paths — handle both /images/ and /public/images/ and relative
 function imgPath(p) {
   if (!p) return '';
@@ -1160,13 +1103,7 @@ function openModal(cfg) {
   // Other actions at bottom
   let btns = '';
   if (show('showReport') && cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
-  if (cfg.pageType === 'publication' && cfg.doi) {
-    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.doi}" target="_blank" rel="noopener noreferrer">↗ DOI</a>`;
-  } else if (cfg.pageType === 'publication' && cfg.link) {
-    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank" rel="noopener noreferrer">↗ link</a>`;
-  } else if (cfg.link) {
-    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank" rel="noopener noreferrer">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
-  }
+  if (cfg.link) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
   const actEl = document.getElementById('modal-actions');
   actEl.innerHTML = btns;
   actEl.style.display = btns ? 'flex' : 'none';
@@ -1316,15 +1253,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       elevation:   m.elevation !== undefined && m.elevation !== ''
         ? +m.elevation : null,
     }));
-    // Rebuild the river network with CMS milestones.
-    // Never let a Journey rendering error stop the rest of the CMS site.
-    if (window._buildRoad) {
-      try {
-        window._buildRoad();
-      } catch (err) {
-        console.error('[Journey] CMS milestone render failed:', err);
-      }
-    }
+    // Rebuild the river network with CMS milestones
+    if (window._buildRoad) window._buildRoad();
   }
 
   // ── STATS ──────────────────────────────────────────────
@@ -1523,23 +1453,14 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // Publications list
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    const doiUrl = externalUrl(p.doi);
-    const pubUrl = externalUrl(p.link || p.url || p.publicationLink);
-    const pubKind = String(p.category || p.type || p.kind || '').toLowerCase();
-    const isFeature = pubKind.includes('feature');
-    const doiHtml = (!isFeature && doiUrl)
-      ? `<a class="pub-doi" href="${doiUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">↗ DOI</a>`
-      : '';
-    const linkHtml = (isFeature && pubUrl)
-      ? `<a class="pub-doi" href="${pubUrl}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">↗ link</a>`
-      : '';
+    const doiHtml=p.doi?`<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>`:'';
     const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
     div.className='pub-card reveal';
     div.dataset.cat = p.category||'';
     const statusHtml = p.status ? `<span class="pub-status">${safe(p.status)}</span>` : '';
     const catHtml = p.category ? `<span class="pub-category-badge">${safe(p.category)}</span>` : '';
-    div.innerHTML=`<div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">${statusHtml}${catHtml}</div><div class="pub-body"><div class="pub-title">${safe(p.title)}</div><div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${safe(p.journal)}</div><div style="display:flex;gap:.8rem;flex-wrap:wrap">${doiHtml}${linkHtml}</div><div style="flex:1"></div>${hasMore?`<span class="pub-more">Read more →</span>`:''}</div>`;
+    div.innerHTML=`<div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">${statusHtml}${catHtml}</div><div class="pub-body"><div class="pub-title">${safe(p.title)}</div><div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${safe(p.journal)}</div>${doiHtml}<div style="flex:1"></div>${hasMore?`<span class="pub-more">Read more →</span>`:''}</div>`;
     if(hasMore){
       div.addEventListener('click',()=>openModal({
         title:p.title,
@@ -1548,9 +1469,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
         shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
-        doi:doiUrl,
-         link:pubUrl,
-         displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
+        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
         vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
         fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
       }));
@@ -2029,12 +1948,7 @@ if (toggle && body) {
 function revealSection() {
   if (!inner) return;
   inner.classList.add('jrn-revealing');
-  inner.classList.add('jrn-revealed');
-  const ms = document.getElementById('jrn-milestones');
-  if (ms) {
-    ms.style.opacity = '1';
-    ms.style.visibility = 'visible';
-  }
+  requestAnimationFrame(() => inner.classList.add('jrn-revealed'));
 }
 
 // ═══════════════════════════════════════
@@ -2206,54 +2120,48 @@ function sampleNoise(nx, ny) {
 }
 
 // ── HAND-AUTHORED WATERSHED TRIBUTARIES ────────────────────────────────────
-// Short, pronounced watershed-style feeder rivers.
-//
-// Design rules:
-//   • every tributary travels monotonically downstream (source -> confluence);
-//   • meanders are SMALL and frequent rather than large lateral excursions;
-//   • each tributary stays in a narrow side-corridor, so neighbouring branches
-//     do not need giant offsets to avoid one another;
-//   • there is exactly one channel — no braid/split/rejoin geometry;
-//   • the confluence is always the exact mainstem point at spec.frac.
-//
-// The source intervals are intentionally ordered along the mainstem.  Where
-// two intervals overlap, they are on opposite sides of the mainstem.  This
-// gives us a simple, deterministic watershed-like network without asking the
-// renderer to gamble on a random collision retry.
+// The tributary network is deliberately NOT generated from CMS milestones.
+// Each branch has a small upstream catchment, its own irregular meander, and
+// a controlled confluence with the mainstem.  The geometry is expressed as a
+// smooth lateral offset from the same mainstem centreline, which makes every
+// tributary read as part of one drainage system instead of as a free-floating
+// decorative curve.
 const HARD_TRIBUTARIES = [
-  { id:'t1', major:true,  frac:0.185, source:0.055, side:-1, width:0.50,
-    offsets:[0.090,0.078,0.094,0.073,0.087,0.064,0.072,0.044,0.030,0.000] },
-  { id:'t2', major:false, frac:0.292, source:0.105, side: 1, width:0.34,
-    offsets:[0.102,0.088,0.112,0.086,0.104,0.075,0.091,0.052,0.030,0.000] },
-  { id:'t3', major:false, frac:0.405, source:0.246, side:-1, width:0.32,
-    offsets:[0.074,0.062,0.081,0.058,0.073,0.049,0.060,0.030,0.000] },
-  { id:'t4', major:true,  frac:0.535, source:0.486, side: 1, width:0.48,
-    offsets:[0.086,0.072,0.091,0.068,0.083,0.056,0.068,0.034,0.000] },
-  { id:'t5', major:false, frac:0.645, source:0.602, side:-1, width:0.33,
-    offsets:[0.092,0.076,0.099,0.072,0.089,0.059,0.070,0.036,0.000] },
-  { id:'t6', major:false, frac:0.755, source:0.680, side: 1, width:0.31,
-    offsets:[0.068,0.055,0.075,0.052,0.067,0.045,0.056,0.026,0.000] },
-  { id:'t7', major:false, frac:0.845, source:0.770, side:-1, width:0.34,
-    offsets:[0.078,0.063,0.084,0.060,0.077,0.050,0.061,0.028,0.000] }
+  // major: longer, broader, slightly more sinuous
+  { id:'t1', major:true,  frac:0.185, source:0.035, side:-1, width:0.64,
+    offsets:[0.220,0.205,0.235,0.255,0.215,0.180,0.145,0.095,0.045,0.000] },
+  { id:'t2', major:false, frac:0.292, source:0.0600, side: 1, width:0.49,
+    offsets:[0.310,0.340,0.315,0.275,0.230,0.185,0.125,0.075,0.035,0.000] },
+  { id:'t3', major:false, frac:0.405, source:0.2337, side:-1, width:0.46,
+    offsets:[0.175,0.145,0.185,0.150,0.115,0.078,0.035,0.000] },
+  { id:'t4', major:true,  frac:0.535, source:0.4876, side: 1, width:0.62,
+    offsets:[0.205,0.235,0.195,0.225,0.165,0.120,0.075,0.035,0.000] },
+  { id:'t5', major:false, frac:0.645, source:0.60137, side:-1, width:0.50,
+    offsets:[0.300,0.270,0.285,0.240,0.190,0.135,0.085,0.040,0.000] },
+  { id:'t6', major:false, frac:0.755, source:0.675, side: 1, width:0.45,
+    offsets:[0.125,0.108,0.145,0.112,0.080,0.050,0.024,0.000] },
+  { id:'t7', major:false, frac:0.845, source:0.755, side: 1, width:0.48,
+    offsets:[0.185,0.220,0.165,0.190,0.125,0.075,0.030,0.000] }
 ];
 
-// Scalar Catmull-Rom interpolation for the small lateral meander profile.
+// Smooth interpolation for the hand-authored offset profile.  Catmull-Rom
+// keeps the tributary bends flowing through the control values without the
+// angular joins that a polyline would create.
 function catmullRom(a,b,c,d,t){
   const t2=t*t, t3=t2*t;
   return 0.5*((2*b)+(-a+c)*t+(2*a-5*b+4*c-d)*t2+(-a+3*b-3*c+d)*t3);
 }
 
 function makeHardTributary(W,H,spec,index){
-  // Keep every source upstream of its confluence and keep the reach short.
   const source = Math.max(0.018, Math.min(spec.source, spec.frac - 0.018));
   const n = spec.offsets.length;
   const pts=[];
-  const samples = spec.major ? 72 : 60;
+  const samples = spec.major ? 64 : 50;
 
-  // The vertical coordinate is deliberately monotonic.  The only freedom is
-  // the small lateral displacement around the mainstem's local centreline.
-  // This is much closer to the compact branching seen on a watershed map than
-  // an unconstrained A* path that can wander back upstream.
+  // The tributary is built as a gently meandering ribbon parallel to the
+  // local mainstem.  Because its lateral offset is always on one side and
+  // fades continuously to zero, the last section naturally folds into the
+  // mainstem instead of stabbing into it.
   for(let i=0;i<samples;i++){
     const t=i/(samples-1);
     const norm=source + (spec.frac-source)*t;
@@ -2261,25 +2169,20 @@ function makeHardTributary(W,H,spec,index){
     const k=Math.min(n-2,Math.floor(u));
     const f=u-k;
     const get=j=>spec.offsets[Math.max(0,Math.min(n-1,j))];
-
     let off=catmullRom(get(k-1),get(k),get(k+1),get(k+2),f);
     off=Math.max(0,off);
 
-    // Very small secondary undulation.  It is phase-locked to the branch,
-    // fades toward the confluence, and is intentionally far smaller than the
-    // primary meander lobes so it cannot create a new crossing.
-    const micro = (
-      Math.sin(t*Math.PI*(4.0 + (index%3)*0.35) + index*1.17) * 0.0042 +
-      Math.sin(t*Math.PI*(7.0 + (index%2)*0.45) - index*0.63) * 0.0020
-    ) * (0.35 + 0.65*(1-t));
-    off=Math.max(0,off+micro);
+    // A very low-frequency, deterministic wiggle gives each branch a
+    // slightly different natural character without creating noise-like kinks.
+    const wiggle=(Math.sin(t*Math.PI*(2.0+index*0.23)+index*1.31)*0.006 +
+                  Math.sin(t*Math.PI*(3.1+index*0.17)-0.4)*0.0035) * (1-t);
+    off=Math.max(0,off+wiggle);
 
     const mainX=getRiverXFrac(norm)*W;
     pts.push({x:mainX + spec.side*off*W, y:norm*H});
   }
 
-  // Exact source and confluence anchors.  The confluence always lands on the
-  // mainstem; the source remains slightly offset so it reads as a headwater.
+  // Exact source and confluence anchors.
   pts[0]={x:getRiverXFrac(source)*W + spec.side*spec.offsets[0]*W, y:source*H};
   pts[pts.length-1]={x:getRiverXFrac(spec.frac)*W, y:spec.frac*H};
   return pts;
@@ -3093,8 +2996,10 @@ let sourceParticles = [];
 let riverPath = [];
 let riverParticlePath = [];
 let waterRipples = [];
+let milestonePositions = []; // [{x, y, elevation, size, nextRipple}]
+let milestoneRipples   = []; // expanding ring objects
 
-const MAX_PARTICLES = 68;
+const MAX_PARTICLES = 42;
 const MAX_RIPPLES = 6;
 let braidParticleCursor = 0;
 let braidActiveCounts = [];
@@ -3294,6 +3199,110 @@ function drawWaterRipples() {
   });
 }
 
+// ── Milestone glow colour by elevation ────────────────────────────────────
+function milestoneGlowColor(elevation) {
+  const e = (elevation != null && elevation !== '') ? +elevation : -1;
+  if (e >= 5750) return [160, 220, 255]; // glacier — icy blue
+  if (e >= 4750) return [200, 180, 140]; // huge rock — warm tan
+  if (e >= 3500) return [180, 140, 100]; // landslide — earthy
+  if (e >= 2250) return [160, 200, 120]; // driftwood — mossy green
+  if (e >= 1000) return [100, 200, 140]; // riparian — fresh green
+  if (e >=  250) return [120, 180, 220]; // crossing — cool blue
+  return                [80,  160, 230]; // mouth — deep river blue
+}
+
+// Called once per milestone per ripple cycle; adds a ring object.
+function spawnMilestoneRipple(mp) {
+  milestoneRipples.push({
+    x: mp.x, y: mp.y,
+    r: 0,
+    maxR: mp.size * 5.5,
+    alpha: 0.80,
+    speed: 0.40 + Math.random() * 0.20,
+    col: milestoneGlowColor(mp.elevation),
+  });
+}
+
+// Draw all active ripple rings + the stationary glow dot.
+// Called from inside tickRiver every frame.
+function drawMilestoneGlows() {
+  const now = performance.now();
+
+  // Spawn new rings on per-milestone staggered timers
+  milestonePositions.forEach((mp, i) => {
+    if (!mp.nextRipple) mp.nextRipple = now + i * 640 + Math.random() * 500;
+    if (now >= mp.nextRipple) {
+      spawnMilestoneRipple(mp);
+      // Also spawn a second ring slightly delayed for a double-pulse feel
+      setTimeout(() => spawnMilestoneRipple(mp), 280);
+      mp.nextRipple = now + 1900 + Math.random() * 1400;
+    }
+  });
+
+  // Advance + draw expanding rings
+  milestoneRipples = milestoneRipples.filter(rp => {
+    rp.r    += rp.speed;
+    rp.alpha *= 0.974;
+    if (rp.alpha < 0.012 || rp.r > rp.maxR) return false;
+
+    const progress = rp.r / rp.maxR;
+    // Envelope: quick fade-in, long fade-out
+    const env = progress < 0.12
+      ? progress / 0.12
+      : 1 - (progress - 0.12) / 0.88;
+    const a   = Math.max(0, rp.alpha * env);
+    const [r, g, b] = rp.col;
+
+    // Outer ring
+    riverCtx.beginPath();
+    riverCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+    riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.75).toFixed(3)})`;
+    riverCtx.lineWidth   = Math.max(0.4, 1.8 * (1 - progress * 0.7));
+    riverCtx.stroke();
+
+    // Inner trailing ring (65% radius, softer)
+    if (rp.r > 5) {
+      riverCtx.beginPath();
+      riverCtx.arc(rp.x, rp.y, rp.r * 0.65, 0, Math.PI * 2);
+      riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.30).toFixed(3)})`;
+      riverCtx.lineWidth   = Math.max(0.3, 0.9 * (1 - progress));
+      riverCtx.stroke();
+    }
+
+    return true;
+  });
+
+  // Draw stationary glow dot for each milestone (always visible)
+  milestonePositions.forEach(mp => {
+    const [r, g, b] = milestoneGlowColor(mp.elevation);
+
+    // Firefly / treasure-like breathing glow — no tail, just a luminous core.
+    const phase = (now * 0.00125) + (mp.y * 0.018) + (mp.x * 0.007);
+    const pulse = 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(phase));
+    const haloR = mp.size * (4.2 + pulse * 1.8);
+
+    const grad = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, haloR);
+    grad.addColorStop(0,    `rgba(${r},${g},${b},${(0.48 * pulse).toFixed(3)})`);
+    grad.addColorStop(0.18, `rgba(${r},${g},${b},${(0.25 * pulse).toFixed(3)})`);
+    grad.addColorStop(0.48, `rgba(${r},${g},${b},${(0.09 * pulse).toFixed(3)})`);
+    grad.addColorStop(1,    `rgba(${r},${g},${b},0)`);
+    riverCtx.beginPath();
+    riverCtx.arc(mp.x, mp.y, haloR, 0, Math.PI * 2);
+    riverCtx.fillStyle = grad;
+    riverCtx.fill();
+
+    // Small luminous core, intentionally larger than normal flow particles.
+    riverCtx.save();
+    riverCtx.shadowBlur  = 10 + pulse * 7;
+    riverCtx.shadowColor = `rgba(${r},${g},${b},${(0.72 + pulse * 0.28).toFixed(3)})`;
+    riverCtx.beginPath();
+    riverCtx.arc(mp.x, mp.y, mp.size * (0.92 + pulse * 0.10), 0, Math.PI * 2);
+    riverCtx.fillStyle = `rgba(${r},${g},${b},${(0.86 + pulse * 0.14).toFixed(3)})`;
+    riverCtx.fill();
+    riverCtx.restore();
+  });
+}
+
 function tickRiver() {
   if (!riverCtx || !riverW || !riverH) {
     requestAnimationFrame(tickRiver);
@@ -3301,7 +3310,7 @@ function tickRiver() {
   }
   riverCtx.clearRect(0, 0, riverW, riverH);
   if (!prefersReducedMotion()) {
-    if (particles.length < MAX_PARTICLES && Math.random() < 0.24) {
+    if (particles.length < MAX_PARTICLES && Math.random() < 0.38) {
       particles.push(spawnParticle());
     }
     if (sourceParticles.length < 4 && Math.random() < 0.018) {
@@ -3384,6 +3393,7 @@ function tickRiver() {
     });
 
     drawWaterRipples();
+    drawMilestoneGlows();
 
     sourceParticles = sourceParticles.filter(p => {
       const norm = p.pos / Math.max(1, riverPath.length - 1);
@@ -3422,7 +3432,6 @@ function buildMilestones() {
 
   const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
     ? window._timelineMilestones : [];
-
   const FIXED_H = isMobile() ? 520 : 680;
   inner.style.height = FIXED_H + 'px';
 
@@ -3431,174 +3440,91 @@ function buildMilestones() {
   drawTopo();
   drawRiverBase();
 
-  if (!layout || !layout.milestoneAnchors.length) return;
+  // Populate milestone glow positions for tickRiver
+  milestonePositions = layout.milestoneAnchors.map(anchor => ({
+    x:         anchor.x,
+    y:         anchor.y,
+    elevation: anchor.milestone ? anchor.milestone.elevation : null,
+    size:      3.0, // ~1.5× the current typical flow particle
+    nextRipple: 0,
+  }));
+  milestoneRipples = [];
 
-  const states = [];
+  if (!layout.milestoneAnchors.length) return;
 
-  layout.milestoneAnchors.forEach((anchor, index)=>{
-    const m = anchor.milestone || {};
+  const popup=document.createElement('div');
+  popup.id='jrn-popup';
+  popup.className='jrn-popup';
+  wrap.appendChild(popup);
 
-    // Find the local mainstem direction so the milestone sits beside the
-    // channel rather than directly on top of it.
-    const p0 = riverPointAtT(Math.max(0, anchor.t - 0.006));
-    const p1 = riverPointAtT(Math.min(1, anchor.t + 0.006));
-    const dx = (p1.x - p0.x) || 1;
-    const dy = (p1.y - p0.y) || 0;
-    const len = Math.hypot(dx,dy) || 1;
+  let active=null;
+  const closePopup=()=>{
+    popup.classList.remove('show');
+    if(active) active.classList.remove('active');
+    active=null;
+  };
 
-    // Normal to the river direction. Alternate sides subtly, while preserving
-    // the local river geometry rather than using a global left/right offset.
-    const nx = -dy / len;
-    const ny =  dx / len;
-    const side = index % 2 === 0 ? 1 : -1;
-    const bankOffset = isMobile() ? 18 : 24;
-
-    const px = anchor.x + nx * bankOffset * side;
-    const py = anchor.y + ny * bankOffset * side;
-
-    // Tiny touch target on the riverbank.
-    const touch = document.createElement('button');
-    touch.type = 'button';
-    touch.className = 'jrn-ms-touch';
-    touch.style.left = px + 'px';
-    touch.style.top = py + 'px';
-    touch.setAttribute('aria-label', m.title || 'Journey milestone');
-    touch.setAttribute('aria-expanded', 'false');
-
-    const card = document.createElement('div');
-    card.className = 'jrn-ms-card';
-    card.setAttribute('role','dialog');
-    card.innerHTML = [
-      m.date ? `<div class="jrn-ms-date">${esc(m.date)}</div>` : '',
-      m.title ? `<div class="jrn-ms-title">${esc(m.title)}</div>` : '',
-      m.description ? `<div class="jrn-ms-desc">${esc(m.description)}</div>` : ''
+  const showPopup=(anchor,button)=>{
+    if(active===button){ closePopup(); return; }
+    if(active) active.classList.remove('active');
+    active=button;
+    button.classList.add('active');
+    const m=anchor.milestone||{};
+    const elev=m.elevation ? `${esc(m.elevation)} m` : '';
+    popup.innerHTML=[
+      elev ? `<div class="jrn-popup-elev">${elev}</div>` : '',
+      m.date ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
+      m.title ? `<div class="jrn-popup-title">${esc(m.title)}</div>` : '',
+      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : ''
     ].join('');
+    popup.classList.add('show');
+    const r=button.getBoundingClientRect();
+    const ir=inner.getBoundingClientRect();
+    let px=r.left-ir.left+18;
+    let py=r.top-ir.top-18;
+    if(px+210>inner.clientWidth) px=r.left-ir.left-220;
+    if(py<6) py=r.bottom-ir.top+10;
+    popup.style.left=px+'px';
+    popup.style.top=py+'px';
+  };
 
-    // Position on the same side as the bank marker initially.
-    const cardGap = 28;
-    const preferredLeft = px + (side > 0 ? cardGap : -cardGap);
-    card.style.left = preferredLeft + 'px';
-    card.style.top = (py - 14) + 'px';
-    if (side < 0) {
-      card.style.transformOrigin = 'right center';
-      card.style.transform = 'translateX(-100%) translateY(3px)';
-    }
-
-    const connector = document.createElement('div');
-    connector.className = 'jrn-ms-connector';
-    const arrow = document.createElement('div');
-    arrow.className = 'jrn-ms-arrow';
-
-    const state = { touch, card, connector, arrow, px, py, side, index };
-    states.push(state);
-
-    function positionConnector(){
-      const cardRect = card.getBoundingClientRect();
-      const innerRect = inner.getBoundingClientRect();
-
-      const cardLeft = cardRect.left - innerRect.left;
-      const cardTop = cardRect.top - innerRect.top;
-      const cardW = cardRect.width;
-      const cardH = cardRect.height;
-
-      const endX = side > 0 ? cardLeft : cardLeft + cardW;
-      const endY = cardTop + Math.min(cardH / 2, 22);
-
-      const sx = px;
-      const sy = py;
-      const vx = endX - sx;
-      const vy = endY - sy;
-      const length = Math.hypot(vx,vy);
-      if (!length) return;
-
-      const angle = Math.atan2(vy,vx) * 180 / Math.PI;
-      connector.style.left = sx + 'px';
-      connector.style.top = sy + 'px';
-      connector.style.width = Math.max(0,length - 4) + 'px';
-      connector.style.transform = `rotate(${angle}deg)`;
-
-      arrow.style.left = (endX - (side > 0 ? 0 : 6)) + 'px';
-      arrow.style.top = (endY - 4) + 'px';
-      arrow.style.transform = `rotate(${angle}deg)`;
-    }
-
-    function open(){
-      // Close all other milestones.
-      states.forEach(s=>{
-        if (s !== state) {
-          s.card.classList.remove('open');
-          s.connector.classList.remove('open');
-          s.arrow.classList.remove('open');
-          s.touch.classList.remove('active');
-          s.touch.setAttribute('aria-expanded','false');
-        }
-      });
-
-      card.classList.add('open');
-      touch.classList.add('active');
-      touch.setAttribute('aria-expanded','true');
-
-      // Wait one frame so the browser knows the card's natural dimensions.
-      requestAnimationFrame(positionConnector);
-    }
-
-    function close(){
-      card.classList.remove('open');
-      connector.classList.remove('open');
-      arrow.classList.remove('open');
-      touch.classList.remove('active');
-      touch.setAttribute('aria-expanded','false');
-    }
-
-    // Desktop: hovering the bank point opens the card. Keep it open while
-    // moving between the point and the card.
-    touch.addEventListener('mouseenter', open);
-    card.addEventListener('mouseenter', open);
-
-    const closeIfLeaving = ()=>{
-      setTimeout(()=>{
-        if (!touch.matches(':hover') && !card.matches(':hover')) close();
-      }, 120);
-    };
-    touch.addEventListener('mouseleave', closeIfLeaving);
-    card.addEventListener('mouseleave', closeIfLeaving);
-
-    // Mobile/touch and explicit mouse click: toggle expansion.
-    touch.addEventListener('click', ev=>{
-      ev.stopPropagation();
-      if (card.classList.contains('open')) close();
-      else open();
-    });
-
-    // The connector exists only while the card is open.
-    const observer = new MutationObserver(()=>{
-      const isOpen = card.classList.contains('open');
-      connector.classList.toggle('open', isOpen);
-      arrow.classList.toggle('open', isOpen);
-      if (isOpen) requestAnimationFrame(positionConnector);
-    });
-    observer.observe(card, {attributes:true, attributeFilter:['class']});
-
-    wrap.appendChild(connector);
-    wrap.appendChild(arrow);
-    wrap.appendChild(card);
-    wrap.appendChild(touch);
+  layout.milestoneAnchors.forEach(anchor=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.className='jrn-milestone-dot';
+    b.setAttribute('aria-label', anchor.milestone.title || `Milestone at ${anchor.milestone.elevation||''} m`);
+    b.style.left=anchor.x+'px';
+    b.style.top=anchor.y+'px';
+    b.addEventListener('mouseenter',()=>showPopup(anchor,b));
+    b.addEventListener('mouseleave',()=>closePopup());
+    b.addEventListener('click',e=>{e.stopPropagation();showPopup(anchor,b);});
+    wrap.appendChild(b);
   });
 
-  // Close when the user clicks/taps elsewhere in the Journey.
-  wrap.addEventListener('click', ev=>{
-    if (!ev.target.closest('.jrn-ms-touch') && !ev.target.closest('.jrn-ms-card')) {
-      states.forEach(s=>{
-        s.card.classList.remove('open');
-        s.connector.classList.remove('open');
-        s.arrow.classList.remove('open');
-        s.touch.classList.remove('active');
-        s.touch.setAttribute('aria-expanded','false');
-      });
+  // Proximity hover: the popup follows the mouse being near a milestone,
+  // rather than requiring the pointer to land exactly on the tiny hit target.
+  const hoverRadius = 34;
+  inner.addEventListener('mousemove', e=>{
+    const r=inner.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    let nearest=null, nearestButton=null, best=Infinity;
+    layout.milestoneAnchors.forEach((anchor,i)=>{
+      const b=wrap.children[i];
+      if(!b || b===popup) return;
+      const dx=mx-anchor.x, dy=my-anchor.y;
+      const d=Math.hypot(dx,dy);
+      if(d<best){best=d;nearest=anchor;nearestButton=b;}
+    });
+    if(nearest && best<=hoverRadius){
+      if(active!==nearestButton) showPopup(nearest,nearestButton);
+    } else if(active){
+      closePopup();
     }
-  }, {once:true});
-}
+  }, {passive:true});
+  inner.addEventListener('mouseleave',closePopup);
 
+  wrap.addEventListener('click',closePopup);
+}
 
 // ═══════════════════════════════════════
 // SCROLL LINK
