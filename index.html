@@ -2996,13 +2996,8 @@ let sourceParticles = [];
 let riverPath = [];
 let riverParticlePath = [];
 let waterRipples = [];
-
-// ── Milestone ripple particles ─────────────────────────────────────────────
-// Each milestone has a fixed river position. We spawn concentric ring ripples
-// from that point continuously. Rings expand outward and fade — like dropping
-// a stone in still water, but repeating on a slow timer.
-let milestoneRipples = []; // [{x, y, r, maxR, alpha, speed, color, t}]
-let milestonePositions = []; // [{x, y, size, color}] — set by buildMilestones
+let milestonePositions = []; // [{x, y, elevation, size, nextRipple}]
+let milestoneRipples   = []; // expanding ring objects
 
 const MAX_PARTICLES = 42;
 const MAX_RIPPLES = 6;
@@ -3037,26 +3032,11 @@ function buildRiverPath() {
   riverParticlePath = resamplePathUniform(riverPath, Math.max(1.4, riverH / 900));
 }
 
-// Himalayan velocity field — tied to elevation, not just pixel position.
-// norm=0 = source (~6500m steep gorge), norm=1 = mouth (~60m flat plain)
-// Real behaviour: fast+turbulent in upper gorges, slow+meandering in Terai.
-// We blend two regimes matching typical Himalayan gradient profiles:
-//   Upper reaches (norm 0–0.35): steep gradient, high velocity
-//   Middle hills  (norm 0.35–0.65): moderate gradient, reducing
-//   Lower plains  (norm 0.65–1.0): near-flat, slow and wide
+// Fast upstream (steep Himalayan), slow downstream (Terai plain)
 function speedAtNorm(norm) {
+  // Fast upstream, progressively slower downstream.
   const n = Math.max(0, Math.min(1, norm));
-  // Piecewise approximation of Manning's equation across three zones
-  if (n < 0.35) {
-    // Upper gorge: very fast, drops sharply with elevation loss
-    return 3.8 - n * 4.0;          // 3.8 at source → ~2.4 at 0.35
-  } else if (n < 0.68) {
-    // Middle hills: moderate, still faster than plain
-    return 2.4 - (n - 0.35) * 3.6; // 2.4 → ~1.2
-  } else {
-    // Terai / floodplain: slow, nearly flat gradient
-    return Math.max(0.35, 1.2 - (n - 0.68) * 2.6); // 1.2 → ~0.35
-  }
+  return 2.35 - 1.75 * Math.pow(n, 0.72);
 }
 
 function meanderSpeedFactor(path, index) {
@@ -3219,102 +3199,100 @@ function drawWaterRipples() {
   });
 }
 
-// ── Milestone glow color based on object type ──────────────────────────────
+// ── Milestone glow colour by elevation ────────────────────────────────────
 function milestoneGlowColor(elevation) {
   const e = (elevation != null && elevation !== '') ? +elevation : -1;
-  if (e >= 5750) return { r:160, g:220, b:255 }; // glacier — icy blue
-  if (e >= 4750) return { r:200, g:180, b:140 }; // rock — warm tan
-  if (e >= 3500) return { r:180, g:140, b:100 }; // landslide — earthy
-  if (e >= 2250) return { r:160, g:200, b:120 }; // driftwood — mossy green
-  if (e >= 1000) return { r:100, g:200, b:140 }; // riparian — fresh green
-  if (e >=  250) return { r:120, g:180, b:220 }; // crossing — cool blue
-  return          { r: 80, g:160, b:230 };        // mouth — deep river blue
+  if (e >= 5750) return [160, 220, 255]; // glacier — icy blue
+  if (e >= 4750) return [200, 180, 140]; // huge rock — warm tan
+  if (e >= 3500) return [180, 140, 100]; // landslide — earthy
+  if (e >= 2250) return [160, 200, 120]; // driftwood — mossy green
+  if (e >= 1000) return [100, 200, 140]; // riparian — fresh green
+  if (e >=  250) return [120, 180, 220]; // crossing — cool blue
+  return                [80,  160, 230]; // mouth — deep river blue
 }
 
+// Called once per milestone per ripple cycle; adds a ring object.
 function spawnMilestoneRipple(mp) {
-  // Each milestone spawns a new ring every ~1.8–2.8s (staggered by index)
-  const { r, g, b } = milestoneGlowColor(mp.elevation);
   milestoneRipples.push({
     x: mp.x, y: mp.y,
-    r: 0,                        // current radius
-    maxR: mp.size * 5.5,        // expands to 5.5× the dot size
-    alpha: 0.75,
-    speed: 0.38 + Math.random() * 0.18, // px/frame expansion speed
-    color: `${r},${g},${b}`,
-    dotR: mp.size,               // centre dot radius
-    dotAlpha: 0.9,
+    r: 0,
+    maxR: mp.size * 5.5,
+    alpha: 0.80,
+    speed: 0.40 + Math.random() * 0.20,
+    col: milestoneGlowColor(mp.elevation),
   });
 }
 
-function drawMilestoneRipples() {
-  if (!milestonePositions.length) return;
-
-  // Spawn new ripples on a per-milestone staggered timer
+// Draw all active ripple rings + the stationary glow dot.
+// Called from inside tickRiver every frame.
+function drawMilestoneGlows() {
   const now = performance.now();
+
+  // Spawn new rings on per-milestone staggered timers
   milestonePositions.forEach((mp, i) => {
-    // Each milestone gets its own ripple interval (1.8–3.2s, offset by index)
-    if (!mp.nextRipple) mp.nextRipple = now + i * 620 + Math.random() * 400;
+    if (!mp.nextRipple) mp.nextRipple = now + i * 640 + Math.random() * 500;
     if (now >= mp.nextRipple) {
       spawnMilestoneRipple(mp);
-      mp.nextRipple = now + 1800 + Math.random() * 1400;
+      // Also spawn a second ring slightly delayed for a double-pulse feel
+      setTimeout(() => spawnMilestoneRipple(mp), 280);
+      mp.nextRipple = now + 1900 + Math.random() * 1400;
     }
   });
 
-  // Draw + advance ripples
+  // Advance + draw expanding rings
   milestoneRipples = milestoneRipples.filter(rp => {
-    rp.r     += rp.speed;
-    rp.alpha *= 0.975; // gradual fade as ring expands
-
+    rp.r    += rp.speed;
+    rp.alpha *= 0.974;
     if (rp.alpha < 0.012 || rp.r > rp.maxR) return false;
 
-    // Fade envelope: fade in quickly (first 15% of expansion), fade out the rest
     const progress = rp.r / rp.maxR;
-    const env = progress < 0.15
-      ? progress / 0.15             // fast fade-in
-      : 1 - (progress - 0.15) / 0.85; // slow fade-out
-    const a = rp.alpha * env;
+    // Envelope: quick fade-in, long fade-out
+    const env = progress < 0.12
+      ? progress / 0.12
+      : 1 - (progress - 0.12) / 0.88;
+    const a   = Math.max(0, rp.alpha * env);
+    const [r, g, b] = rp.col;
 
-    // Outer expanding ring
+    // Outer ring
     riverCtx.beginPath();
     riverCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
-    riverCtx.strokeStyle = `rgba(${rp.color},${(a * 0.7).toFixed(3)})`;
-    riverCtx.lineWidth   = Math.max(0.5, 1.8 * (1 - progress));
+    riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.75).toFixed(3)})`;
+    riverCtx.lineWidth   = Math.max(0.4, 1.8 * (1 - progress * 0.7));
     riverCtx.stroke();
 
-    // Second ring — slightly behind, creates depth
-    if (rp.r > 6) {
+    // Inner trailing ring (65% radius, softer)
+    if (rp.r > 5) {
       riverCtx.beginPath();
-      riverCtx.arc(rp.x, rp.y, rp.r * 0.62, 0, Math.PI * 2);
-      riverCtx.strokeStyle = `rgba(${rp.color},${(a * 0.35).toFixed(3)})`;
-      riverCtx.lineWidth   = Math.max(0.3, 1.0 * (1 - progress));
+      riverCtx.arc(rp.x, rp.y, rp.r * 0.65, 0, Math.PI * 2);
+      riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.30).toFixed(3)})`;
+      riverCtx.lineWidth   = Math.max(0.3, 0.9 * (1 - progress));
       riverCtx.stroke();
     }
 
     return true;
   });
 
-  // Draw stationary glowing centre dot for each milestone
+  // Draw stationary glow dot for each milestone (always visible)
   milestonePositions.forEach(mp => {
-    const { r, g, b } = milestoneGlowColor(mp.elevation);
-    const col = `${r},${g},${b}`;
+    const [r, g, b] = milestoneGlowColor(mp.elevation);
 
-    // Outer soft halo
-    const grad = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, mp.size * 3.2);
-    grad.addColorStop(0,   `rgba(${col},0.35)`);
-    grad.addColorStop(0.4, `rgba(${col},0.12)`);
-    grad.addColorStop(1,   `rgba(${col},0)`);
+    // Soft ambient halo
+    const grad = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, mp.size * 3.5);
+    grad.addColorStop(0,   `rgba(${r},${g},${b},0.40)`);
+    grad.addColorStop(0.45,`rgba(${r},${g},${b},0.12)`);
+    grad.addColorStop(1,   `rgba(${r},${g},${b},0)`);
     riverCtx.beginPath();
-    riverCtx.arc(mp.x, mp.y, mp.size * 3.2, 0, Math.PI * 2);
+    riverCtx.arc(mp.x, mp.y, mp.size * 3.5, 0, Math.PI * 2);
     riverCtx.fillStyle = grad;
     riverCtx.fill();
 
-    // Inner bright core — the "treasure" dot
+    // Bright core dot
     riverCtx.save();
-    riverCtx.shadowBlur  = 10;
-    riverCtx.shadowColor = `rgba(${col},0.9)`;
+    riverCtx.shadowBlur  = 12;
+    riverCtx.shadowColor = `rgba(${r},${g},${b},0.95)`;
     riverCtx.beginPath();
     riverCtx.arc(mp.x, mp.y, mp.size, 0, Math.PI * 2);
-    riverCtx.fillStyle = `rgba(${col},0.92)`;
+    riverCtx.fillStyle = `rgba(${r},${g},${b},0.95)`;
     riverCtx.fill();
     riverCtx.restore();
   });
@@ -3355,13 +3333,7 @@ function tickRiver() {
 
       // Paths are uniformly resampled, so one index is approximately the same
       // physical distance everywhere. No channel-specific speed multiplier.
-      // Step size in path-index units. The uniformly resampled path has
-      // spacing ≈ pxPerStep px/index. We want to advance ~pxPerFrame pixels.
-      // speedAtNorm gives relative velocity; baseSpeed is a per-particle scale.
-      // Result: comets move visibly fast upstream, noticeably slow at mouth.
-      const pxPerStep2 = Math.max(1.0, riverH / 900);
-      const pxPerFrame = targetStep * pxPerStep2 * 1.8; // calibrated for 60fps feel
-      p.pos += pxPerFrame / pxPerStep2;
+      p.pos += targetStep / Math.max(0.5, Math.max(1.4, riverH / 900));
 
       if (p.pos >= pathLen - 1) {
         if (p.channelIndex >= 0 && braidActiveCounts[p.channelIndex] > 0) {
@@ -3388,69 +3360,35 @@ function tickRiver() {
       const lateral = lateralScale * channelWidth;
       const offset = Math.sin(p.pos * 0.028 + p.seed) * lateral
                    + Math.sin(p.pos * 0.07  + p.seed * 1.7) * lateral * 0.35;
-      // ── COMET TAIL — drawn as a gradient polyline along the path ──────
-      // Tail pixel length scales with speed: faster upstream = longer tail.
-      // This is physically correct (faster water = longer visible streak).
-      const speed      = speedAtNorm(norm);
-      const tailPx     = 28 + speed * 18 + p.size * 8; // 28–82px depending on position+size
-      // Path spacing after uniform resample ≈ max(1.4, riverH/900) px/step
-      const pxPerStep  = Math.max(1.4, riverH / 900);
-      const stepsBack  = Math.ceil(tailPx / pxPerStep);
-      const NSEG       = 18; // segments in the comet tail polyline
-      const stepStride = stepsBack / NSEG;
-
-      // Build tail points from tip (oldest) to head (current)
-      const tailPts = [];
-      for (let s = NSEG; s >= 0; s--) {
-        const tpos = p.pos - s * stepStride;
-        if (tpos < 0) continue;
-        const tp = pathPointAt(path, tpos);
-        if (tp) tailPts.push({ x: tp.x + offset * (s / NSEG), y: tp.y, t: 1 - s / NSEG });
+      const trailLen = p.trailLen || 8;
+      riverCtx.shadowBlur = 3 + (1 - norm) * 4;
+      riverCtx.shadowColor = isDark()
+        ? 'rgba(180,230,255,0.45)'
+        : 'rgba(255,255,255,0.35)';
+      for (let k = trailLen; k >= 0; k--) {
+        const trailPos = p.pos - k * 2;
+        if (trailPos < 0) continue;
+        const trailPt = pathPointAt(path, trailPos);
+        const fade = 1 - k / (trailLen + 1);
+        drawTrailParticle(
+          { x: trailPt.x + offset * (0.6 + 0.4 * fade), y: trailPt.y },
+          Math.max(0.25, p.size * (0.35 + 0.65 * fade)),
+          p.alpha * fade * 0.55
+        );
       }
 
-      if (tailPts.length >= 2) {
-        // Draw the comet tail as a gradient polyline
-        // Glow — wide soft halo behind the head
-        riverCtx.save();
-        riverCtx.shadowBlur = 6 + (1 - norm) * 8;
-        riverCtx.shadowColor = isDark()
-          ? 'rgba(180,230,255,0.55)' : 'rgba(255,255,255,0.45)';
-
-        for (let s = 0; s < tailPts.length - 1; s++) {
-          const a = tailPts[s], b = tailPts[s + 1];
-          const t = (a.t + b.t) / 2; // midpoint fade 0→1 (tip→head)
-          // Comet profile: almost invisible at tip, bright at head
-          const alpha = p.alpha * Math.pow(t, 2.2) * 0.85;
-          const width = Math.max(0.4, p.size * (0.15 + t * 0.85));
-
-          riverCtx.beginPath();
-          riverCtx.moveTo(a.x, a.y);
-          riverCtx.lineTo(b.x, b.y);
-          riverCtx.strokeStyle = particleColor(alpha);
-          riverCtx.lineWidth   = width;
-          riverCtx.lineCap     = 'round';
-          riverCtx.stroke();
-        }
-        riverCtx.restore();
-
-        // Bright head dot at current position
-        const head = tailPts[tailPts.length - 1];
-        riverCtx.save();
-        riverCtx.shadowBlur  = 8 + (1 - norm) * 10;
-        riverCtx.shadowColor = isDark()
-          ? 'rgba(200,245,255,0.8)' : 'rgba(255,255,255,0.7)';
-        riverCtx.beginPath();
-        riverCtx.arc(head.x, head.y, Math.max(0.8, p.size * 0.9), 0, Math.PI * 2);
-        riverCtx.fillStyle = particleColor(p.alpha);
-        riverCtx.fill();
-        riverCtx.restore();
+      // A smaller number of particles become elongated streaks, following the
+      // actual local tangent so bends read as moving water rather than dots.
+      if (p.seed % 1 > 0.34) {
+        const streakLen = Math.max(2, Math.floor(3 + p.size * 2 + (1 - norm) * 3));
+        drawWaterStreak(path, index, streakLen, p.alpha * 0.24, Math.max(0.3, p.size * 0.36));
       }
       riverCtx.shadowBlur = 0;
       return true;
     });
 
     drawWaterRipples();
-    drawMilestoneRipples();
+    drawMilestoneGlows();
 
     sourceParticles = sourceParticles.filter(p => {
       const norm = p.pos / Math.max(1, riverPath.length - 1);
@@ -3497,18 +3435,17 @@ function buildMilestones() {
   drawTopo();
   drawRiverBase();
 
-  // Populate milestone positions for the ripple particle system.
-  // Size = 1.5× the typical flow particle size.
-  milestonePositions = (layout ? layout.milestoneAnchors : []).map(anchor => ({
+  // Populate milestone glow positions for tickRiver
+  milestonePositions = layout.milestoneAnchors.map(anchor => ({
     x:         anchor.x,
     y:         anchor.y,
-    elevation: anchor.milestone.elevation,
-    size:      2.4,   // 1.5× the typical flow particle (base size ~1.1–1.95)
-    nextRipple: 0,    // will be set on first frame
+    elevation: anchor.milestone ? anchor.milestone.elevation : null,
+    size:      2.4, // 1.5× typical flow particle (~1.1–1.95px base)
+    nextRipple: 0,
   }));
-  milestoneRipples = []; // clear any old ripples
+  milestoneRipples = [];
 
-  if (!layout || !layout.milestoneAnchors.length) return;
+  if (!layout.milestoneAnchors.length) return;
 
   const popup=document.createElement('div');
   popup.id='jrn-popup';
