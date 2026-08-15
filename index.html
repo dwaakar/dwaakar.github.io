@@ -278,8 +278,8 @@
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    .jrn-milestone-dot{position:absolute;width:13px;height:13px;padding:0;border-radius:50%;transform:translate(-50%,-50%);background:var(--surface);border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.16);pointer-events:auto;transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
-    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%) scale(1.28);background:var(--accent);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 12px rgba(0,0,0,.18)}
+    .jrn-milestone-dot{position:absolute;width:22px;height:22px;padding:0;border:0;border-radius:50%;transform:translate(-50%,-50%);background:transparent;pointer-events:auto;z-index:6;opacity:0}
+    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%);background:transparent;box-shadow:none}
     .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
     .jrn-popup{position:absolute;z-index:10;pointer-events:none;
       background:var(--surface);border:1px solid var(--border);
@@ -3276,23 +3276,28 @@ function drawMilestoneGlows() {
   milestonePositions.forEach(mp => {
     const [r, g, b] = milestoneGlowColor(mp.elevation);
 
-    // Soft ambient halo
-    const grad = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, mp.size * 3.5);
-    grad.addColorStop(0,   `rgba(${r},${g},${b},0.40)`);
-    grad.addColorStop(0.45,`rgba(${r},${g},${b},0.12)`);
-    grad.addColorStop(1,   `rgba(${r},${g},${b},0)`);
+    // Firefly / treasure-like breathing glow — no tail, just a luminous core.
+    const phase = (now * 0.00125) + (mp.y * 0.018) + (mp.x * 0.007);
+    const pulse = 0.78 + 0.22 * (0.5 + 0.5 * Math.sin(phase));
+    const haloR = mp.size * (4.2 + pulse * 1.8);
+
+    const grad = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, haloR);
+    grad.addColorStop(0,    `rgba(${r},${g},${b},${(0.48 * pulse).toFixed(3)})`);
+    grad.addColorStop(0.18, `rgba(${r},${g},${b},${(0.25 * pulse).toFixed(3)})`);
+    grad.addColorStop(0.48, `rgba(${r},${g},${b},${(0.09 * pulse).toFixed(3)})`);
+    grad.addColorStop(1,    `rgba(${r},${g},${b},0)`);
     riverCtx.beginPath();
-    riverCtx.arc(mp.x, mp.y, mp.size * 3.5, 0, Math.PI * 2);
+    riverCtx.arc(mp.x, mp.y, haloR, 0, Math.PI * 2);
     riverCtx.fillStyle = grad;
     riverCtx.fill();
 
-    // Bright core dot
+    // Small luminous core, intentionally larger than normal flow particles.
     riverCtx.save();
-    riverCtx.shadowBlur  = 12;
-    riverCtx.shadowColor = `rgba(${r},${g},${b},0.95)`;
+    riverCtx.shadowBlur  = 10 + pulse * 7;
+    riverCtx.shadowColor = `rgba(${r},${g},${b},${(0.72 + pulse * 0.28).toFixed(3)})`;
     riverCtx.beginPath();
-    riverCtx.arc(mp.x, mp.y, mp.size, 0, Math.PI * 2);
-    riverCtx.fillStyle = `rgba(${r},${g},${b},0.95)`;
+    riverCtx.arc(mp.x, mp.y, mp.size * (0.92 + pulse * 0.10), 0, Math.PI * 2);
+    riverCtx.fillStyle = `rgba(${r},${g},${b},${(0.86 + pulse * 0.14).toFixed(3)})`;
     riverCtx.fill();
     riverCtx.restore();
   });
@@ -3440,7 +3445,7 @@ function buildMilestones() {
     x:         anchor.x,
     y:         anchor.y,
     elevation: anchor.milestone ? anchor.milestone.elevation : null,
-    size:      2.4, // 1.5× typical flow particle (~1.1–1.95px base)
+    size:      3.0, // ~1.5× the current typical flow particle
     nextRipple: 0,
   }));
   milestoneRipples = [];
