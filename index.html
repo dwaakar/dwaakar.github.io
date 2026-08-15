@@ -3495,6 +3495,8 @@ function buildMilestones() {
     b.setAttribute('aria-label', anchor.milestone.title || `Milestone at ${anchor.milestone.elevation||''} m`);
     b.style.left=anchor.x+'px';
     b.style.top=anchor.y+'px';
+    b.addEventListener('mouseenter',()=>showPopup(anchor,b));
+    b.addEventListener('mouseleave',()=>closePopup());
     b.addEventListener('click',e=>{e.stopPropagation();showPopup(anchor,b);});
     wrap.appendChild(b);
   });
