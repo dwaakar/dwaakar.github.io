@@ -6,7 +6,7 @@
   <title>Diwakar Adhikari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js" defer></script>
   <style>
     :root{--bg:#f7f5f0;--bg2:#eeeae2;--surface:#fff;--border:#ddd9d0;--ink:#1a1814;--ink2:#5a5650;--accent:#2d6a4f;--accent2:#40916c;--gold:#b7832a;--tag-bg:#e8f5ee;--tag-ink:#1b4332;--radius:10px;--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 40px rgba(0,0,0,.12);--nav-h:64px;--t:0.3s cubic-bezier(.4,0,.2,1)}
     [data-theme="dark"]{--bg:#111410;--bg2:#1a1d17;--surface:#20241e;--border:#2e332b;--ink:#e8e4dc;--ink2:#9a9890;--accent:#52b788;--accent2:#74c69d;--gold:#d4a94a;--tag-bg:#1b3a2e;--tag-ink:#95d5b2}
@@ -260,6 +260,9 @@
     .jrn-inner.jrn-revealed #jrn-river{transition-delay:.5s}
     .jrn-inner.jrn-revealed #jrn-milestones{transition-delay:.65s}
     @media(prefers-reduced-motion:reduce){.jrn-inner .jrn-layer{transition:opacity .25s linear}}
+    @keyframes jrnDrawLine{to{stroke-dashoffset:0}}
+    #jrn-dialogue{word-break:break-word;display:block}
+    #jrn-ms-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:7}
 
     /* Topographic contour canvas — drawn once per resize/theme, nudged
        gently on scroll for a subtle parallax (transform only, no redraw) */
@@ -278,7 +281,7 @@
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    .jrn-milestone-dot{position:absolute;width:22px;height:22px;padding:0;border:0;border-radius:50%;transform:translate(-50%,-50%);background:transparent;pointer-events:auto;z-index:6;opacity:0}
+    .jrn-milestone-dot{position:absolute;width:26px;height:26px;padding:0;border:0;border-radius:50%;transform:translate(-50%,-50%);background:transparent;pointer-events:auto;z-index:6;opacity:0}
     .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%);background:transparent;box-shadow:none}
     .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
     .jrn-popup{position:absolute;z-index:10;pointer-events:none;
@@ -534,8 +537,8 @@
 </section>
 
 <!-- NEPAL MAP (Leaflet + OpenStreetMap) -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" media="print" onload="this.media='all'">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 <section id="nepal-map">
   <div class="section-header reveal">
     <h2 class="section-title">Field Presence</h2>
@@ -2082,6 +2085,8 @@ let _noiseW = 0, _noiseH = 0;
 const NOISE_COLS = 140, NOISE_ROWS = 90;
 
 function buildNoiseGrid(W, H) {
+  // Skip rebuild if dimensions unchanged — biggest perf win in this file
+  if (_noiseGrid && _noiseW === W && _noiseH === H) return;
   _noiseW = W; _noiseH = H;
   _noiseGrid = [];
   const SEED = 42;
@@ -2310,6 +2315,13 @@ function initTopo() {
   window.addEventListener('resize', debounce(() => { resizeTopo(); drawTopo(); }, 200));
 }
 
+  // Save to cache
+  topoCtx = origCtx;
+  _topoCache = offscreen;
+  _topoCacheKey = cacheKey;
+  topoCtx.clearRect(0, 0, topoW, topoH);
+  topoCtx.drawImage(offscreen, 0, 0);
+
 function resizeTopo() {
   if (!topoCanvas) return;
   topoW = topoCanvas.width  = topoCanvas.offsetWidth;
@@ -2319,8 +2331,31 @@ function resizeTopo() {
 // Elevation range — glacial headwater to near sea-level (Gandaki-like).
 const ELEV_TOP = 6500, ELEV_BOTTOM = 60, ELEV_STEP = 500;
 
+// Offscreen topo cache — rebuilt only when layout/theme changes
+let _topoCache = null, _topoCacheTheme = null, _topoCacheKey = null;
+
+function invalidateTopoCache() { _topoCache = null; }
+
 function drawTopo() {
   if (!topoCtx || !topoW || !topoH) return;
+  const isDk = document.documentElement.getAttribute('data-theme') === 'dark';
+  const cacheKey = `${topoW}x${topoH}:${(layout?.confluences?.length||0)}:${isDk}`;
+
+  // Serve from cache if nothing changed
+  if (_topoCache && _topoCacheKey === cacheKey) {
+    topoCtx.clearRect(0, 0, topoW, topoH);
+    topoCtx.drawImage(_topoCache, 0, 0);
+    return;
+  }
+
+  // Build offscreen canvas
+  const offscreen = document.createElement('canvas');
+  offscreen.width = topoW; offscreen.height = topoH;
+  const ctx2 = offscreen.getContext('2d');
+  // Swap topoCtx temporarily so the existing drawing code writes to offscreen
+  const origCtx = topoCtx;
+  topoCtx = ctx2;
+
   const t = theme();
   topoCtx.clearRect(0, 0, topoW, topoH);
 
@@ -2788,7 +2823,8 @@ function drawRiverBase() {
   // -------------------------
   confluences.forEach(c => {
     const steps = c.major ? 60 : 40;
-    const pathPts = samplePath(c.tribPath, steps);
+    if (!c._sampledPath) c._sampledPath = const pathPts = samplePath(c.tribPath, steps);
+    const pathPts = c._sampledPath;
     const mainW = widthAtY(c.y, confluences);
     const fullTribW = mainW * (c.tribWidthMult || (c.major ? 0.65 : 0.50));
 
@@ -2912,7 +2948,8 @@ function drawRiverBase() {
   // mainstem. They fade toward the confluence so they do not sit on top of
   // the main channel as a second dark line.
   confluences.forEach(c => {
-    const pathPts = samplePath(c.tribPath, c.major ? 60 : 40);
+    if (!c._sampledPath) c._sampledPath = const pathPts = samplePath(c.tribPath, c.major ? 60 : 40);
+    const pathPts = c._sampledPath;
     baseCtx.save();
     baseCtx.beginPath();
     pathPts.forEach((p, i) => i === 0 ? baseCtx.moveTo(p.x, p.y) : baseCtx.lineTo(p.x, p.y));
@@ -2958,7 +2995,8 @@ function drawRiverBase() {
 
   // Keep the particle engine's tributary paths in sync with the visible geometry.
   window._tribPaths = confluences.map(c => {
-    const pts = samplePath(c.tribPath, c.major ? 60 : 40);
+    if (!c._sampledPath) c._sampledPath = const pts = samplePath(c.tribPath, c.major ? 60 : 40);
+    const pathPts = c._sampledPath;
     return resamplePathUniform(pts.map(p => ({x: p.x, y: p.y})), Math.max(1.4, baseH / 900));
   }).filter(p => p.length > 8);
 }
@@ -2974,7 +3012,8 @@ function flashConfluence(c) {
     const p = Math.min(1, (now - start) / duration);
     const glowT = Math.sin(p * Math.PI); // 0 -> 1 -> 0
     drawRiverBase();
-    const pathPts = samplePath(c.tribPath, 40);
+    if (!c._sampledPath) c._sampledPath = const pathPts = samplePath(c.tribPath, 40);
+    const pathPts = c._sampledPath;
     const mainW = layout ? widthAtY(c.y, layout.confluences) : 4;
     const fullW = mainW * (c.tribWidthMult || (c.major ? 0.65 : 0.50));
     fillVariableWidthPath(baseCtx, pathPts,
@@ -3425,6 +3464,17 @@ window.addEventListener('resize', resizeRiver);
 // ═══════════════════════════════════════
 let milestoneObserver = null;
 
+function objectForElev(elev) {
+  const e = (elev != null && elev !== '') ? +elev : -1;
+  if (e >= 5750) return { icon: '🧊', label: 'Glacier' };
+  if (e >= 4750) return { icon: '🪨', label: 'Huge Rock' };
+  if (e >= 3500) return { icon: '⛰️',  label: 'Landslide' };
+  if (e >= 2250) return { icon: '🪵', label: 'Driftwood' };
+  if (e >= 1000) return { icon: '🌿', label: 'Riparian Vegetation' };
+  if (e >=  250) return { icon: '🌉', label: 'River Crossing' };
+  return { icon: '🌊', label: 'River Mouth' };
+}
+
 function buildMilestones() {
   const wrap = document.getElementById('jrn-milestones');
   if (!wrap || !inner) return;
@@ -3440,68 +3490,164 @@ function buildMilestones() {
   drawTopo();
   drawRiverBase();
 
-  // Populate milestone glow positions for tickRiver
-  milestonePositions = layout.milestoneAnchors.map(anchor => ({
-    x:         anchor.x,
-    y:         anchor.y,
+  milestonePositions = (layout ? layout.milestoneAnchors : []).map(anchor => ({
+    x: anchor.x, y: anchor.y,
     elevation: anchor.milestone ? anchor.milestone.elevation : null,
-    size:      3.0, // ~1.5× the current typical flow particle
-    nextRipple: 0,
+    size: 2.4, nextRipple: 0,
   }));
   milestoneRipples = [];
 
-  if (!layout.milestoneAnchors.length) return;
+  if (!layout || !layout.milestoneAnchors.length) return;
 
-  const popup=document.createElement('div');
-  popup.id='jrn-popup';
-  popup.className='jrn-popup';
-  wrap.appendChild(popup);
+  const W = inner.clientWidth, H = FIXED_H;
 
-  let active=null;
-  const closePopup=()=>{
-    popup.classList.remove('show');
-    if(active) active.classList.remove('active');
-    active=null;
-  };
+  // ── SVG for connector lines ──────────────────────────────────────────
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.id = 'jrn-ms-svg';
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:7;opacity:0;transition:opacity .25s';
+  wrap.appendChild(svg);
 
-  const showPopup=(anchor,button)=>{
-    if(active===button){ closePopup(); return; }
-    if(active) active.classList.remove('active');
-    active=button;
-    button.classList.add('active');
-    const m=anchor.milestone||{};
-    const elev=m.elevation ? `${esc(m.elevation)} m` : '';
-    popup.innerHTML=[
-      elev ? `<div class="jrn-popup-elev">${elev}</div>` : '',
-      m.date ? `<div class="jrn-popup-date">${esc(m.date)}</div>` : '',
-      m.title ? `<div class="jrn-popup-title">${esc(m.title)}</div>` : '',
-      m.description ? `<div class="jrn-popup-desc">${esc(m.description)}</div>` : ''
+  // ── Dialogue panel ───────────────────────────────────────────────────
+  const panel = document.createElement('div');
+  panel.id = 'jrn-dialogue';
+  panel.style.cssText = `position:absolute;z-index:8;pointer-events:none;
+    background:var(--surface);border:1.5px solid var(--accent);
+    border-radius:12px;padding:1rem 1.15rem;
+    box-shadow:0 8px 32px rgba(0,0,0,.18);
+    max-width:min(260px,${W*0.42}px);
+    opacity:0;transition:opacity .2s;
+    font-size:.8rem;line-height:1.5;`;
+  wrap.appendChild(panel);
+
+  // ── Invisible hit buttons over each glow dot ─────────────────────────
+  let activeAnchor = null, activeLine = null;
+
+  function closeDialogue() {
+    svg.style.opacity = '0';
+    panel.style.opacity = '0';
+    panel.style.pointerEvents = 'none';
+    if (activeAnchor) activeAnchor._btn.style.boxShadow = '';
+    activeAnchor = null; activeLine = null;
+  }
+
+  function openDialogue(anchor, btn) {
+    if (activeAnchor === anchor) { closeDialogue(); return; }
+    if (activeAnchor) activeAnchor._btn.style.boxShadow = '';
+    activeAnchor = anchor;
+
+    const m   = anchor.milestone || {};
+    const [r,g,b] = milestoneGlowColor(m.elevation);
+    const col = `rgb(${r},${g},${b})`;
+    const elev = (m.elevation != null && m.elevation !== '') ? `${esc(String(m.elevation))}\u202fm` : '';
+
+    // ── Build dialogue content ────────────────────────────────────────
+    const obj = objectForElev ? objectForElev(m.elevation) : {icon:'📍',label:''};
+    panel.innerHTML = [
+      `<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.45rem">
+         <span style="font-size:1.2rem">${obj.icon}</span>
+         <strong style="font-size:.85rem;color:var(--ink)">${esc(m.title||obj.label)}</strong>
+       </div>`,
+      elev    ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${col};letter-spacing:.07em;margin-bottom:.25rem">${elev}</div>` : '',
+      m.date  ? `<div style="font-size:.68rem;color:var(--ink2);margin-bottom:.25rem">${esc(m.date)}</div>` : '',
+      m.description ? `<div style="color:var(--ink2);font-size:.75rem;line-height:1.55">${esc(m.description)}</div>` : '',
     ].join('');
-    popup.classList.add('show');
-    const r=button.getBoundingClientRect();
-    const ir=inner.getBoundingClientRect();
-    let px=r.left-ir.left+18;
-    let py=r.top-ir.top-18;
-    if(px+210>inner.clientWidth) px=r.left-ir.left-220;
-    if(py<6) py=r.bottom-ir.top+10;
-    popup.style.left=px+'px';
-    popup.style.top=py+'px';
-  };
 
-  layout.milestoneAnchors.forEach(anchor=>{
-    const b=document.createElement('button');
-    b.type='button';
-    b.className='jrn-milestone-dot';
-    b.setAttribute('aria-label', anchor.milestone.title || `Milestone at ${anchor.milestone.elevation||''} m`);
-    b.style.left=anchor.x+'px';
-    b.style.top=anchor.y+'px';
-    b.addEventListener('mouseenter',()=>showPopup(anchor,b));
-    b.addEventListener('mouseleave',()=>closePopup());
-    b.addEventListener('click',e=>{e.stopPropagation();showPopup(anchor,b);});
+    // ── Measure and position dialogue ────────────────────────────────
+    panel.style.opacity = '0';
+    panel.style.pointerEvents = 'auto';
+    panel.style.display = 'block';
+
+    // Force layout to get real dimensions
+    const PW = Math.min(260, W * 0.42);
+    const PH = panel.scrollHeight || 120;
+
+    // Connector line from glow dot to dialogue edge
+    // Place dialogue on the less-crowded side, keep fully within canvas
+    const rx = anchor.x, ry = anchor.y;
+    const LINE = 55; // line length in px
+    const side  = rx > W * 0.5 ? -1 : 1; // -1=left, 1=right
+
+    let dx = rx + side * LINE;
+    let dy = ry - PH / 2;
+
+    // Clamp inside canvas with margin
+    const MARGIN = 8;
+    dx = Math.max(MARGIN, Math.min(W - PW - MARGIN, dx));
+    dy = Math.max(MARGIN, Math.min(H - PH - MARGIN, dy));
+
+    panel.style.left  = dx + 'px';
+    panel.style.top   = dy + 'px';
+    panel.style.width = PW + 'px';
+
+    // Connection point on dialogue edge
+    const cardEdgeX = side === 1 ? dx : dx + PW;
+    const cardEdgeY = dy + PH / 2;
+
+    // ── Draw SVG flowchart connector ─────────────────────────────────
+    svg.innerHTML = '';
+
+    // Elbow path: dot → horizontal → vertical → card edge
+    const midX = side === 1
+      ? rx + LINE * 0.55
+      : rx - LINE * 0.55;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    const d = `M ${rx} ${ry} L ${midX} ${ry} L ${midX} ${cardEdgeY} L ${cardEdgeX} ${cardEdgeY}`;
+    path.setAttribute('d', d);
+    path.setAttribute('stroke', col);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    // Animated dash — draws the line as if being drawn in real time
+    const pathLen = path.getTotalLength ? path.getTotalLength() : 150;
+    path.style.cssText = `stroke-dasharray:${pathLen};stroke-dashoffset:${pathLen};
+      animation:jrnDrawLine .35s ease-out forwards`;
+    svg.appendChild(path);
+
+    // Dot at origin
+    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    dot.setAttribute('cx', rx); dot.setAttribute('cy', ry); dot.setAttribute('r', '3.5');
+    dot.setAttribute('fill', col);
+    svg.appendChild(dot);
+
+    // Arrowhead at card edge
+    const aw = 6, ah = 4;
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+    const ax = cardEdgeX, ay = cardEdgeY;
+    const pts = side === 1
+      ? `${ax},${ay} ${ax-aw},${ay-ah} ${ax-aw},${ay+ah}`
+      : `${ax},${ay} ${ax+aw},${ay-ah} ${ax+aw},${ay+ah}`;
+    arrow.setAttribute('points', pts);
+    arrow.setAttribute('fill', col);
+    svg.appendChild(arrow);
+
+    svg.style.opacity = '1';
+    panel.style.opacity = '1';
+    btn.style.boxShadow = `0 0 0 4px rgba(${r},${g},${b},0.35)`;
+  }
+
+  layout.milestoneAnchors.forEach(anchor => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.style.cssText = `position:absolute;width:32px;height:32px;padding:0;border:0;
+      border-radius:50%;background:transparent;cursor:pointer;
+      transform:translate(-50%,-50%);z-index:9;pointer-events:auto`;
+    b.style.left = anchor.x + 'px';
+    b.style.top  = anchor.y + 'px';
+    b.setAttribute('aria-label', anchor.milestone?.title || 'Milestone');
+    anchor._btn = b;
+
+    b.addEventListener('click', e => { e.stopPropagation(); openDialogue(anchor, b); });
+    b.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); openDialogue(anchor, b); }, {passive:false});
     wrap.appendChild(b);
   });
 
-  wrap.addEventListener('click',closePopup);
+  // Close when tapping elsewhere inside section
+  inner.addEventListener('click', e => {
+    if (!e.target.closest('button')) closeDialogue();
+  });
 }
 
 // ═══════════════════════════════════════
