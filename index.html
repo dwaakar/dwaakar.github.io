@@ -315,8 +315,8 @@
 
     .jrn-object-card{
       position:absolute;z-index:11;pointer-events:none;
-      width:min(520px,calc(100vw - 56px));
-      max-height:calc(100vh - 100px);overflow:hidden;
+      width:min(520px,calc(100vw - 32px));
+      max-height:calc(100vh - 32px);overflow:hidden;
       background:color-mix(in srgb,var(--surface) 96%,transparent);
       border:1px solid var(--border);border-radius:12px;
       padding:.85rem 1rem .9rem;
@@ -331,10 +331,11 @@
       box-shadow:0 12px 34px rgba(0,0,0,.17);
     }
     .jrn-object-card.open::after{
-      content:"";position:absolute;top:50%;height:1.5px;
+      content:"";position:absolute;top:50%;height:2px;
       width:var(--jrn-line,34px);
-      background:linear-gradient(90deg,color-mix(in srgb,var(--accent2) 70%,transparent),color-mix(in srgb,var(--accent2) 12%,transparent));
+      background:linear-gradient(90deg,color-mix(in srgb,var(--accent2) 78%,transparent),color-mix(in srgb,var(--accent2) 18%,transparent));
       transform:translateY(-50%);transform-origin:left center;pointer-events:none;z-index:-1;
+      box-shadow:0 0 5px color-mix(in srgb,var(--accent2) 35%,transparent);
     }
     .jrn-object-card[data-side="left"]::after{left:100%;transform:translateY(-50%) scaleX(-1);transform-origin:left center}
     .jrn-object-card[data-side="right"]::after{left:-34px}
@@ -2001,6 +2002,7 @@ if (toggle && body) {
       if (hintEl) hintEl.textContent = hintEl.dataset.collapseText || 'Click to collapse';
       // Do not render from the collapsed state. The canvas dimensions are zero
       // until the browser has laid out the opened accordion.
+      startRiverAnimation();
       refreshJourneyAfterOpen();
       body.addEventListener('transitionend', function onEnd(e) {
         if (e.propertyName !== 'max-height') return;
@@ -2008,6 +2010,9 @@ if (toggle && body) {
         body.removeEventListener('transitionend', onEnd);
       });
     } else {
+      // Stop the particle loop while the Journey is collapsed. The static
+      // river/topography remain intact and will redraw when reopened.
+      stopRiverAnimation();
       // Lock in the current pixel height first so we can transition from it
       body.style.maxHeight = inner.scrollHeight + 'px';
       requestAnimationFrame(() => {
@@ -3075,13 +3080,26 @@ const MAX_PARTICLES = 68;
 const MAX_RIPPLES = 6;
 let braidParticleCursor = 0;
 let braidActiveCounts = [];
+let riverAnimationActive = false;
+let riverAnimationFrame = 0;
 
 function initRiver() {
   riverCanvas = document.getElementById('jrn-river');
   if (!riverCanvas) return;
   riverCtx = riverCanvas.getContext('2d');
   resizeRiver();
-  tickRiver();
+}
+
+function startRiverAnimation(){
+  if (riverAnimationActive || !riverCtx) return;
+  riverAnimationActive = true;
+  riverAnimationFrame = requestAnimationFrame(tickRiver);
+}
+
+function stopRiverAnimation(){
+  riverAnimationActive = false;
+  if (riverAnimationFrame) cancelAnimationFrame(riverAnimationFrame);
+  riverAnimationFrame = 0;
 }
 
 function resizeRiver() {
@@ -3272,8 +3290,9 @@ function drawWaterRipples() {
 }
 
 function tickRiver() {
+  if (!riverAnimationActive) return;
   if (!riverCtx || !riverW || !riverH) {
-    requestAnimationFrame(tickRiver);
+    riverAnimationFrame = requestAnimationFrame(tickRiver);
     return;
   }
   riverCtx.clearRect(0, 0, riverW, riverH);
@@ -3381,7 +3400,7 @@ function tickRiver() {
       return p.alpha > 0.04;
     });
   }
-  requestAnimationFrame(tickRiver);
+  riverAnimationFrame = requestAnimationFrame(tickRiver);
 }
 
 window.addEventListener('resize', resizeRiver);
@@ -3452,13 +3471,15 @@ function buildMilestones() {
     ].join('');
 
     // Put the dialogue fully on-screen and connect it to the glowing particle.
-    const cardWidth = Math.min(520, Math.max(230, inner.clientWidth - 56));
+    // The card is sized against the viewport so it never forces page scrolling.
+    const cardWidth = Math.min(520, Math.max(230, inner.clientWidth - 32));
     card.style.width = cardWidth + 'px';
     const leftSide = anchor.x > inner.clientWidth * .55;
-    const left = leftSide ? Math.max(12, anchor.x - cardWidth - 34) : Math.min(inner.clientWidth - cardWidth - 12, anchor.x + 34);
-    const maxTop = Math.max(10, inner.clientHeight - Math.min(card.offsetHeight || 180, window.innerHeight - 120) - 10);
+    const left = leftSide
+      ? Math.max(12, anchor.x - cardWidth - 34)
+      : Math.min(Math.max(12, inner.clientWidth - cardWidth - 12), anchor.x + 34);
     card.style.left = left + 'px';
-    card.style.top = Math.max(10, Math.min(anchor.y - 24, maxTop)) + 'px';
+    card.style.top = '12px';
     card.dataset.side = leftSide ? 'left' : 'right';
 
     const toggle = (event)=>{
@@ -3475,10 +3496,18 @@ function buildMilestones() {
         requestAnimationFrame(()=>{
           const rect = card.getBoundingClientRect();
           const innerRect = inner.getBoundingClientRect();
-          const localTop = Math.max(10, Math.min(anchor.y - rect.height/2, inner.clientHeight - rect.height - 10));
+          const availableH = Math.max(80, Math.min(window.innerHeight - 32, innerRect.height - 24));
+          card.style.maxHeight = availableH + 'px';
+          const localTop = Math.max(12, Math.min(anchor.y - rect.height/2, inner.clientHeight - rect.height - 12));
+          const localLeft = leftSide
+            ? Math.max(12, anchor.x - rect.width - 34)
+            : Math.min(inner.clientWidth - rect.width - 12, anchor.x + 34);
           card.style.top = localTop + 'px';
-          card.style.left = leftSide ? Math.max(12, anchor.x - rect.width - 34) + 'px' : Math.min(inner.clientWidth - rect.width - 12, anchor.x + 34) + 'px';
-          card.style.setProperty('--jrn-line', '34px');
+          card.style.left = localLeft + 'px';
+          const lineLength = leftSide
+            ? Math.max(20, anchor.x - (localLeft + rect.width))
+            : Math.max(20, localLeft - anchor.x);
+          card.style.setProperty('--jrn-line', lineLength + 'px');
         });
       }
     };
@@ -3545,6 +3574,14 @@ let enginesInitialised = false;
 function initEngines() {
   if (enginesInitialised) return;
   enginesInitialised = true;
+
+  // Initialize the actual Journey visualization layers.  These were
+  // accidentally omitted from the previous optimization pass, which left
+  // the canvases without rendering contexts and made the Journey disappear.
+  initTopo();
+  initRiverBase();
+  initRiver();
+
   resizeTopo(); resizeRiverBase(); resizeRiver();
   drawTopo();
   buildMilestones();
@@ -3678,8 +3715,22 @@ window.addEventListener('load', () => {
       .catch(e => console.warn('Map GeoJSON error:', e));
   };
 
-  // Run if data already set
-  if (window._mapData) window._renderLeafletMap(window._mapData);
+  // Render the map only when it is near the viewport. This avoids GeoJSON/tile
+  // work blocking the initial page load while preserving the map completely.
+  if (window._mapData) {
+    const mapEl = document.getElementById('leaflet-map');
+    const renderMap = () => window._renderLeafletMap(window._mapData);
+    if (mapEl && 'IntersectionObserver' in window) {
+      const mapIO = new IntersectionObserver(entries => {
+        if (!entries.some(e => e.isIntersecting)) return;
+        mapIO.disconnect();
+        renderMap();
+      }, { rootMargin: '700px 0px' });
+      mapIO.observe(mapEl);
+    } else {
+      renderMap();
+    }
+  }
 })();
 </script>
 
