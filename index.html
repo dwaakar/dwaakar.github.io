@@ -6,10 +6,7 @@
   <title>Diwakar Adhikari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap"></noscript>
-  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
   <style>
     :root{--bg:#f7f5f0;--bg2:#eeeae2;--surface:#fff;--border:#ddd9d0;--ink:#1a1814;--ink2:#5a5650;--accent:#2d6a4f;--accent2:#40916c;--gold:#b7832a;--tag-bg:#e8f5ee;--tag-ink:#1b4332;--radius:10px;--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 40px rgba(0,0,0,.12);--nav-h:64px;--t:0.3s cubic-bezier(.4,0,.2,1)}
     [data-theme="dark"]{--bg:#111410;--bg2:#1a1d17;--surface:#20241e;--border:#2e332b;--ink:#e8e4dc;--ink2:#9a9890;--accent:#52b788;--accent2:#74c69d;--gold:#d4a94a;--tag-bg:#1b3a2e;--tag-ink:#95d5b2}
@@ -281,94 +278,25 @@
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    /* Quirky milestone objects: the river carries a different object as
-       elevation changes. Each object is a real DOM element, not a transient
-       popup, so the interaction remains reliable on touch devices. */
-    .jrn-object{
-      position:absolute;transform:translate(-50%,-50%);
-      width:34px;height:34px;padding:0;border:0;background:transparent;
-      pointer-events:auto;cursor:pointer;z-index:9;
-      display:flex;align-items:center;justify-content:center;
-      border-radius:50%;
-      transition:transform .2s cubic-bezier(.2,.8,.2,1),filter .2s;
-    }
-    .jrn-object::before{
-      content:"";width:14px;height:14px;border-radius:50%;
-      background:var(--accent2);border:2px solid rgba(255,255,255,.9);
-      box-shadow:0 0 0 4px color-mix(in srgb,var(--accent2) 16%,transparent),
-                 0 0 16px color-mix(in srgb,var(--accent2) 72%,transparent);
-      animation:jrnGlow 1.8s ease-in-out infinite;
-    }
-    .jrn-object:hover,.jrn-object.active{
-      transform:translate(-50%,-50%) scale(1.18);
-      filter:drop-shadow(0 0 8px color-mix(in srgb,var(--accent2) 70%,transparent));
-    }
-    .jrn-object-glyph{display:none}
-    @keyframes jrnGlow{0%,100%{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent2) 14%,transparent),0 0 12px color-mix(in srgb,var(--accent2) 55%,transparent)}50%{box-shadow:0 0 0 6px color-mix(in srgb,var(--accent2) 20%,transparent),0 0 24px color-mix(in srgb,var(--accent2) 80%,transparent)}}
-    .jrn-object-glacier .jrn-object-glyph{font-size:2rem}
-    .jrn-object-rock .jrn-object-glyph{font-size:2rem}
-    .jrn-object-landslide .jrn-object-glyph{font-size:1.85rem}
-    .jrn-object-driftwood .jrn-object-glyph{font-size:1.9rem}
-    .jrn-object-vegetation .jrn-object-glyph{font-size:1.85rem}
-    .jrn-object-bridge .jrn-object-glyph{font-size:1.75rem}
-    .jrn-object-mouth .jrn-object-glyph{font-size:1.9rem}
-
-    .jrn-object-card{
-      position:absolute;z-index:11;pointer-events:none;
-      width:min(520px,calc(100vw - 32px));
-      max-height:calc(100vh - 32px);overflow:hidden;
-      background:color-mix(in srgb,var(--surface) 96%,transparent);
-      border:1px solid var(--border);border-radius:12px;
-      padding:.85rem 1rem .9rem;
-      box-shadow:0 10px 28px rgba(0,0,0,.13);
-      backdrop-filter:blur(8px);
-      opacity:0;transform:translateY(4px) scale(.98);
-      transform-origin:left center;
-      transition:opacity .18s,transform .18s,box-shadow .18s;
-    }
-    .jrn-object-card.open{
-      opacity:1;transform:translateY(0) scale(1);
-      box-shadow:0 12px 34px rgba(0,0,0,.17);
-    }
-    .jrn-object-card.open::after{
-      content:"";position:absolute;top:50%;height:2px;
-      width:var(--jrn-line,34px);
-      background:linear-gradient(90deg,color-mix(in srgb,var(--accent2) 78%,transparent),color-mix(in srgb,var(--accent2) 18%,transparent));
-      transform:translateY(-50%);transform-origin:left center;pointer-events:none;z-index:-1;
-      box-shadow:0 0 5px color-mix(in srgb,var(--accent2) 35%,transparent);
-    }
-    .jrn-object-card[data-side="left"]::after{left:100%;transform:translateY(-50%) scaleX(-1);transform-origin:left center}
-    .jrn-object-card[data-side="right"]::after{left:-34px}
-    .jrn-object-card-kicker{
-      font-family:'JetBrains Mono',monospace;font-size:.58rem;
-      color:var(--accent);letter-spacing:.1em;text-transform:uppercase;
-      margin-bottom:.2rem;
-    }
-    .jrn-object-card-date{
-      font-size:.68rem;color:var(--ink2);opacity:.8;margin-bottom:.16rem;
-    }
-    .jrn-object-card-title{
-      font-weight:700;font-size:.84rem;color:var(--ink);
-      line-height:1.3;margin-bottom:.25rem;
-    }
-    .jrn-object-card-desc{
-      font-size:.73rem;color:var(--ink2);line-height:1.48;
-    }
-    .jrn-object-card::before{
-      content:"";position:absolute;left:-7px;top:15px;width:12px;height:12px;
-      background:color-mix(in srgb,var(--surface) 94%,transparent);
-      border-left:1px solid var(--border);border-bottom:1px solid var(--border);
-      transform:rotate(45deg);
-    }
-    .jrn-object-card.closed{
-      display:none;
-    }
-    @media(max-width:700px){
-      .jrn-object-card{width:min(230px,calc(100vw - 42px))}
-      .jrn-object{width:40px;height:40px}
-      .jrn-object-glyph{font-size:1.55rem!important}
-    }
-
+    .jrn-milestone-dot{position:absolute;width:13px;height:13px;padding:0;border-radius:50%;transform:translate(-50%,-50%);background:var(--surface);border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.16);pointer-events:auto;transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
+    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%) scale(1.28);background:var(--accent);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 12px rgba(0,0,0,.18)}
+    .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:10px;padding:.75rem .95rem;width:200px;
+      box-shadow:0 8px 32px rgba(0,0,0,.14);
+      opacity:0;transition:opacity .15s;font-size:.8rem}
+    .jrn-popup.show{opacity:1}
+    .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
+      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
+    .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
+    .jrn-popup-title{font-weight:700;font-size:.85rem;color:var(--ink);
+      line-height:1.3;margin-bottom:.25rem}
+    .jrn-popup-desc{font-size:.75rem;color:var(--ink2);line-height:1.5}
+    .jrn-popup-badge{display:inline-block;margin-top:.4rem;padding:.12rem .5rem;
+      border-radius:6px;font-size:.62rem;font-weight:600;letter-spacing:.06em;
+      background:var(--accent);color:#fff;opacity:.85}
+    .jrn-popup-badge.jrn-minor-badge{background:var(--ink2);opacity:.55}
     @media(prefers-reduced-motion:reduce){
       .jrn-body{transition:none}
       .jrn-toggle-icon{transition:none}
@@ -597,7 +525,7 @@
       <!-- Layer 2: Flow particles, redrawn every frame -->
       <canvas id="jrn-river" class="jrn-layer"></canvas>
 
-      <!-- Layer 3: CMS milestones represented by quirky river objects + persistent cards -->
+      <!-- Layer 3: CMS milestone anchors on the mainstem + expandable cards -->
       <div id="jrn-milestones" class="jrn-layer"></div>
 
     </div>
@@ -606,6 +534,8 @@
 </section>
 
 <!-- NEPAL MAP (Leaflet + OpenStreetMap) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <section id="nepal-map">
   <div class="section-header reveal">
     <h2 class="section-title">Field Presence</h2>
@@ -741,6 +671,7 @@
   <div class="lb-caption" id="lb-caption"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
 // ── HELPERS ──────────────────────────────────────────────────
 function parseFM(text) {
@@ -1172,10 +1103,7 @@ function openModal(cfg) {
   // Other actions at bottom
   let btns = '';
   if (show('showReport') && cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
-  if (cfg.link) {
-    const isFeature = cfg.pageType==='publication' && /feature|article/i.test(String(cfg.category||''));
-    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank" rel="noopener">↗ ${cfg.pageType==='publication' ? (isFeature?'Link':'DOI') : 'GitHub'}</a>`;
-  }
+  if (cfg.link) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
   const actEl = document.getElementById('modal-actions');
   actEl.innerHTML = btns;
   actEl.style.display = btns ? 'flex' : 'none';
@@ -1305,8 +1233,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   }
 
   // ── JOURNEY / RIVER TIMELINE ─────────────────────────────
-  // Every visible piece of the Journey section is CMS-driven: the
-  // milestones themselves (type/title/date/description) and the
+  // Milestone content is CMS-driven; elevation controls placement on
+  // the mainstem. Tributaries are fixed visual geometry in the Journey.
   // surrounding labels. Old field names (year/sub/detail) are kept as
   // fallbacks so existing CMS entries keep working.
   document.getElementById('jrn-toggle-label-text').textContent = safe(s.journeyLabel || 'Explore My Journey');
@@ -1319,11 +1247,11 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   if (s.milestones && s.milestones.length) {
     window._timelineMilestones = s.milestones.map(m => ({
-      type:        (m.type === 'major') ? 'major' : 'minor',
       title:       m.title || '',
       date:        m.date  || m.year   || '',
       description: m.description || m.detail || m.sub || '',
-      elevation:   m.elevation ? +m.elevation : null, // metres; null = auto-place
+      elevation:   m.elevation !== undefined && m.elevation !== ''
+        ? +m.elevation : null,
     }));
     // Rebuild the river network with CMS milestones
     if (window._buildRoad) window._buildRoad();
@@ -1525,11 +1453,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // Publications list
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    const isFeature = /feature|article/i.test(String(p.category||'')) || /feature/i.test(String(p.type||''));
-    const resourceUrl = isFeature ? (p.link || '') : (p.doi || '');
-    const resourceLabel = isFeature ? 'Link' : 'DOI';
-    const resourceClass = isFeature ? 'pub-more' : 'pub-doi';
-    const doiHtml=resourceUrl ? `<a class="${resourceClass}" href="${resourceUrl}" target="_blank" rel="noopener">↗ ${resourceLabel}</a>` : '';
+    const doiHtml=p.doi?`<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>`:'';
     const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
     div.className='pub-card reveal';
@@ -1545,7 +1469,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
         shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
-        link:p.doi||p.link||'', category:p.category||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
+        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
         vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
         fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
       }));
@@ -1785,8 +1709,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   });
 
   // Reveal
-  document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
-  requestAnimationFrame(()=>document.getElementById('loading').classList.add('done'));
+  setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>observer.observe(el)),100);
+  document.getElementById('loading').classList.add('done');
 }
 
 // ── BOOT ─────────────────────────────────────────────────────
@@ -2002,7 +1926,6 @@ if (toggle && body) {
       if (hintEl) hintEl.textContent = hintEl.dataset.collapseText || 'Click to collapse';
       // Do not render from the collapsed state. The canvas dimensions are zero
       // until the browser has laid out the opened accordion.
-      startRiverAnimation();
       refreshJourneyAfterOpen();
       body.addEventListener('transitionend', function onEnd(e) {
         if (e.propertyName !== 'max-height') return;
@@ -2010,9 +1933,6 @@ if (toggle && body) {
         body.removeEventListener('transitionend', onEnd);
       });
     } else {
-      // Stop the particle loop while the Journey is collapsed. The static
-      // river/topography remain intact and will redraw when reopened.
-      stopRiverAnimation();
       // Lock in the current pixel height first so we can transition from it
       body.style.maxHeight = inner.scrollHeight + 'px';
       requestAnimationFrame(() => {
@@ -2288,9 +2208,10 @@ function buildHardTributaries(W,H){
 }
 
 // ── buildLayout ──────────────────────────────────────────────────────────────
-// The river network is fixed; CMS milestones are represented separately as
-// clickable anchors on the mainstem.  Their elevation controls only vertical
-// placement of the anchor, never tributary generation.
+// The river network is fixed: mainstem + hard-coded tributaries.
+// CMS milestones are separate clickable anchors on the mainstem.
+// Elevation controls only milestone placement; CMS never creates or
+// classifies tributaries.
 function buildLayout(W,H,milestones){
   buildNoiseGrid(W,H);
   const confluences=buildHardTributaries(W,H);
@@ -3075,31 +2996,20 @@ let sourceParticles = [];
 let riverPath = [];
 let riverParticlePath = [];
 let waterRipples = [];
+let milestonePositions = [];
+let milestoneRipples   = [];
 
 const MAX_PARTICLES = 68;
 const MAX_RIPPLES = 6;
 let braidParticleCursor = 0;
 let braidActiveCounts = [];
-let riverAnimationActive = false;
-let riverAnimationFrame = 0;
 
 function initRiver() {
   riverCanvas = document.getElementById('jrn-river');
   if (!riverCanvas) return;
   riverCtx = riverCanvas.getContext('2d');
   resizeRiver();
-}
-
-function startRiverAnimation(){
-  if (riverAnimationActive || !riverCtx) return;
-  riverAnimationActive = true;
-  riverAnimationFrame = requestAnimationFrame(tickRiver);
-}
-
-function stopRiverAnimation(){
-  riverAnimationActive = false;
-  if (riverAnimationFrame) cancelAnimationFrame(riverAnimationFrame);
-  riverAnimationFrame = 0;
+  tickRiver();
 }
 
 function resizeRiver() {
@@ -3289,10 +3199,96 @@ function drawWaterRipples() {
   });
 }
 
+function milestoneGlowColor(elevation) {
+  const e = (elevation != null && elevation !== '') ? +elevation : -1;
+  if (e >= 5750) return [160, 220, 255];
+  if (e >= 4750) return [200, 180, 140];
+  if (e >= 3500) return [180, 140, 100];
+  if (e >= 2250) return [160, 200, 120];
+  if (e >= 1000) return [100, 200, 140];
+  if (e >=  250) return [120, 180, 220];
+  return                [80,  160, 230];
+}
+
+function objectForElev(elev) {
+  const e = (elev != null && elev !== '') ? +elev : -1;
+  if (e >= 5750) return { icon: '🧊', label: 'Glacier' };
+  if (e >= 4750) return { icon: '🪨', label: 'Huge Rock' };
+  if (e >= 3500) return { icon: '⛰️',  label: 'Landslide' };
+  if (e >= 2250) return { icon: '🪵', label: 'Driftwood' };
+  if (e >= 1000) return { icon: '🌿', label: 'Riparian Vegetation' };
+  if (e >=  250) return { icon: '🌉', label: 'River Crossing' };
+  return { icon: '🌊', label: 'River Mouth' };
+}
+
+function spawnMilestoneRipple(mp) {
+  milestoneRipples.push({
+    x: mp.x, y: mp.y, r: 0,
+    maxR: mp.size * 5.5,
+    alpha: 0.80,
+    speed: 0.40 + Math.random() * 0.20,
+    col: milestoneGlowColor(mp.elevation),
+  });
+}
+
+function drawMilestoneGlows() {
+  if (!milestonePositions.length) return;
+  const now = performance.now();
+
+  milestonePositions.forEach((mp, i) => {
+    if (!mp.nextRipple) mp.nextRipple = now + i * 640 + Math.random() * 500;
+    if (now >= mp.nextRipple) {
+      spawnMilestoneRipple(mp);
+      setTimeout(() => spawnMilestoneRipple(mp), 280);
+      mp.nextRipple = now + 1900 + Math.random() * 1400;
+    }
+  });
+
+  milestoneRipples = milestoneRipples.filter(rp => {
+    rp.r += rp.speed; rp.alpha *= 0.974;
+    if (rp.alpha < 0.012 || rp.r > rp.maxR) return false;
+    const progress = rp.r / rp.maxR;
+    const env = progress < 0.12 ? progress / 0.12 : 1 - (progress - 0.12) / 0.88;
+    const a = Math.max(0, rp.alpha * env);
+    const [r, g, b] = rp.col;
+    riverCtx.beginPath();
+    riverCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
+    riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.75).toFixed(3)})`;
+    riverCtx.lineWidth = Math.max(0.4, 1.8 * (1 - progress * 0.7));
+    riverCtx.stroke();
+    if (rp.r > 5) {
+      riverCtx.beginPath();
+      riverCtx.arc(rp.x, rp.y, rp.r * 0.65, 0, Math.PI * 2);
+      riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.30).toFixed(3)})`;
+      riverCtx.lineWidth = Math.max(0.3, 0.9 * (1 - progress));
+      riverCtx.stroke();
+    }
+    return true;
+  });
+
+  milestonePositions.forEach(mp => {
+    const [r, g, b] = milestoneGlowColor(mp.elevation);
+    const grad = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, mp.size * 3.5);
+    grad.addColorStop(0,    `rgba(${r},${g},${b},0.40)`);
+    grad.addColorStop(0.45, `rgba(${r},${g},${b},0.12)`);
+    grad.addColorStop(1,    `rgba(${r},${g},${b},0)`);
+    riverCtx.beginPath();
+    riverCtx.arc(mp.x, mp.y, mp.size * 3.5, 0, Math.PI * 2);
+    riverCtx.fillStyle = grad; riverCtx.fill();
+    riverCtx.save();
+    riverCtx.shadowBlur = 12;
+    riverCtx.shadowColor = `rgba(${r},${g},${b},0.95)`;
+    riverCtx.beginPath();
+    riverCtx.arc(mp.x, mp.y, mp.size, 0, Math.PI * 2);
+    riverCtx.fillStyle = `rgba(${r},${g},${b},0.95)`;
+    riverCtx.fill();
+    riverCtx.restore();
+  });
+}
+
 function tickRiver() {
-  if (!riverAnimationActive) return;
   if (!riverCtx || !riverW || !riverH) {
-    riverAnimationFrame = requestAnimationFrame(tickRiver);
+    requestAnimationFrame(tickRiver);
     return;
   }
   riverCtx.clearRect(0, 0, riverW, riverH);
@@ -3380,6 +3376,7 @@ function tickRiver() {
     });
 
     drawWaterRipples();
+    drawMilestoneGlows();
 
     sourceParticles = sourceParticles.filter(p => {
       const norm = p.pos / Math.max(1, riverPath.length - 1);
@@ -3400,7 +3397,7 @@ function tickRiver() {
       return p.alpha > 0.04;
     });
   }
-  riverAnimationFrame = requestAnimationFrame(tickRiver);
+  requestAnimationFrame(tickRiver);
 }
 
 window.addEventListener('resize', resizeRiver);
@@ -3410,18 +3407,6 @@ window.addEventListener('resize', resizeRiver);
 // MILESTONE ANCHORS + CARDS (CMS-driven)
 // ═══════════════════════════════════════
 let milestoneObserver = null;
-
-function milestoneObjectForElevation(elevation){
-  const e = Number(elevation);
-  if (!Number.isFinite(e)) return { cls:'jrn-object-rock', glyph:'🪨', label:'River stone' };
-  if (e >= 5750) return { cls:'jrn-object-glacier', glyph:'🧊', label:'Glacier' };
-  if (e >= 4750) return { cls:'jrn-object-rock', glyph:'🪨', label:'Huge rock' };
-  if (e >= 3500) return { cls:'jrn-object-landslide', glyph:'⛰️', label:'Landslide' };
-  if (e >= 2250) return { cls:'jrn-object-driftwood', glyph:'🪵', label:'Driftwood' };
-  if (e >= 1000) return { cls:'jrn-object-vegetation', glyph:'🌿', label:'Riparian life' };
-  if (e >= 250)  return { cls:'jrn-object-bridge', glyph:'🌉', label:'River crossing' };
-  return { cls:'jrn-object-mouth', glyph:'🌊', label:'River mouth' };
-}
 
 function buildMilestones() {
   const wrap = document.getElementById('jrn-milestones');
@@ -3438,100 +3423,115 @@ function buildMilestones() {
   drawTopo();
   drawRiverBase();
 
+  // Populate milestone glow positions for tickRiver
+  milestonePositions = (layout ? layout.milestoneAnchors : []).map(anchor => ({
+    x: anchor.x, y: anchor.y,
+    elevation: anchor.milestone ? anchor.milestone.elevation : null,
+    size: 2.4, nextRipple: 0,
+  }));
+  milestoneRipples = [];
+
   if (!layout || !layout.milestoneAnchors.length) return;
 
-  layout.milestoneAnchors.forEach((anchor, index)=>{
-    const m = anchor.milestone || {};
-    const obj = milestoneObjectForElevation(m.elevation);
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = `jrn-object ${obj.cls}`;
-    button.style.left = anchor.x + 'px';
-    button.style.top = anchor.y + 'px';
-    button.setAttribute('aria-label',
-      `${obj.label}${m.elevation ? ` at ${m.elevation} metres` : ''}${m.title ? `: ${m.title}` : ''}`);
+  // ── SVG connector layer ──────────────────────────────────────────────
+  const W = inner.clientWidth || 800, H = parseInt(inner.style.height) || 680;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:7;opacity:0;transition:opacity .2s';
+  wrap.appendChild(svg);
 
-    const glyph = document.createElement('span');
-    glyph.className = 'jrn-object-glyph';
-    glyph.textContent = obj.glyph;
-    glyph.setAttribute('aria-hidden','true');
-    button.appendChild(glyph);
+  // ── Dialogue panel ────────────────────────────────────────────────────
+  const dlg = document.createElement('div');
+  dlg.style.cssText=`position:absolute;z-index:8;background:var(--surface);
+    border:1.5px solid var(--border);border-radius:12px;padding:.9rem 1.05rem;
+    box-shadow:0 8px 32px rgba(0,0,0,.18);opacity:0;transition:opacity .18s;
+    pointer-events:none;font-size:.8rem;line-height:1.5;word-break:break-word`;
+  wrap.appendChild(dlg);
 
-    // The dialog/card is created immediately and remains in the DOM.
-    const card = document.createElement('div');
-    card.className = 'jrn-object-card closed';
-    card.setAttribute('role','dialog');
-    card.setAttribute('aria-label', m.title || obj.label);
-    card.innerHTML = [
-      m.elevation !== undefined && m.elevation !== null && m.elevation !== ''
-        ? `<div class="jrn-object-card-kicker">${esc(m.elevation)} m · ${esc(obj.label)}</div>` : '',
-      m.date ? `<div class="jrn-object-card-date">${esc(m.date)}</div>` : '',
-      m.title ? `<div class="jrn-object-card-title">${esc(m.title)}</div>` : '',
-      m.description ? `<div class="jrn-object-card-desc">${esc(m.description)}</div>` : ''
+  let activeBtn = null;
+
+  function closeDlg() {
+    svg.style.opacity='0'; dlg.style.opacity='0'; dlg.style.pointerEvents='none';
+    if(activeBtn){ activeBtn.style.outline=''; activeBtn=null; }
+  }
+
+  function openDlg(anchor, btn) {
+    if(activeBtn===btn){ closeDlg(); return; }
+    if(activeBtn) activeBtn.style.outline='';
+    activeBtn=btn;
+
+    const m = anchor.milestone||{};
+    const obj = objectForElev(m.elevation);
+    const [r,g,b] = milestoneGlowColor(m.elevation);
+    const col = `rgb(${r},${g},${b})`;
+    const elev = (m.elevation!=null&&m.elevation!=='') ? `${esc(String(m.elevation))} m` : '';
+
+    dlg.innerHTML=[
+      `<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
+         <span style="font-size:1.15rem">${obj.icon}</span>
+         <strong style="color:var(--ink);font-size:.84rem">${esc(m.title||obj.label)}</strong>
+       </div>`,
+      elev   ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${col};letter-spacing:.07em;margin-bottom:.22rem">${elev}</div>` : '',
+      m.date ? `<div style="font-size:.68rem;color:var(--ink2);margin-bottom:.22rem">${esc(m.date)}</div>` : '',
+      m.description ? `<div style="font-size:.74rem;color:var(--ink2);line-height:1.55">${esc(m.description)}</div>` : '',
     ].join('');
 
-    // Put the dialogue fully on-screen and connect it to the glowing particle.
-    // The card is sized against the viewport so it never forces page scrolling.
-    const cardWidth = Math.min(520, Math.max(230, inner.clientWidth - 32));
-    card.style.width = cardWidth + 'px';
-    const leftSide = anchor.x > inner.clientWidth * .55;
-    const left = leftSide
-      ? Math.max(12, anchor.x - cardWidth - 34)
-      : Math.min(Math.max(12, inner.clientWidth - cardWidth - 12), anchor.x + 34);
-    card.style.left = left + 'px';
-    card.style.top = '12px';
-    card.dataset.side = leftSide ? 'left' : 'right';
+    const PW = Math.min(240, Math.floor(W*0.42));
+    dlg.style.width=PW+'px'; dlg.style.display='block';
+    const PH = dlg.scrollHeight||110;
+    const rx=anchor.x, ry=anchor.y;
+    const side = rx > W*0.55 ? -1 : 1;
+    const LINE = 52, MARGIN = 8;
+    let dx = side===1 ? rx+LINE : rx-LINE-PW;
+    let dy = ry - Math.round(PH/2);
+    dx = Math.max(MARGIN, Math.min(W-PW-MARGIN, dx));
+    dy = Math.max(MARGIN, Math.min(H-PH-MARGIN, dy));
+    dlg.style.left=dx+'px'; dlg.style.top=dy+'px'; dlg.style.pointerEvents='auto';
 
-    const toggle = (event)=>{
-      event.stopPropagation();
-      const wasOpen = card.classList.contains('open');
-      wrap.querySelectorAll('.jrn-object-card.open').forEach(c=>{c.classList.remove('open');c.classList.add('closed');});
-      wrap.querySelectorAll('.jrn-object.active').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-expanded','false');});
-      if (!wasOpen) {
-        card.classList.remove('closed');
-        card.classList.add('open');
-        button.classList.add('active');
-        button.setAttribute('aria-expanded','true');
-        // Reposition after the browser knows the real dialogue height.
-        requestAnimationFrame(()=>{
-          const rect = card.getBoundingClientRect();
-          const innerRect = inner.getBoundingClientRect();
-          const availableH = Math.max(80, Math.min(window.innerHeight - 32, innerRect.height - 24));
-          card.style.maxHeight = availableH + 'px';
-          const localTop = Math.max(12, Math.min(anchor.y - rect.height/2, inner.clientHeight - rect.height - 12));
-          const localLeft = leftSide
-            ? Math.max(12, anchor.x - rect.width - 34)
-            : Math.min(inner.clientWidth - rect.width - 12, anchor.x + 34);
-          card.style.top = localTop + 'px';
-          card.style.left = localLeft + 'px';
-          const lineLength = leftSide
-            ? Math.max(20, anchor.x - (localLeft + rect.width))
-            : Math.max(20, localLeft - anchor.x);
-          card.style.setProperty('--jrn-line', lineLength + 'px');
-        });
-      }
-    };
+    const cardEdgeX = side===1 ? dx : dx+PW;
+    const cardEdgeY = dy + Math.round(PH/2);
+    const elbowX = side===1 ? rx+LINE*0.55 : rx-LINE*0.55;
 
-    button.setAttribute('aria-expanded','false');
-    button.addEventListener('click', toggle);
-    card.addEventListener('click', e=>e.stopPropagation());
+    svg.innerHTML='';
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',`M${rx},${ry} L${elbowX},${ry} L${elbowX},${cardEdgeY} L${cardEdgeX},${cardEdgeY}`);
+    path.setAttribute('stroke',col); path.setAttribute('stroke-width','1.5');
+    path.setAttribute('fill','none'); path.setAttribute('stroke-linecap','round');
+    path.setAttribute('stroke-linejoin','round');
+    const pLen = path.getTotalLength ? path.getTotalLength() : 120;
+    path.style.cssText=`stroke-dasharray:${pLen};stroke-dashoffset:${pLen};animation:jrnDrawLine .3s ease-out forwards`;
+    svg.appendChild(path);
 
-    wrap.appendChild(card);
-    wrap.appendChild(button);
+    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',rx); dot.setAttribute('cy',ry); dot.setAttribute('r','3.5');
+    dot.setAttribute('fill',col); svg.appendChild(dot);
+
+    const aw=6,ah=4,ax=cardEdgeX,ay=cardEdgeY;
+    const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',side===1
+      ? `${ax},${ay} ${ax-aw},${ay-ah} ${ax-aw},${ay+ah}`
+      : `${ax},${ay} ${ax+aw},${ay-ah} ${ax+aw},${ay+ah}`);
+    poly.setAttribute('fill',col); svg.appendChild(poly);
+
+    svg.style.opacity='1'; dlg.style.opacity='1';
+    btn.style.outline=`2px solid rgba(${r},${g},${b},0.5)`;
+  }
+
+  layout.milestoneAnchors.forEach(anchor=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.style.cssText=`position:absolute;width:34px;height:34px;padding:0;border:0;
+      border-radius:50%;background:transparent;cursor:pointer;z-index:9;
+      transform:translate(-50%,-50%);pointer-events:auto`;
+    b.style.left=anchor.x+'px'; b.style.top=anchor.y+'px';
+    b.setAttribute('aria-label',(anchor.milestone&&anchor.milestone.title)||'Milestone');
+    b.addEventListener('click',e=>{e.stopPropagation();openDlg(anchor,b);});
+    b.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();openDlg(anchor,b);},{passive:false});
+    wrap.appendChild(b);
   });
 
-  wrap.addEventListener('click', ()=>{
-    wrap.querySelectorAll('.jrn-object-card.open').forEach(c=>{
-      c.classList.remove('open');
-      c.classList.add('closed');
-    });
-    wrap.querySelectorAll('.jrn-object.active').forEach(b=>{
-      b.classList.remove('active');
-      b.setAttribute('aria-expanded','false');
-    });
-  }, { once:false });
+  inner.addEventListener('click',e=>{ if(!e.target.closest('button')) closeDlg(); });
 }
-
 
 // ═══════════════════════════════════════
 // SCROLL LINK
@@ -3574,17 +3574,9 @@ let enginesInitialised = false;
 function initEngines() {
   if (enginesInitialised) return;
   enginesInitialised = true;
-
-  // Initialize the actual Journey visualization layers.  These were
-  // accidentally omitted from the previous optimization pass, which left
-  // the canvases without rendering contexts and made the Journey disappear.
-  initTopo();
-  initRiverBase();
-  initRiver();
-
-  resizeTopo(); resizeRiverBase(); resizeRiver();
-  drawTopo();
-  buildMilestones();
+  // Don't call resizeTopo/buildMilestones here — the accordion body is still
+  // collapsed so all canvas dimensions are 0. refreshJourneyAfterOpen() handles
+  // the real sizing after the body is visible.
 }
 
 // Expose for renderSite to call after CMS milestones arrive
@@ -3592,9 +3584,13 @@ window._buildRoad = function() {
   if (enginesInitialised) { buildMilestones(); setOpenHeight(); }
 };
 
-// Keep the heavy Journey canvas engine lazy: initialize only when the user opens it.
+// Boot the static/background layers immediately. The Journey itself remains
+// collapsed, but its rendering engines are made ready before the user opens it.
 try {
-  // DOM/CMS setup only; canvas work is deferred to ensureJourneyReady().
+  initTopo();
+  initRiverBase();
+  initRiver();
+  initEngines();
 } catch (err) {
   console.error('[Journey] boot failed:', err);
 }
@@ -3602,8 +3598,13 @@ try {
 // Re-measure after fonts/layout settle; this also protects deployed builds where
 // CMS content arrives a little later than the first paint.
 window.addEventListener('load', () => {
-  // Only lightweight layout correction after load; Journey rendering stays lazy.
-  if (enginesInitialised) setOpenHeight();
+  try {
+    if (enginesInitialised) {
+      resizeTopo(); resizeRiverBase(); resizeRiver();
+      drawTopo();
+      setOpenHeight();
+    }
+  } catch (err) { console.error('[Journey] post-load resize failed:', err); }
 });
 
 })();
@@ -3715,22 +3716,8 @@ window.addEventListener('load', () => {
       .catch(e => console.warn('Map GeoJSON error:', e));
   };
 
-  // Render the map only when it is near the viewport. This avoids GeoJSON/tile
-  // work blocking the initial page load while preserving the map completely.
-  if (window._mapData) {
-    const mapEl = document.getElementById('leaflet-map');
-    const renderMap = () => window._renderLeafletMap(window._mapData);
-    if (mapEl && 'IntersectionObserver' in window) {
-      const mapIO = new IntersectionObserver(entries => {
-        if (!entries.some(e => e.isIntersecting)) return;
-        mapIO.disconnect();
-        renderMap();
-      }, { rootMargin: '700px 0px' });
-      mapIO.observe(mapEl);
-    } else {
-      renderMap();
-    }
-  }
+  // Run if data already set
+  if (window._mapData) window._renderLeafletMap(window._mapData);
 })();
 </script>
 
