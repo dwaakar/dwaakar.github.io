@@ -2307,7 +2307,7 @@ function initTopo() {
   topoCanvas = document.getElementById('jrn-topo');
   if (!topoCanvas) return;
   topoCtx = topoCanvas.getContext('2d');
-  window.addEventListener('resize', debounce(() => { resizeTopo(); drawTopo(); }, 200));
+  // Resize handled by centralised handleResize() below
 }
 
 function resizeTopo() {
@@ -2996,8 +2996,6 @@ let sourceParticles = [];
 let riverPath = [];
 let riverParticlePath = [];
 let waterRipples = [];
-let milestonePositions = [];
-let milestoneRipples   = [];
 
 const MAX_PARTICLES = 68;
 const MAX_RIPPLES = 6;
@@ -3199,88 +3197,112 @@ function drawWaterRipples() {
   });
 }
 
+let milestonePositions = [];
+let milestoneRipples   = [];
+
+// ── Elevation → theme-aware glow colour ──────────────────────────────────
 function milestoneGlowColor(elevation) {
-  const e = (elevation != null && elevation !== '') ? +elevation : -1;
-  if (e >= 5750) return [160, 220, 255];
-  if (e >= 4750) return [200, 180, 140];
-  if (e >= 3500) return [180, 140, 100];
-  if (e >= 2250) return [160, 200, 120];
-  if (e >= 1000) return [100, 200, 140];
-  if (e >=  250) return [120, 180, 220];
-  return                [80,  160, 230];
+  const e    = (elevation != null && elevation !== '') ? +elevation : -1;
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (e >= 5750) return dark ? [160,225,255] : [30,130,200];
+  if (e >= 4750) return dark ? [210,185,145] : [140,95,40];
+  if (e >= 3500) return dark ? [195,155,110] : [120,75,20];
+  if (e >= 2250) return dark ? [165,210,125] : [60,140,50];
+  if (e >= 1000) return dark ? [100,210,150] : [20,130,80];
+  if (e >=  250) return dark ? [120,185,230] : [20,90,170];
+  return               dark ? [80, 165,240]  : [10,70,160];
 }
 
+// ── Elevation → object emoji ──────────────────────────────────────────────
 function objectForElev(elev) {
   const e = (elev != null && elev !== '') ? +elev : -1;
-  if (e >= 5750) return { icon: '🧊', label: 'Glacier' };
-  if (e >= 4750) return { icon: '🪨', label: 'Huge Rock' };
-  if (e >= 3500) return { icon: '⛰️',  label: 'Landslide' };
-  if (e >= 2250) return { icon: '🪵', label: 'Driftwood' };
-  if (e >= 1000) return { icon: '🌿', label: 'Riparian Vegetation' };
-  if (e >=  250) return { icon: '🌉', label: 'River Crossing' };
-  return { icon: '🌊', label: 'River Mouth' };
+  if (e >= 5750) return { icon:'🧊', label:'Glacier' };
+  if (e >= 4750) return { icon:'🪨', label:'Huge Rock' };
+  if (e >= 3500) return { icon:'⛰️',  label:'Landslide' };
+  if (e >= 2250) return { icon:'🪵', label:'Driftwood' };
+  if (e >= 1000) return { icon:'🌿', label:'Riparian Vegetation' };
+  if (e >=  250) return { icon:'🌉', label:'River Crossing' };
+  return { icon:'🌊', label:'River Mouth' };
 }
 
+// ── Spawn one expanding ring from a milestone position ────────────────────
 function spawnMilestoneRipple(mp) {
   milestoneRipples.push({
-    x: mp.x, y: mp.y, r: 0,
+    x:mp.x, y:mp.y, r:0,
     maxR: mp.size * 5.5,
-    alpha: 0.80,
-    speed: 0.40 + Math.random() * 0.20,
+    alpha: 0.82,
+    speed: 0.38 + Math.random() * 0.22,
     col: milestoneGlowColor(mp.elevation),
   });
 }
 
+// ── Draw all glow rings + centre dots — called every frame from tickRiver ─
 function drawMilestoneGlows() {
-  if (!milestonePositions.length) return;
-  const now = performance.now();
+  if (!milestonePositions.length || !riverCtx) return;
+  const now  = performance.now();
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
 
+  // Spawn new rings on staggered per-milestone timers
   milestonePositions.forEach((mp, i) => {
-    if (!mp.nextRipple) mp.nextRipple = now + i * 640 + Math.random() * 500;
+    if (!mp.nextRipple) mp.nextRipple = now + i * 680 + Math.random() * 500;
     if (now >= mp.nextRipple) {
       spawnMilestoneRipple(mp);
-      setTimeout(() => spawnMilestoneRipple(mp), 280);
+      setTimeout(() => spawnMilestoneRipple(mp), 290); // double-pulse
       mp.nextRipple = now + 1900 + Math.random() * 1400;
     }
   });
 
+  // Advance + draw expanding rings
   milestoneRipples = milestoneRipples.filter(rp => {
-    rp.r += rp.speed; rp.alpha *= 0.974;
+    rp.r    += rp.speed;
+    rp.alpha *= 0.974;
     if (rp.alpha < 0.012 || rp.r > rp.maxR) return false;
+
     const progress = rp.r / rp.maxR;
-    const env = progress < 0.12 ? progress / 0.12 : 1 - (progress - 0.12) / 0.88;
+    const env = progress < 0.12
+      ? progress / 0.12
+      : 1 - (progress - 0.12) / 0.88;
     const a = Math.max(0, rp.alpha * env);
-    const [r, g, b] = rp.col;
+    const [r,g,b] = rp.col;
+
     riverCtx.beginPath();
     riverCtx.arc(rp.x, rp.y, rp.r, 0, Math.PI * 2);
-    riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.75).toFixed(3)})`;
-    riverCtx.lineWidth = Math.max(0.4, 1.8 * (1 - progress * 0.7));
+    riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a*0.75).toFixed(3)})`;
+    riverCtx.lineWidth   = Math.max(0.4, 1.8 * (1 - progress * 0.7));
     riverCtx.stroke();
+
     if (rp.r > 5) {
       riverCtx.beginPath();
-      riverCtx.arc(rp.x, rp.y, rp.r * 0.65, 0, Math.PI * 2);
-      riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a * 0.30).toFixed(3)})`;
-      riverCtx.lineWidth = Math.max(0.3, 0.9 * (1 - progress));
+      riverCtx.arc(rp.x, rp.y, rp.r * 0.62, 0, Math.PI * 2);
+      riverCtx.strokeStyle = `rgba(${r},${g},${b},${(a*0.28).toFixed(3)})`;
+      riverCtx.lineWidth   = Math.max(0.3, 0.9 * (1 - progress));
       riverCtx.stroke();
     }
     return true;
   });
 
+  // Stationary glow dot for each milestone
   milestonePositions.forEach(mp => {
-    const [r, g, b] = milestoneGlowColor(mp.elevation);
-    const grad = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, mp.size * 3.5);
-    grad.addColorStop(0,    `rgba(${r},${g},${b},0.40)`);
-    grad.addColorStop(0.45, `rgba(${r},${g},${b},0.12)`);
+    const [r,g,b] = milestoneGlowColor(mp.elevation);
+
+    // Soft ambient halo — wider in dark mode
+    const haloR = mp.size * (dark ? 4.0 : 2.8);
+    const grad  = riverCtx.createRadialGradient(mp.x, mp.y, 0, mp.x, mp.y, haloR);
+    grad.addColorStop(0,    `rgba(${r},${g},${b},${dark?0.45:0.30})`);
+    grad.addColorStop(0.45, `rgba(${r},${g},${b},${dark?0.15:0.08})`);
     grad.addColorStop(1,    `rgba(${r},${g},${b},0)`);
     riverCtx.beginPath();
-    riverCtx.arc(mp.x, mp.y, mp.size * 3.5, 0, Math.PI * 2);
-    riverCtx.fillStyle = grad; riverCtx.fill();
+    riverCtx.arc(mp.x, mp.y, haloR, 0, Math.PI * 2);
+    riverCtx.fillStyle = grad;
+    riverCtx.fill();
+
+    // Bright core dot
     riverCtx.save();
-    riverCtx.shadowBlur = 12;
-    riverCtx.shadowColor = `rgba(${r},${g},${b},0.95)`;
+    riverCtx.shadowBlur  = dark ? 14 : 7;
+    riverCtx.shadowColor = `rgba(${r},${g},${b},${dark?0.95:0.75})`;
     riverCtx.beginPath();
     riverCtx.arc(mp.x, mp.y, mp.size, 0, Math.PI * 2);
-    riverCtx.fillStyle = `rgba(${r},${g},${b},0.95)`;
+    riverCtx.fillStyle = `rgba(${r},${g},${b},${dark?0.95:0.85})`;
     riverCtx.fill();
     riverCtx.restore();
   });
@@ -3400,7 +3422,7 @@ function tickRiver() {
   requestAnimationFrame(tickRiver);
 }
 
-window.addEventListener('resize', resizeRiver);
+// Resize handled by centralised handleResize() below
 
 
 // ═══════════════════════════════════════
@@ -3420,117 +3442,156 @@ function buildMilestones() {
 
   resizeTopo(); resizeRiverBase(); resizeRiver();
   layout = buildLayout(topoW || inner.clientWidth, FIXED_H, MILESTONES);
-  drawTopo();
-  drawRiverBase();
+  drawTopo(); drawRiverBase();
 
-  // Populate milestone glow positions for tickRiver
-  milestonePositions = (layout ? layout.milestoneAnchors : []).map(anchor => ({
-    x: anchor.x, y: anchor.y,
-    elevation: anchor.milestone ? anchor.milestone.elevation : null,
+  // Update milestone glow positions for tickRiver
+  milestonePositions = (layout ? layout.milestoneAnchors : []).map(a => ({
+    x: a.x, y: a.y,
+    elevation: a.milestone ? a.milestone.elevation : null,
     size: 2.4, nextRipple: 0,
   }));
   milestoneRipples = [];
 
   if (!layout || !layout.milestoneAnchors.length) return;
 
-  // ── SVG connector layer ──────────────────────────────────────────────
-  const W = inner.clientWidth || 800, H = parseInt(inner.style.height) || 680;
+  const W = inner.clientWidth || 800;
+  const H = FIXED_H;
+
+  // ── SVG connector layer ────────────────────────────────────────────────
   const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
   svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  svg.style.cssText='position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:7;opacity:0;transition:opacity .2s';
+  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;' +
+    'pointer-events:none;overflow:visible;z-index:7;opacity:0;transition:opacity .2s';
   wrap.appendChild(svg);
 
   // ── Dialogue panel ────────────────────────────────────────────────────
   const dlg = document.createElement('div');
-  dlg.style.cssText=`position:absolute;z-index:8;background:var(--surface);
-    border:1.5px solid var(--border);border-radius:12px;padding:.9rem 1.05rem;
-    box-shadow:0 8px 32px rgba(0,0,0,.18);opacity:0;transition:opacity .18s;
-    pointer-events:none;font-size:.8rem;line-height:1.5;word-break:break-word`;
+  dlg.style.cssText = 'position:absolute;z-index:8;background:var(--surface);' +
+    'border:1.5px solid var(--border);border-radius:12px;padding:.9rem 1.05rem;' +
+    'box-shadow:0 8px 32px rgba(0,0,0,.18);opacity:0;transition:opacity .18s;' +
+    'pointer-events:none;font-size:.8rem;line-height:1.5;word-break:break-word';
   wrap.appendChild(dlg);
 
   let activeBtn = null;
 
   function closeDlg() {
-    svg.style.opacity='0'; dlg.style.opacity='0'; dlg.style.pointerEvents='none';
-    if(activeBtn){ activeBtn.style.outline=''; activeBtn=null; }
+    svg.style.opacity = '0';
+    dlg.style.opacity = '0';
+    dlg.style.pointerEvents = 'none';
+    if (activeBtn) { activeBtn.style.outline = ''; activeBtn = null; }
   }
 
   function openDlg(anchor, btn) {
-    if(activeBtn===btn){ closeDlg(); return; }
-    if(activeBtn) activeBtn.style.outline='';
-    activeBtn=btn;
+    if (activeBtn === btn) { closeDlg(); return; }
+    if (activeBtn) activeBtn.style.outline = '';
+    activeBtn = btn;
 
-    const m = anchor.milestone||{};
-    const obj = objectForElev(m.elevation);
-    const [r,g,b] = milestoneGlowColor(m.elevation);
-    const col = `rgb(${r},${g},${b})`;
-    const elev = (m.elevation!=null&&m.elevation!=='') ? `${esc(String(m.elevation))} m` : '';
+    const m = anchor.milestone || {};
+    const obj = (typeof objectForElev === 'function') ? objectForElev(m.elevation) : {icon:'📍',label:'Milestone'};
+    const [r,g,b] = (typeof milestoneGlowColor === 'function') ? milestoneGlowColor(m.elevation) : [120,180,220];
+    const isDk = document.documentElement.getAttribute('data-theme') === 'dark';
+    // Boost brightness in light mode so line is visible on white bg
+    const lineCol = isDk ? `rgb(${r},${g},${b})` : `rgb(${Math.max(0,r-40)},${Math.max(0,g-40)},${Math.max(0,b-40)})`;
+    const elev = (m.elevation != null && m.elevation !== '') ? `${esc(String(m.elevation))}\u202fm` : '';
 
-    dlg.innerHTML=[
-      `<div style="display:flex;align-items:center;gap:.4rem;margin-bottom:.4rem">
+    dlg.innerHTML = [
+      `<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.42rem">
          <span style="font-size:1.15rem">${obj.icon}</span>
-         <strong style="color:var(--ink);font-size:.84rem">${esc(m.title||obj.label)}</strong>
+         <strong style="color:var(--ink);font-size:.85rem">${esc(m.title || obj.label)}</strong>
        </div>`,
-      elev   ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${col};letter-spacing:.07em;margin-bottom:.22rem">${elev}</div>` : '',
+      elev   ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${lineCol};letter-spacing:.07em;margin-bottom:.22rem">${elev}</div>` : '',
       m.date ? `<div style="font-size:.68rem;color:var(--ink2);margin-bottom:.22rem">${esc(m.date)}</div>` : '',
       m.description ? `<div style="font-size:.74rem;color:var(--ink2);line-height:1.55">${esc(m.description)}</div>` : '',
     ].join('');
 
-    const PW = Math.min(240, Math.floor(W*0.42));
-    dlg.style.width=PW+'px'; dlg.style.display='block';
-    const PH = dlg.scrollHeight||110;
-    const rx=anchor.x, ry=anchor.y;
-    const side = rx > W*0.55 ? -1 : 1;
-    const LINE = 52, MARGIN = 8;
-    let dx = side===1 ? rx+LINE : rx-LINE-PW;
-    let dy = ry - Math.round(PH/2);
-    dx = Math.max(MARGIN, Math.min(W-PW-MARGIN, dx));
-    dy = Math.max(MARGIN, Math.min(H-PH-MARGIN, dy));
-    dlg.style.left=dx+'px'; dlg.style.top=dy+'px'; dlg.style.pointerEvents='auto';
+    // ── Position dialogue ─────────────────────────────────────────────
+    const PW = Math.min(240, Math.floor(W * 0.42));
+    dlg.style.width = PW + 'px';
+    dlg.style.display = 'block';
+    dlg.style.opacity = '0';
+    dlg.style.pointerEvents = 'auto';
+    const PH = dlg.scrollHeight || 110;
 
-    const cardEdgeX = side===1 ? dx : dx+PW;
-    const cardEdgeY = dy + Math.round(PH/2);
-    const elbowX = side===1 ? rx+LINE*0.55 : rx-LINE*0.55;
+    const rx = anchor.x, ry = anchor.y;
+    const side = rx > W * 0.55 ? -1 : 1;
+    const LINE = 55, MARGIN = 8;
+    let dx = side === 1 ? rx + LINE : rx - LINE - PW;
+    let dy = ry - Math.round(PH / 2);
+    dx = Math.max(MARGIN, Math.min(W - PW - MARGIN, dx));
+    dy = Math.max(MARGIN, Math.min(H - PH - MARGIN, dy));
+    dlg.style.left = dx + 'px';
+    dlg.style.top  = dy + 'px';
 
-    svg.innerHTML='';
-    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('d',`M${rx},${ry} L${elbowX},${ry} L${elbowX},${cardEdgeY} L${cardEdgeX},${cardEdgeY}`);
-    path.setAttribute('stroke',col); path.setAttribute('stroke-width','1.5');
-    path.setAttribute('fill','none'); path.setAttribute('stroke-linecap','round');
-    path.setAttribute('stroke-linejoin','round');
+    // ── Flowchart elbow connector ─────────────────────────────────────
+    const cardEdgeX = side === 1 ? dx : dx + PW;
+    const cardEdgeY = dy + Math.round(PH / 2);
+    const elbowX = side === 1 ? rx + LINE * 0.6 : rx - LINE * 0.6;
+
+    svg.innerHTML = '';
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', `M${rx},${ry} L${elbowX},${ry} L${elbowX},${cardEdgeY} L${cardEdgeX},${cardEdgeY}`);
+    path.setAttribute('stroke', lineCol);
+    path.setAttribute('stroke-width', '1.5');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
     const pLen = path.getTotalLength ? path.getTotalLength() : 120;
-    path.style.cssText=`stroke-dasharray:${pLen};stroke-dashoffset:${pLen};animation:jrnDrawLine .3s ease-out forwards`;
+    path.style.strokeDasharray = pLen;
+    path.style.strokeDashoffset = pLen;
+    path.style.animation = 'jrnDrawLine .3s ease-out forwards';
     svg.appendChild(path);
 
-    const dot=document.createElementNS('http://www.w3.org/2000/svg','circle');
-    dot.setAttribute('cx',rx); dot.setAttribute('cy',ry); dot.setAttribute('r','3.5');
-    dot.setAttribute('fill',col); svg.appendChild(dot);
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', rx); dot.setAttribute('cy', ry); dot.setAttribute('r','3.5');
+    dot.setAttribute('fill', lineCol);
+    svg.appendChild(dot);
 
-    const aw=6,ah=4,ax=cardEdgeX,ay=cardEdgeY;
-    const poly=document.createElementNS('http://www.w3.org/2000/svg','polygon');
-    poly.setAttribute('points',side===1
+    const aw = 6, ah = 4, ax = cardEdgeX, ay = cardEdgeY;
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points', side === 1
       ? `${ax},${ay} ${ax-aw},${ay-ah} ${ax-aw},${ay+ah}`
       : `${ax},${ay} ${ax+aw},${ay-ah} ${ax+aw},${ay+ah}`);
-    poly.setAttribute('fill',col); svg.appendChild(poly);
+    poly.setAttribute('fill', lineCol);
+    svg.appendChild(poly);
 
-    svg.style.opacity='1'; dlg.style.opacity='1';
-    btn.style.outline=`2px solid rgba(${r},${g},${b},0.5)`;
+    svg.style.opacity = '1';
+    dlg.style.opacity = '1';
+    btn.style.outline = `2px solid rgba(${r},${g},${b},0.55)`;
   }
 
-  layout.milestoneAnchors.forEach(anchor=>{
-    const b=document.createElement('button');
-    b.type='button';
-    b.style.cssText=`position:absolute;width:34px;height:34px;padding:0;border:0;
-      border-radius:50%;background:transparent;cursor:pointer;z-index:9;
-      transform:translate(-50%,-50%);pointer-events:auto`;
-    b.style.left=anchor.x+'px'; b.style.top=anchor.y+'px';
-    b.setAttribute('aria-label',(anchor.milestone&&anchor.milestone.title)||'Milestone');
-    b.addEventListener('click',e=>{e.stopPropagation();openDlg(anchor,b);});
-    b.addEventListener('touchend',e=>{e.preventDefault();e.stopPropagation();openDlg(anchor,b);},{passive:false});
+  // ── Hit buttons — transparent circles over each glow dot ──────────────
+  // IMPORTANT: wrap has pointer-events:none so buttons need it explicitly.
+  layout.milestoneAnchors.forEach(anchor => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    // Inline style ensures pointer-events work even with parent:none
+    b.style.cssText = 'position:absolute;width:36px;height:36px;padding:0;border:0;' +
+      'border-radius:50%;background:transparent;cursor:pointer;z-index:9;' +
+      'transform:translate(-50%,-50%);pointer-events:auto;-webkit-tap-highlight-color:transparent';
+    b.style.left = anchor.x + 'px';
+    b.style.top  = anchor.y + 'px';
+    b.setAttribute('aria-label', (anchor.milestone && anchor.milestone.title) || 'Milestone');
+
+    // Click (desktop)
+    b.addEventListener('click', e => {
+      e.stopPropagation();
+      openDlg(anchor, b);
+    });
+
+    // Touchend (mobile) — more reliable than click on canvas overlays
+    b.addEventListener('touchend', e => {
+      e.preventDefault();     // stop ghost click
+      e.stopPropagation();
+      openDlg(anchor, b);
+    }, { passive: false });
+
     wrap.appendChild(b);
   });
 
-  inner.addEventListener('click',e=>{ if(!e.target.closest('button')) closeDlg(); });
+  // Close when tapping empty space inside the inner canvas
+  inner.addEventListener('click', e => {
+    if (e.target === inner || e.target.tagName === 'CANVAS') closeDlg();
+  });
 }
 
 // ═══════════════════════════════════════
@@ -3554,6 +3615,50 @@ function debounceRAF(fn) {
     requestAnimationFrame(() => { queued = false; fn.apply(this, args); });
   };
 }
+// ── Centralised resize handler ───────────────────────────────────────────
+// Browser zoom changes devicePixelRatio AND offsetWidth/offsetHeight.
+// We must rebuild ALL canvas paths together so particles stay on the river.
+let _lastDPR = window.devicePixelRatio || 1;
+let _lastInnerW = window.innerWidth;
+
+function handleResize() {
+  const dpr = window.devicePixelRatio || 1;
+  const w   = window.innerWidth;
+
+  // Always resize all canvases together
+  resizeTopo();
+  resizeRiverBase();
+  resizeRiver(); // rebuilds riverPath + riverParticlePath
+
+  // If DPR or width changed (zoom or window resize), reset in-flight particles
+  // so they re-spawn on the new path rather than drifting to wrong positions
+  if (dpr !== _lastDPR || Math.abs(w - _lastInnerW) > 2) {
+    particles        = [];   // clear mainstem particles — they'll respawn
+    sourceParticles  = [];
+    milestoneRipples = [];   // clear ripples so they restart fresh
+    _lastDPR    = dpr;
+    _lastInnerW = w;
+  }
+
+  // Redraw static layers
+  drawTopo();
+  drawRiverBase();
+
+  // Rebuild milestone positions for updated canvas dimensions
+  if (layout && layout.milestoneAnchors && inner) {
+    const H = parseInt(inner.style.height) || 680;
+    milestonePositions = layout.milestoneAnchors.map(a => ({
+      x: getRiverXFrac(a.frac) * (riverW || inner.clientWidth),
+      y: a.frac * H,
+      elevation: a.milestone ? a.milestone.elevation : null,
+      size: 2.4, nextRipple: 0,
+    }));
+  }
+}
+
+// Debounced so rapid resize events (e.g. dragging window edge) don't spam
+window.addEventListener('resize', debounce(handleResize, 120));
+
 function debounce(fn, ms) {
   let h;
   return function(...args) { clearTimeout(h); h = setTimeout(() => fn.apply(this, args), ms); };
@@ -3574,9 +3679,9 @@ let enginesInitialised = false;
 function initEngines() {
   if (enginesInitialised) return;
   enginesInitialised = true;
-  // Don't call resizeTopo/buildMilestones here — the accordion body is still
-  // collapsed so all canvas dimensions are 0. refreshJourneyAfterOpen() handles
-  // the real sizing after the body is visible.
+  resizeTopo(); resizeRiverBase(); resizeRiver();
+  drawTopo();
+  buildMilestones();
 }
 
 // Expose for renderSite to call after CMS milestones arrive
