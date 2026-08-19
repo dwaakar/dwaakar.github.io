@@ -272,7 +272,10 @@
     #jrn-river{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
 
     /* Milestone anchor + card layer */
-    #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none}
+    /* pointer-events NOT set to none here — WebKit/Safari blocks children if parent is none.
+       Clicks on empty space fall through to the canvas naturally since buttons are the only
+       interactive elements and they have explicit z-index above the canvases. */
+    #jrn-milestones{position:absolute;inset:0;z-index:3}
     /* ── Tributary hover popup ── */
     .jrn-trib-hint{position:absolute;bottom:1.8rem;left:50%;transform:translateX(-50%);
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
@@ -3588,10 +3591,13 @@ function buildMilestones() {
     wrap.appendChild(b);
   });
 
-  // Close when tapping empty space inside the inner canvas
-  inner.addEventListener('click', e => {
-    if (e.target === inner || e.target.tagName === 'CANVAS') closeDlg();
+  // Close when tapping empty space — but NOT a button
+  wrap.addEventListener('click', e => {
+    if (e.target.tagName !== 'BUTTON') closeDlg();
   });
+  wrap.addEventListener('touchend', e => {
+    if (e.target.tagName !== 'BUTTON') closeDlg();
+  }, { passive: true });
 }
 
 // ═══════════════════════════════════════
