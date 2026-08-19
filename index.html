@@ -293,23 +293,7 @@
       transform:scale(1.15);background:color-mix(in srgb,var(--accent) 18%,transparent);
       box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent)}
     .jrn-milestone-hit:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
-    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:10px;padding:.75rem .95rem;width:200px;
-      box-shadow:0 8px 32px rgba(0,0,0,.14);
-      opacity:0;transition:opacity .15s;font-size:.8rem}
-    .jrn-popup.show{opacity:1}
-    .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
-      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
-    .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
-    .jrn-popup-title{font-weight:700;font-size:.85rem;color:var(--ink);
-      line-height:1.3;margin-bottom:.25rem}
-    .jrn-popup-desc{font-size:.75rem;color:var(--ink2);line-height:1.5}
-    .jrn-popup-badge{display:inline-block;margin-top:.4rem;padding:.12rem .5rem;
-      border-radius:6px;font-size:.62rem;font-weight:600;letter-spacing:.06em;
-      background:var(--accent);color:#fff;opacity:.85}
-    .jrn-popup-badge.jrn-minor-badge{background:var(--ink2);opacity:.55}
-    @media(prefers-reduced-motion:reduce){
+@media(prefers-reduced-motion:reduce){
       .jrn-body{transition:none}
       .jrn-toggle-icon{transition:none}
       #jrn-topo{transition:none!important}
@@ -1257,17 +1241,24 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     jrnHintEl.textContent = jrnHintEl.dataset.expandText;
   }
 
-  if (s.milestones && s.milestones.length) {
-    window._timelineMilestones = s.milestones.map(m => ({
-      title:       m.title || '',
-      date:        m.date  || m.year   || '',
-      description: m.description || m.detail || m.sub || '',
-      elevation:   m.elevation !== undefined && m.elevation !== ''
-        ? +m.elevation : null,
-    }));
-    // Rebuild the river network with CMS milestones
-    if (window._buildRoad) window._buildRoad();
-  }
+  // The CMS is authoritative: replace the entire milestone list every time,
+// including when it is empty, so deleted milestones disappear from the site.
+const cmsMilestones = Array.isArray(s.milestones) ? s.milestones : [];
+window._timelineMilestones = cmsMilestones.map((m, sourceIndex) => ({
+  _sourceIndex: sourceIndex,
+  year:        m && m.year != null ? String(m.year) : '',
+  title:       m && m.title != null ? String(m.title) : '',
+  date:        m && m.date != null && m.date !== '' ? String(m.date)
+                : (m && m.year != null ? String(m.year) : ''),
+  description: m && m.description != null ? String(m.description)
+                : (m && m.detail != null ? String(m.detail)
+                : (m && m.sub != null ? String(m.sub) : '')),
+  sub:         m && m.sub != null ? String(m.sub) : '',
+  icon:        m && m.icon != null && m.icon !== '' ? String(m.icon) : '📌',
+  elevation:   m && m.elevation !== undefined && m.elevation !== ''
+                ? Number(m.elevation) : null
+}));
+if (window._buildRoad) window._buildRoad();
 
   // ── STATS ──────────────────────────────────────────────
   const statsGrid = document.getElementById('stats-grid');
@@ -1872,6 +1863,16 @@ loadSite();
 <script>
 (function() {
 'use strict';
+
+// Escape CMS-provided text before inserting it into the milestone dialogue.
+function esc(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 // ═══════════════════════════════════════
 // ACCORDION
@@ -3501,13 +3502,12 @@ function buildMilestones() {
   if (!wrap._jrnMilestoneEventsBound) {
     wrap._jrnMilestoneEventsBound = true;
 
-    wrap.addEventListener('click', e => {
+    const activateMilestone = e => {
       const hit = e.target.closest('.jrn-milestone-hit');
       const state = wrap._jrnMilestoneState;
       if (!state) return;
 
       if (!hit || !wrap.contains(hit)) {
-        // Clicking the dialogue itself should not close it.
         if (e.target.closest('.jrn-milestone-dialog')) return;
         state.close();
         return;
@@ -3520,9 +3520,18 @@ function buildMilestones() {
       const anchor = state.getAnchor(index);
       if (!anchor) return;
 
-      // A click/tap locks the dialogue open. A second click/tap on the same
-      // milestone closes it. This works for mouse, touch and keyboard.
       state.open(anchor, hit, true);
+    };
+
+    // One delegated pointer path handles mouse, touch and pen.
+    wrap.addEventListener('pointerup', activateMilestone);
+
+    // Keyboard accessibility for the same hit targets.
+    wrap.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const hit = e.target.closest('.jrn-milestone-hit');
+      if (!hit) return;
+      activateMilestone(e);
     });
 
     // Hover is deliberately restricted to mouse/trackpad pointers so a
@@ -3583,6 +3592,7 @@ function buildMilestones() {
       const obj = (typeof objectForElev === 'function')
         ? objectForElev(m.elevation)
         : { icon: '📍', label: 'Milestone' };
+      const milestoneIcon = m.icon || obj.icon || '📌';
       const [r, g, b] = (typeof milestoneGlowColor === 'function')
         ? milestoneGlowColor(m.elevation)
         : [120, 180, 220];
@@ -3596,7 +3606,7 @@ function buildMilestones() {
 
       dlg.innerHTML = [
         `<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.42rem">
-           <span style="font-size:1.15rem">${obj.icon}</span>
+           <span style="font-size:1.15rem">${esc(milestoneIcon)}</span>
            <strong style="color:var(--ink);font-size:.85rem">${esc(m.title || obj.label)}</strong>
          </div>`,
         elev ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${lineCol};letter-spacing:.07em;margin-bottom:.22rem">${elev}</div>` : '',
