@@ -3608,21 +3608,16 @@ function buildMilestones() {
     }
   }
 
-  // Remove any old delegated listeners by cloning inner
-  const freshInner = inner.cloneNode(false);
-  inner.parentNode.replaceChild(freshInner, inner);
-  inner = freshInner; // update closure reference
+  // Remove old delegated listeners by storing named references on the element.
+  // Avoids cloneNode which would detach canvas rendering contexts.
+  if (inner._jrnClick)   inner.removeEventListener('click',    inner._jrnClick);
+  if (inner._jrnTouch)   inner.removeEventListener('touchend', inner._jrnTouch);
 
-  // Re-append all children (canvases, wrap) to the fresh inner
-  [topoCanvas, riverBaseCanvas, riverCanvas, wrap].forEach(el => {
-    if (el && el.parentNode !== inner) inner.appendChild(el);
-  });
+  inner._jrnClick = handleInteraction;
+  inner._jrnTouch = e => { e.preventDefault(); handleInteraction(e); };
 
-  inner.addEventListener('click', handleInteraction);
-  inner.addEventListener('touchend', e => {
-    e.preventDefault(); // stop ghost click on mobile
-    handleInteraction(e);
-  }, { passive: false });
+  inner.addEventListener('click',    inner._jrnClick);
+  inner.addEventListener('touchend', inner._jrnTouch, { passive: false });
 }
 
 // ═══════════════════════════════════════
