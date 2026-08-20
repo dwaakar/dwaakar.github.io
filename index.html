@@ -275,32 +275,25 @@
     /* pointer-events NOT set to none here — WebKit/Safari blocks children if parent is none.
        Clicks on empty space fall through to the canvas naturally since buttons are the only
        interactive elements and they have explicit z-index above the canvases. */
-    #jrn-milestones{position:absolute;inset:0;z-index:3;pointer-events:none}
+    #jrn-milestones{position:absolute;inset:0;z-index:3}
     /* ── Tributary hover popup ── */
     .jrn-trib-hint{position:absolute;bottom:1.8rem;left:50%;transform:translateX(-50%);
       font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;
       color:var(--ink2);opacity:.45;pointer-events:none;white-space:nowrap;z-index:4}
 
-    .jrn-milestone-dot{position:absolute;width:13px;height:13px;padding:0;border-radius:50%;transform:translate(-50%,-50%);background:var(--surface);border:2px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent),0 2px 8px rgba(0,0,0,.16);pointer-events:auto;transition:transform .2s,box-shadow .2s,background .2s;z-index:6}
-    .jrn-milestone-dot:hover,.jrn-milestone-dot.active{transform:translate(-50%,-50%) scale(1.28);background:var(--accent);box-shadow:0 0 0 5px color-mix(in srgb,var(--accent) 18%,transparent),0 3px 12px rgba(0,0,0,.18)}
-    .jrn-milestone-dot:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
-    .jrn-popup{position:absolute;z-index:10;pointer-events:none;
-      background:var(--surface);border:1px solid var(--border);
-      border-radius:10px;padding:.75rem .95rem;width:200px;
-      box-shadow:0 8px 32px rgba(0,0,0,.14);
-      opacity:0;transition:opacity .15s;font-size:.8rem}
-    .jrn-popup.show{opacity:1}
-    .jrn-popup-elev{font-family:'JetBrains Mono',monospace;font-size:.62rem;
-      color:var(--accent);opacity:.75;letter-spacing:.08em;margin-bottom:.18rem}
-    .jrn-popup-date{font-size:.7rem;color:var(--ink2);margin-bottom:.18rem;opacity:.8}
-    .jrn-popup-title{font-weight:700;font-size:.85rem;color:var(--ink);
-      line-height:1.3;margin-bottom:.25rem}
-    .jrn-popup-desc{font-size:.75rem;color:var(--ink2);line-height:1.5}
-    .jrn-popup-badge{display:inline-block;margin-top:.4rem;padding:.12rem .5rem;
-      border-radius:6px;font-size:.62rem;font-weight:600;letter-spacing:.06em;
-      background:var(--accent);color:#fff;opacity:.85}
-    .jrn-popup-badge.jrn-minor-badge{background:var(--ink2);opacity:.55}
-    @media(prefers-reduced-motion:reduce){
+    /* Interactive milestone hit targets. The visible glowing milestone is
+       rendered by the river canvas; this transparent DOM button supplies
+       reliable mouse/touch/keyboard interaction above that canvas. */
+    .jrn-milestone-hit{position:absolute;width:38px;height:38px;padding:0;border:0;border-radius:50%;
+      transform:translate(-50%,-50%);background:transparent;cursor:pointer;pointer-events:auto;
+      -webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:9}
+    .jrn-milestone-hit::before{content:'';position:absolute;inset:7px;border-radius:50%;
+      border:1px solid transparent;transition:transform .18s,background .18s,box-shadow .18s}
+    .jrn-milestone-hit:hover::before,.jrn-milestone-hit.active::before{
+      transform:scale(1.15);background:color-mix(in srgb,var(--accent) 18%,transparent);
+      box-shadow:0 0 0 4px color-mix(in srgb,var(--accent) 14%,transparent)}
+    .jrn-milestone-hit:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+@media(prefers-reduced-motion:reduce){
       .jrn-body{transition:none}
       .jrn-toggle-icon{transition:none}
       #jrn-topo{transition:none!important}
@@ -1248,17 +1241,24 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     jrnHintEl.textContent = jrnHintEl.dataset.expandText;
   }
 
-  if (s.milestones && s.milestones.length) {
-    window._timelineMilestones = s.milestones.map(m => ({
-      title:       m.title || '',
-      date:        m.date  || m.year   || '',
-      description: m.description || m.detail || m.sub || '',
-      elevation:   m.elevation !== undefined && m.elevation !== ''
-        ? +m.elevation : null,
-    }));
-    // Rebuild the river network with CMS milestones
-    if (window._buildRoad) window._buildRoad();
-  }
+  // The CMS is authoritative: replace the entire milestone list every time,
+// including when it is empty, so deleted milestones disappear from the site.
+const cmsMilestones = Array.isArray(s.milestones) ? s.milestones : [];
+window._timelineMilestones = cmsMilestones.map((m, sourceIndex) => ({
+  _sourceIndex: sourceIndex,
+  year:        m && m.year != null ? String(m.year) : '',
+  title:       m && m.title != null ? String(m.title) : '',
+  date:        m && m.date != null && m.date !== '' ? String(m.date)
+                : (m && m.year != null ? String(m.year) : ''),
+  description: m && m.description != null ? String(m.description)
+                : (m && m.detail != null ? String(m.detail)
+                : (m && m.sub != null ? String(m.sub) : '')),
+  sub:         m && m.sub != null ? String(m.sub) : '',
+  icon:        m && m.icon != null && m.icon !== '' ? String(m.icon) : '📌',
+  elevation:   m && m.elevation !== undefined && m.elevation !== ''
+                ? Number(m.elevation) : null
+}));
+if (window._buildRoad) window._buildRoad();
 
   // ── STATS ──────────────────────────────────────────────
   const statsGrid = document.getElementById('stats-grid');
@@ -1864,12 +1864,22 @@ loadSite();
 (function() {
 'use strict';
 
+// Escape CMS-provided text before inserting it into the milestone dialogue.
+function esc(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ═══════════════════════════════════════
 // ACCORDION
 // ═══════════════════════════════════════
 const toggle = document.getElementById('jrn-toggle');
 const body   = document.getElementById('jrn-body');
-let inner  = document.getElementById('jrn-inner');
+const inner  = document.getElementById('jrn-inner');
 
 function setOpenHeight() {
   // Measure only after the Journey engine has been sized/built.
@@ -3436,22 +3446,31 @@ let milestoneObserver = null;
 function buildMilestones() {
   const wrap = document.getElementById('jrn-milestones');
   if (!wrap || !inner) return;
+
+  // Rebuild only the milestone DOM. The river/topography canvases remain
+  // untouched except for the normal layout/resize work below.
   wrap.innerHTML = '';
 
-  const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
-    ? window._timelineMilestones : [];
+  const MILESTONES = Array.isArray(window._timelineMilestones)
+    ? window._timelineMilestones.filter(Boolean)
+    : [];
   const FIXED_H = isMobile() ? 520 : 680;
   inner.style.height = FIXED_H + 'px';
 
-  resizeTopo(); resizeRiverBase(); resizeRiver();
+  resizeTopo();
+  resizeRiverBase();
+  resizeRiver();
   layout = buildLayout(topoW || inner.clientWidth, FIXED_H, MILESTONES);
-  drawTopo(); drawRiverBase();
+  drawTopo();
+  drawRiverBase();
 
-  // Populate glow positions for tickRiver
+  // Update milestone glow positions used by the animated river canvas.
   milestonePositions = (layout ? layout.milestoneAnchors : []).map(a => ({
-    x: a.x, y: a.y,
+    x: a.x,
+    y: a.y,
     elevation: a.milestone ? a.milestone.elevation : null,
-    size: 2.4, nextRipple: 0,
+    size: 2.4,
+    nextRipple: 0,
   }));
   milestoneRipples = [];
 
@@ -3460,165 +3479,231 @@ function buildMilestones() {
   const W = inner.clientWidth || 800;
   const H = FIXED_H;
 
-  // ── SVG layer for connector line (visual only, no events) ─────────────
+  // ── SVG connector layer ──────────────────────────────────────────────
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;' +
+  svg.style.cssText =
+    'position:absolute;inset:0;width:100%;height:100%;' +
     'pointer-events:none;overflow:visible;z-index:7;opacity:0;transition:opacity .2s';
   wrap.appendChild(svg);
 
-  // ── Dialogue panel (visual only, no events needed on it) ──────────────
+  // ── Dialogue panel ───────────────────────────────────────────────────
   const dlg = document.createElement('div');
-  dlg.style.cssText = 'position:absolute;z-index:8;pointer-events:none;' +
-    'background:var(--surface);border:1.5px solid var(--border);' +
-    'border-radius:12px;padding:.9rem 1.05rem;' +
-    'box-shadow:0 8px 32px rgba(0,0,0,.18);' +
-    'opacity:0;transition:opacity .18s;' +
-    'font-size:.8rem;line-height:1.5;word-break:break-word';
+  dlg.className = 'jrn-milestone-dialog';
+  dlg.style.cssText =
+    'position:absolute;z-index:8;background:var(--surface);' +
+    'border:1.5px solid var(--border);border-radius:12px;padding:.9rem 1.05rem;' +
+    'box-shadow:0 8px 32px rgba(0,0,0,.18);opacity:0;transition:opacity .18s;' +
+    'pointer-events:none;font-size:.8rem;line-height:1.5;word-break:break-word';
   wrap.appendChild(dlg);
 
-  // ── Store hit targets for event delegation ────────────────────────────
-  // Each entry: {x, y, anchor} — used by the delegated listener on inner
-  const HIT_R = Math.max(20, isMobile() ? 28 : 22); // hit radius in px
-  const hitTargets = layout.milestoneAnchors.map(anchor => ({
-    x: anchor.x,
-    y: anchor.y,
-    anchor,
-  }));
+  // The wrapper owns ONE delegated event system for its lifetime. Every
+  // rebuild replaces the buttons, but this listener is never duplicated.
+  if (!wrap._jrnMilestoneEventsBound) {
+    wrap._jrnMilestoneEventsBound = true;
 
-  let activeTarget = null;
+    const activateMilestone = e => {
+      const hit = e.target.closest('.jrn-milestone-hit');
+      const state = wrap._jrnMilestoneState;
+      if (!state) return;
 
-  function closeDlg() {
-    svg.style.opacity = '0';
-    dlg.style.opacity = '0';
-    activeTarget = null;
-  }
+      if (!hit || !wrap.contains(hit)) {
+        if (e.target.closest('.jrn-milestone-dialog')) return;
+        state.close();
+        return;
+      }
 
-  function openDlg(ht) {
-    const anchor = ht.anchor;
-    const m   = anchor.milestone || {};
-    const obj = (typeof objectForElev === 'function')
-      ? objectForElev(m.elevation) : { icon: '📍', label: 'Milestone' };
-    const [r, g, b] = (typeof milestoneGlowColor === 'function')
-      ? milestoneGlowColor(m.elevation) : [120, 180, 220];
-    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-    // Deeper colour in light mode so the line is visible
-    const dr = dark ? r : Math.max(0, r - 50);
-    const dg = dark ? g : Math.max(0, g - 50);
-    const db = dark ? b : Math.max(0, b - 50);
-    const col  = `rgb(${dr},${dg},${db})`;
-    const elev = (m.elevation != null && m.elevation !== '')
-      ? `${esc(String(m.elevation))}\u202fm` : '';
+      e.preventDefault();
+      const index = Number(hit.dataset.milestoneIndex);
+      if (!Number.isInteger(index)) return;
 
-    dlg.innerHTML = [
-      `<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.42rem">
-         <span style="font-size:1.15rem">${obj.icon}</span>
-         <strong style="color:var(--ink);font-size:.85rem">${esc(m.title || obj.label)}</strong>
-       </div>`,
-      elev    ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${col};letter-spacing:.07em;margin-bottom:.22rem">${elev}</div>` : '',
-      m.date  ? `<div style="font-size:.68rem;color:var(--ink2);margin-bottom:.22rem">${esc(m.date)}</div>` : '',
-      m.description ? `<div style="font-size:.74rem;color:var(--ink2);line-height:1.55">${esc(m.description)}</div>` : '',
-    ].join('');
+      const anchor = state.getAnchor(index);
+      if (!anchor) return;
 
-    // ── Size and position dialogue ────────────────────────────────────
-    const PW = Math.min(240, Math.floor(W * 0.42));
-    dlg.style.width   = PW + 'px';
-    dlg.style.display = 'block';
-    dlg.style.opacity = '0'; // measure before showing
-    const PH = dlg.scrollHeight || 110;
-
-    const rx = ht.x, ry = ht.y;
-    const side = rx > W * 0.55 ? -1 : 1; // left of river or right
-    const LINE = 55, MARGIN = 8;
-    let dx = side === 1 ? rx + LINE : rx - LINE - PW;
-    let dy = ry - Math.round(PH / 2);
-    dx = Math.max(MARGIN, Math.min(W - PW - MARGIN, dx));
-    dy = Math.max(MARGIN, Math.min(H - PH - MARGIN, dy));
-    dlg.style.left = dx + 'px';
-    dlg.style.top  = dy + 'px';
-
-    // ── Draw flowchart elbow connector in SVG ─────────────────────────
-    const cardEdgeX = side === 1 ? dx : dx + PW;
-    const cardEdgeY = dy + Math.round(PH / 2);
-    const elbowX    = side === 1 ? rx + LINE * 0.6 : rx - LINE * 0.6;
-
-    svg.innerHTML = '';
-
-    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-    path.setAttribute('d',
-      `M${rx},${ry} L${elbowX},${ry} L${elbowX},${cardEdgeY} L${cardEdgeX},${cardEdgeY}`);
-    path.setAttribute('stroke', col);
-    path.setAttribute('stroke-width', '1.5');
-    path.setAttribute('fill', 'none');
-    path.setAttribute('stroke-linecap', 'round');
-    path.setAttribute('stroke-linejoin', 'round');
-    const pLen = path.getTotalLength ? path.getTotalLength() : 120;
-    path.style.strokeDasharray  = pLen;
-    path.style.strokeDashoffset = pLen;
-    path.style.animation = 'jrnDrawLine .3s ease-out forwards';
-    svg.appendChild(path);
-
-    // Dot at river attachment point
-    const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    dot.setAttribute('cx', rx); dot.setAttribute('cy', ry); dot.setAttribute('r', '4');
-    dot.setAttribute('fill', col);
-    svg.appendChild(dot);
-
-    // Arrowhead at card edge
-    const aw = 6, ah = 4;
-    const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-    poly.setAttribute('points', side === 1
-      ? `${cardEdgeX},${cardEdgeY} ${cardEdgeX-aw},${cardEdgeY-ah} ${cardEdgeX-aw},${cardEdgeY+ah}`
-      : `${cardEdgeX},${cardEdgeY} ${cardEdgeX+aw},${cardEdgeY-ah} ${cardEdgeX+aw},${cardEdgeY+ah}`);
-    poly.setAttribute('fill', col);
-    svg.appendChild(poly);
-
-    svg.style.opacity = '1';
-    dlg.style.opacity = '1';
-    activeTarget = ht;
-  }
-
-  // ── EVENT DELEGATION on inner — no buttons, no z-index fights ────────
-  // Get click/touch coordinates relative to inner, then geometry-check
-  // against stored hit targets. Works in every browser including WebKit.
-  function getRelativeXY(e) {
-    const rect = inner.getBoundingClientRect();
-    const src  = e.changedTouches ? e.changedTouches[0] : e;
-    return {
-      x: src.clientX - rect.left,
-      y: src.clientY - rect.top,
+      state.open(anchor, hit, true);
     };
+
+    // One delegated pointer path handles mouse, touch and pen.
+    wrap.addEventListener('pointerup', activateMilestone);
+
+    // Keyboard accessibility for the same hit targets.
+    wrap.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      const hit = e.target.closest('.jrn-milestone-hit');
+      if (!hit) return;
+      activateMilestone(e);
+    });
+
+    // Hover is deliberately restricted to mouse/trackpad pointers so a
+    // touchscreen does not get the hover-open/hover-close sequence.
+    wrap.addEventListener('pointerover', e => {
+      if (e.pointerType !== 'mouse') return;
+      const hit = e.target.closest('.jrn-milestone-hit');
+      const state = wrap._jrnMilestoneState;
+      if (!hit || !state || !wrap.contains(hit)) return;
+      const index = Number(hit.dataset.milestoneIndex);
+      const anchor = state.getAnchor(index);
+      if (anchor) state.open(anchor, hit, false);
+    });
+
+    wrap.addEventListener('pointerout', e => {
+      if (e.pointerType !== 'mouse') return;
+      const hit = e.target.closest('.jrn-milestone-hit');
+      const state = wrap._jrnMilestoneState;
+      if (!hit || !state || !wrap.contains(hit)) return;
+
+      const related = e.relatedTarget;
+      if (related && hit.contains(related)) return;
+      if (!state.locked) state.close();
+    });
   }
 
-  function findHit(x, y) {
-    for (const ht of hitTargets) {
-      if (Math.hypot(x - ht.x, y - ht.y) <= HIT_R) return ht;
-    }
-    return null;
-  }
+  const state = {
+    svg,
+    dlg,
+    activeIndex: null,
+    locked: false,
+    getAnchor(index) {
+      // Anchors are sorted by elevation/river position, so use their stable
+      // original CMS index rather than assuming visual order == data order.
+      return layout.milestoneAnchors.find(a => a.index === index) || null;
+    },
+    close() {
+      this.svg.style.opacity = '0';
+      this.dlg.style.opacity = '0';
+      this.dlg.style.pointerEvents = 'none';
+      this.locked = false;
+      this.activeIndex = null;
+      wrap.querySelectorAll('.jrn-milestone-hit.active').forEach(el => el.classList.remove('active'));
+    },
+    open(anchor, btn, lock) {
+      const index = Number(anchor.index);
+      if (this.activeIndex === index && this.locked && lock) {
+        this.close();
+        return;
+      }
 
-  function handleInteraction(e) {
-    const { x, y } = getRelativeXY(e);
-    const hit = findHit(x, y);
-    if (hit) {
-      if (activeTarget === hit) { closeDlg(); return; } // toggle off
-      openDlg(hit);
-    } else {
-      closeDlg();
-    }
-  }
+      this.activeIndex = index;
+      this.locked = !!lock;
+      wrap.querySelectorAll('.jrn-milestone-hit.active').forEach(el => el.classList.remove('active'));
+      btn.classList.add('active');
 
-  // Remove old delegated listeners by storing named references on the element.
-  // Avoids cloneNode which would detach canvas rendering contexts.
-  if (inner._jrnClick)   inner.removeEventListener('click',    inner._jrnClick);
-  if (inner._jrnTouch)   inner.removeEventListener('touchend', inner._jrnTouch);
+      const m = anchor.milestone || {};
+      const obj = (typeof objectForElev === 'function')
+        ? objectForElev(m.elevation)
+        : { icon: '📍', label: 'Milestone' };
+      const milestoneIcon = m.icon || obj.icon || '📌';
+      const [r, g, b] = (typeof milestoneGlowColor === 'function')
+        ? milestoneGlowColor(m.elevation)
+        : [120, 180, 220];
+      const isDk = document.documentElement.getAttribute('data-theme') === 'dark';
+      const lineCol = isDk
+        ? `rgb(${r},${g},${b})`
+        : `rgb(${Math.max(0,r-40)},${Math.max(0,g-40)},${Math.max(0,b-40)})`;
+      const elev = (m.elevation != null && m.elevation !== '')
+        ? `${esc(String(m.elevation))}\u202fm`
+        : '';
 
-  inner._jrnClick = handleInteraction;
-  inner._jrnTouch = e => { e.preventDefault(); handleInteraction(e); };
+      dlg.innerHTML = [
+        `<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.42rem">
+           <span style="font-size:1.15rem">${esc(milestoneIcon)}</span>
+           <strong style="color:var(--ink);font-size:.85rem">${esc(m.title || obj.label)}</strong>
+         </div>`,
+        elev ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${lineCol};letter-spacing:.07em;margin-bottom:.22rem">${elev}</div>` : '',
+        m.date ? `<div style="font-size:.68rem;color:var(--ink2);margin-bottom:.22rem">${esc(m.date)}</div>` : '',
+        m.description ? `<div style="font-size:.74rem;color:var(--ink2);line-height:1.55">${esc(m.description)}</div>` : '',
+      ].join('');
 
-  inner.addEventListener('click',    inner._jrnClick);
-  inner.addEventListener('touchend', inner._jrnTouch, { passive: false });
+      const PW = Math.min(240, Math.floor(W * 0.42));
+      dlg.style.width = PW + 'px';
+      dlg.style.display = 'block';
+      dlg.style.opacity = '0';
+      dlg.style.pointerEvents = 'auto';
+      const PH = dlg.scrollHeight || 110;
+
+      const rx = anchor.x;
+      const ry = anchor.y;
+      const side = rx > W * 0.55 ? -1 : 1;
+      const LINE = 55;
+      const MARGIN = 8;
+      let dx = side === 1 ? rx + LINE : rx - LINE - PW;
+      let dy = ry - Math.round(PH / 2);
+      dx = Math.max(MARGIN, Math.min(W - PW - MARGIN, dx));
+      dy = Math.max(MARGIN, Math.min(H - PH - MARGIN, dy));
+      dlg.style.left = dx + 'px';
+      dlg.style.top = dy + 'px';
+
+      // ── Flowchart elbow connector ───────────────────────────────────
+      const cardEdgeX = side === 1 ? dx : dx + PW;
+      const cardEdgeY = dy + Math.round(PH / 2);
+      const elbowX = side === 1 ? rx + LINE * 0.6 : rx - LINE * 0.6;
+
+      svg.innerHTML = '';
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', `M${rx},${ry} L${elbowX},${ry} L${elbowX},${cardEdgeY} L${cardEdgeX},${cardEdgeY}`);
+      path.setAttribute('stroke', lineCol);
+      path.setAttribute('stroke-width', '1.5');
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke-linecap', 'round');
+      path.setAttribute('stroke-linejoin', 'round');
+      const pLen = path.getTotalLength ? path.getTotalLength() : 120;
+      path.style.strokeDasharray = pLen;
+      path.style.strokeDashoffset = pLen;
+      path.style.animation = 'jrnDrawLine .3s ease-out forwards';
+      svg.appendChild(path);
+
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('cx', rx);
+      dot.setAttribute('cy', ry);
+      dot.setAttribute('r', '3.5');
+      dot.setAttribute('fill', lineCol);
+      svg.appendChild(dot);
+
+      const aw = 6, ah = 4, ax = cardEdgeX, ay = cardEdgeY;
+      const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      poly.setAttribute('points', side === 1
+        ? `${ax},${ay} ${ax-aw},${ay-ah} ${ax-aw},${ay+ah}`
+        : `${ax},${ay} ${ax+aw},${ay-ah} ${ax+aw},${ay+ah}`);
+      poly.setAttribute('fill', lineCol);
+      svg.appendChild(poly);
+
+      svg.style.opacity = '1';
+      dlg.style.opacity = '1';
+    },
+  };
+
+  wrap._jrnMilestoneState = state;
+
+  // ── One DOM hit target per CMS milestone ─────────────────────────────
+  layout.milestoneAnchors.forEach(anchor => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'jrn-milestone-hit';
+    b.dataset.milestoneIndex = String(anchor.index);
+    b.style.left = anchor.x + 'px';
+    b.style.top = anchor.y + 'px';
+    b.setAttribute('aria-label', (anchor.milestone && anchor.milestone.title) || `Milestone ${anchor.index + 1}`);
+    wrap.appendChild(b);
+  });
+
+  syncMilestoneHitboxes();
 }
+
+// Keep every DOM hit target locked to the same coordinates as its canvas
+// milestone. This is called after every layout/resize rather than only when
+// the CMS is first rendered.
+function syncMilestoneHitboxes() {
+  const wrap = document.getElementById('jrn-milestones');
+  if (!wrap || !layout || !layout.milestoneAnchors) return;
+
+  layout.milestoneAnchors.forEach(anchor => {
+    const hit = wrap.querySelector(`.jrn-milestone-hit[data-milestone-index="${anchor.index}"]`);
+    if (!hit) return;
+    hit.style.left = anchor.x + 'px';
+    hit.style.top = anchor.y + 'px';
+  });
+}
+
 
 // ═══════════════════════════════════════
 // SCROLL LINK
@@ -3679,6 +3764,8 @@ function handleResize() {
       elevation: a.milestone ? a.milestone.elevation : null,
       size: 2.4, nextRipple: 0,
     }));
+    // Keep the interactive DOM hit targets aligned with the resized canvas.
+    syncMilestoneHitboxes();
   }
 }
 
