@@ -12,7 +12,6 @@ backend:
     uploadMedia: 'Upload "{{path}}"'
     deleteMedia: 'Delete "{{path}}"'
 
-
 media_folder: "images"
 public_folder: "/images"
 
@@ -85,7 +84,7 @@ collections:
                 widget: "select"
                 required: false
                 default: 3000
-                hint: "Position on the river AND the icon: ≥5750m=🧊Glacier, 4750-5749m=🪨Huge Rock, 3500-4749m=⛰️Landslide, 2250-3499m=🪵Driftwood, 1000-2249m=🌿Riparian Vegetation, 250-999m=🌉River Crossing, <250m=🌊River Mouth."
+                hint: "Position on the river: ≥5750m=🧊Glacier, 4750-5749m=🪨Huge Rock, 3500-4749m=⛰️Landslide, 2250-3499m=🪵Driftwood, 1000-2249m=🌿Riparian Vegetation, 250-999m=🌉River Crossing, <250m=🌊River Mouth."
                 options:
                   - { label: "6500 m — Glacial Source / Summit", value: 6500 }
                   - { label: "6250 m — High Glacial", value: 6250 }
@@ -114,8 +113,20 @@ collections:
                   - { label: "500 m — Foothills / Terai Edge", value: 500 }
                   - { label: "250 m — Terai / Lowland", value: 250 }
                   - { label: "60 m — River Mouth / Floodplain", value: 60 }
+              - label: "Multiple Entries in Same Year / Elevation Offset"
+                name: "sameYearOffset"
+                widget: "select"
+                required: false
+                default: "none"
+                hint: "Select an offset if there are multiple entries in the same year/elevation so they do not overlap on the river."
+                options:
+                  - { label: "Single / Standard (No Shift)", value: "none" }
+                  - { label: "Earlier in Year (Shift Upstream)", value: "upstream" }
+                  - { label: "Later in Year (Shift Downstream)", value: "downstream" }
+                  - { label: "Shift Channel Left", value: "left" }
+                  - { label: "Shift Channel Right", value: "right" }
               - { label: "Title", name: "title", widget: "string", required: false }
-              - { label: "Description", name: "description", widget: "text", required: false, hint: "Shown on the card when expanded." }
+              - { label: "Description", name: "description", widget: "text", required: false, hint: "Full text or sentence shown in the popup dialog box." }
               - { label: "Subtitle / Institution", name: "sub", widget: "string", required: false, hint: "e.g. Tribhuvan University" }
               - { label: "Icon (emoji)", name: "icon", widget: "string", required: false, default: "📌" }
           - label: "── Statistics Counter Bar ──"
@@ -302,10 +313,11 @@ collections:
       - { label: "Title", name: "title", widget: "string" }
       - { label: "Authors", name: "authors", widget: "string", required: false }
       - { label: "Year", name: "year", widget: "string", required: false }
-      - { label: "Journal / Book", name: "journal", widget: "string", required: false }
+      - { label: "Journal / Book / Outlet", name: "journal", widget: "string", required: false }
       - { label: "Publication Status", name: "status", widget: "string", required: false, hint: "e.g. Published, Under Review, Accepted, Submitted" }
-      - { label: "Publication Type / Category", name: "category", widget: "string", required: false, hint: "e.g. Research Article, Book Chapter, Conference Paper, Policy Brief" }
-      - { label: "DOI / URL", name: "doi", widget: "string", required: false }
+      - { label: "Publication Type / Category", name: "category", widget: "string", required: false, hint: "e.g. Research Article, Book Chapter, Feature Article, News, Blog Post" }
+      - { label: "DOI (for Research Articles)", name: "doi", widget: "string", required: false, hint: "e.g. 10.1002/joc.1234 or https://doi.org/10.1002/joc.1234" }
+      - { label: "Article / Media Link (for Features, News, Blogs)", name: "link", widget: "string", required: false, hint: "Direct URL for news, feature articles, or blog posts" }
       - { label: "Abstract", name: "abstract", widget: "text", required: false }
       - { label: "Detailed Overview", name: "body", widget: "markdown", required: false }
       - label: "Images (slideshow if multiple, static if one)"
@@ -315,7 +327,6 @@ collections:
         fields:
           - { label: "Image", name: "src", widget: "image", media_folder: "images", public_folder: "/images" }
           - { label: "Caption (optional)", name: "caption", widget: "string", required: false }
-      - { label: "External Link", name: "link", widget: "string", required: false }
       - label: "Display Mode"
         name: "displayMode"
         widget: "select"
