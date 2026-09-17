@@ -8,9 +8,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
   
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   
+  <!-- Marked.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
 
   <style>
@@ -184,7 +186,7 @@
     .stat-number{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:700;line-height:1;display:block;color:var(--accent)}
     .stat-label{font-size:.82rem;opacity:.85;margin-top:.4rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 
-    /* ── JOURNEY SECTION ── */
+    /* JOURNEY ACCORDION & RIVER SYSTEM */
     #timeline{padding:0;position:relative}
     .jrn-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;padding:1.4rem clamp(1.5rem,8vw,8rem);background:transparent;border:none;border-top:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;font-family:'Inter',sans-serif;font-size:.88rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);transition:color .3s,background .3s}
     .jrn-toggle:hover{color:var(--accent);background:var(--bg2)}
@@ -212,11 +214,11 @@
     .jrn-milestone-hit::before{content:'';position:absolute;inset:6px;border-radius:50%;border:1.5px solid transparent;transition:transform .18s,background .18s,box-shadow .18s}
     .jrn-milestone-hit:hover::before,.jrn-milestone-hit.active::before{transform:scale(1.2);background:color-mix(in srgb,var(--accent) 24%,transparent);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent)}
 
-    /* FLUID DIALOGUE BOX (NON-UNIFORM SIZE) */
+    /* FLUID NON-UNIFORM DIALOGUE BOX (NO ELEVATION BADGE) */
     .jrn-milestone-card{position:absolute;width:auto;min-width:240px;max-width:min(440px,88vw);height:auto;max-height:80vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:1.1rem 1.3rem;z-index:50;transition:opacity var(--t),transform var(--t);transform:translate(-50%,-100%) translateY(-14px);pointer-events:auto;white-space:normal;word-break:break-word}
     .jrn-card-desc{font-size:.88rem;line-height:1.65;color:var(--ink2);margin-top:.6rem;white-space:pre-line}
 
-    /* NEPAL MAP */
+    /* MAP SECTION */
     #nepal-map{padding:6rem clamp(1.5rem,8vw,8rem)}
     .section-sub{color:var(--ink2);font-size:.95rem;margin-top:.5rem;max-width:600px}
     #leaflet-map{height:520px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-top:1.5rem;z-index:1}
@@ -267,14 +269,6 @@
     .slideshow-dots{display:flex;justify-content:center;gap:.4rem;padding:.6rem 0}
     .slide-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background var(--t),transform var(--t)}
     .slide-dot.active{background:var(--accent);transform:scale(1.3)}
-    .slider-wrap{position:relative;width:100%;margin:.8rem 0}
-    .slider-inner{position:relative;width:100%;height:260px;border-radius:12px;overflow:hidden;background:var(--bg2)}
-    .slider-slide{position:absolute;inset:0;opacity:0;transition:opacity .4s ease}
-    .slider-slide.active{opacity:1}
-    .slider-slide img{width:100%;height:100%;object-fit:cover;display:block}
-    .slider-controls{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0}
-    .slider-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--ink2);transition:all var(--t)}
-    .slider-counter{font-size:.82rem;color:var(--ink2);font-family:'JetBrains Mono',monospace}
     .modal-actions{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--border)}
     .modal-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.2rem;border-radius:6px;font-size:.86rem;font-weight:500;transition:all var(--t)}
     .modal-btn-primary{background:var(--accent);color:#fff}
@@ -369,6 +363,7 @@
   <div class="stats-grid" id="stats-grid"></div>
 </section>
 
+<!-- JOURNEY TIMELINE -->
 <section id="timeline">
   <button class="jrn-toggle" id="jrn-toggle" aria-expanded="false" aria-controls="jrn-body">
     <span class="jrn-toggle-label">
@@ -388,6 +383,7 @@
   </div>
 </section>
 
+<!-- NEPAL MAP SECTION -->
 <section id="nepal-map">
   <div class="section-header reveal">
     <h2 class="section-title">Field Presence</h2>
@@ -550,9 +546,9 @@ function parseFM(text) {
         data[key] = parts.join('\n').trimEnd();
       } else {
         const paras = []; let cur = [];
-        parts.forEach(line => {
-          if (line === '') { if (cur.length) { paras.push(cur.join(' ')); cur = []; } }
-          else cur.push(line);
+        parts.forEach(l => {
+          if (l === '') { if (cur.length) { paras.push(cur.join(' ')); cur = []; } }
+          else cur.push(l);
         });
         if (cur.length) paras.push(cur.join(' '));
         data[key] = paras.join('\n\n').trim();
@@ -635,6 +631,7 @@ async function fileList(dir) {
   const fb={
     '/content/projects/':['hydroclimatic-variability-marsyangdi.md','sediment-dynamics-hydropower.md','water-soil-food-nexus.md','sisdol-landfill-pollution.md','nepal-waste-map.md','climate-adaptation-marginalized.md','spring-water-karnali.md'],
     '/content/publications/':['drinking-water-marsyangdi.md','trace-elements-gandaki.md','ecological-restoration-nepal.md','sediment-dynamics-hydropower.md','hydroclimatic-variability-submitted.md'],
+    '/content/awards/':['research-fellowship-tu.md','data-fellowship.md','most-innovative.md','climate-action-fund.md','digital-solution.md','sasgp.md'],
     '/content/education/':['msc-environmental-science.md','bsc-environmental-science.md'],
     '/content/experience/':['research-assistant-tribhuvan.md','environmental-consultant.md']
   };
@@ -674,20 +671,6 @@ const cvBtn = document.getElementById('cv-btn');
 const cvMenu = document.getElementById('cv-menu');
 cvBtn.addEventListener('click', e=>{ e.stopPropagation(); cvMenu.classList.toggle('open'); });
 document.addEventListener('click',()=>cvMenu.classList.remove('open'));
-
-// TABS
-function animateToggle(wrapEl, renderFn) {
-  renderFn();
-  Array.from(wrapEl.children).forEach((el, i) => {
-    el.style.opacity = '0';
-    el.style.transform = 'translateY(12px)';
-    setTimeout(() => {
-      el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
-      el.style.opacity = '1';
-      el.style.transform = 'translateY(0)';
-    }, i * 45);
-  });
-}
 
 document.querySelectorAll('[data-tab]').forEach(btn=>{
   btn.addEventListener('click',()=>{
@@ -736,7 +719,6 @@ document.getElementById('lb-next').addEventListener('click',()=>{lbIdx=(lbIdx+1)
 // MODAL
 const overlay = document.getElementById('modal-overlay');
 function openModal(cfg) {
-  const icon = cfg.icon||'📄';
   const vis0 = cfg.vis || {};
   const gallery0 = (cfg.gallery||[]);
   const firstGalleryImg = gallery0.length > 0 ? imgPath(typeof gallery0[0]==='string' ? gallery0[0] : (gallery0[0].src||'')) : '';
@@ -845,7 +827,118 @@ function startTyping(tags){
 
 const observer = new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); }); },{threshold:0.1});
 
-// RENDER SITE
+// LEAFLET MAP ENGINE
+window._leafletMapInstance = null;
+window._renderLeafletMap = function(mapConfig) {
+  const mapEl = document.getElementById('leaflet-map');
+  if (!mapEl || typeof L === 'undefined') return;
+
+  if (window._leafletMapInstance) {
+    window._leafletMapInstance.remove();
+    window._leafletMapInstance = null;
+  }
+
+  const map = L.map('leaflet-map', {
+    center: [28.3949, 84.1240],
+    zoom: 7,
+    minZoom: 6,
+    maxZoom: 11,
+    scrollWheelZoom: false
+  });
+  window._leafletMapInstance = map;
+
+  const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
+  const tileUrl = isDarkTheme
+    ? 'https://{s}[.basemaps.cartocdn.com/dark_all/](https://.basemaps.cartocdn.com/dark_all/){z}/{x}/{y}{r}.png'
+    : 'https://{s}[.basemaps.cartocdn.com/light_all/](https://.basemaps.cartocdn.com/light_all/){z}/{x}/{y}{r}.png';
+
+  L.tileLayer(tileUrl, {
+    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+  }).addTo(map);
+
+  const legendEl = document.getElementById('map-legend');
+  const typeColors = {
+    research: '#2d6a4f',
+    community: '#d4a94a',
+    eia: '#c85a17',
+    visited: '#4a90e2',
+    other: '#708090'
+  };
+  const typeLabels = {
+    research: 'Research Project',
+    community: 'Community Initiative',
+    eia: 'Environmental Assessment',
+    visited: 'Field Presence / Visited',
+    other: 'General Engagement'
+  };
+
+  if (legendEl) {
+    legendEl.innerHTML = Object.keys(typeColors).map(type => `
+      <div class="legend-item">
+        <span class="legend-dot" style="background:${typeColors[type]}"></span>
+        <span>${typeLabels[type]}</span>
+      </div>
+    `).join('');
+  }
+
+  const districts = (mapConfig && Array.isArray(mapConfig.districts)) ? mapConfig.districts : [];
+
+  // District centroid approximations
+  const districtCoords = {
+    "KATHMANDU": [27.7172, 85.3240], "LALITPUR": [27.6588, 85.3247], "BHAKTAPUR": [27.6710, 85.4298],
+    "MUSTANG": [28.9985, 83.8473], "MANANG": [28.6600, 84.1500], "GORKHA": [28.2889, 84.6890],
+    "LAMJUNG": [28.2439, 84.4172], "KASKI": [28.3949, 83.9856], "CHITWAN": [27.5291, 84.3542],
+    "DHADING": [27.8644, 84.9089], "RASUWA": [28.1356, 85.2934], "SINDHUPALCHOK": [27.9528, 85.6856],
+    "SOLUKHUMBU": [27.7052, 86.7110], "SANKHUWASABHA": [27.5878, 87.2144], "TAPLEJUNG": [27.5888, 87.8222],
+    "JUMLA": [29.2747, 82.1838], "DOLPA": [29.0300, 83.0000], "HUMLA": [30.0000, 81.8000],
+    "KALIKOT": [29.1417, 81.7583], "MUGU": [29.7400, 82.3500], "SURKHET": [28.6000, 81.6333],
+    "DAILEKH": [28.8378, 81.7103], "JAJARKOT": [28.7000, 82.2000], "RUKUM": [28.6333, 82.4833],
+    "ROLPA": [28.3000, 82.6333], "SALYAN": [28.3667, 82.1667], "DANG": [28.0333, 82.3000],
+    "BANKE": [28.1167, 81.7000], "BARDIYA": [28.3500, 81.3500], "KAILALI": [28.7167, 80.6000],
+    "KANCHANPUR": [28.9167, 80.3333], "DADELDHURA": [29.3000, 80.5833], "BAITADI": [29.5500, 80.5500],
+    "DARCHULA": [29.8500, 80.5333], "BAJHANG": [29.7500, 81.2000], "BAJURA": [29.6000, 81.5000],
+    "ACHHAM": [29.1167, 81.3000], "DOTI": [29.2667, 80.9833], "PALPA": [27.8667, 83.5500],
+    "GULMI": [28.0833, 83.2500], "ARGHAKHANCHI": [27.9500, 83.1000], "SYANGJA": [28.0833, 83.8333],
+    "TANAHU": [27.9500, 84.2667], "NAWALPARASI": [27.6500, 83.9500], "RUPANDEHI": [27.5000, 83.4500],
+    "KAPILBASTU": [27.5833, 83.0500], "PARBAT": [28.2000, 83.7000], "BAGLUNG": [28.2667, 83.6000],
+    "MYAGDI": [28.4500, 83.5667], "PYUTHAN": [28.1000, 82.8833], "MAKWANPUR": [27.4167, 85.0333],
+    "NUWAKOT": [27.9167, 85.1667], "KAVRE": [27.5333, 85.5500], "RAMECHHAP": [27.3333, 86.0833],
+    "DOLAKHA": [27.6833, 86.0667], "SINDHULI": [27.2500, 85.9667], "BARA": [27.0500, 85.0000],
+    "PARSA": [27.0833, 84.8667], "RAUTAHAT": [26.9667, 85.3167], "SARLAHI": [26.9500, 85.5500],
+    "MAHOTTARI": [26.9167, 85.8333], "DHANUSA": [26.7833, 86.0000], "SIRAHA": [26.6500, 86.2000],
+    "SAPTARI": [26.5833, 86.7500], "UDAYAPUR": [26.9000, 86.5167], "OKHALDHUNGA": [27.3167, 86.5000],
+    "KHOTANG": [27.2000, 86.7833], "BHOJPUR": [27.1667, 87.0500], "DHANKUTA": [26.9833, 87.3333],
+    "TERHATHUM": [27.1333, 87.5500], "PANCHTHAR": [27.2000, 87.8333], "ILAM": [26.9167, 87.9333],
+    "JHAPA": [26.6333, 87.9833], "MORANG": [26.6500, 87.4500], "SUNSARI": [26.6500, 87.1667]
+  };
+
+  districts.forEach(d => {
+    const name = (d.name || '').toUpperCase().trim();
+    const coords = districtCoords[name];
+    if (!coords) return;
+
+    const color = typeColors[d.type] || typeColors.other;
+    const marker = L.circleMarker(coords, {
+      radius: 9,
+      fillColor: color,
+      color: '#ffffff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.88
+    }).addTo(map);
+
+    const popupHtml = `
+      <div class="lp-title">${safe(d.project || name)}</div>
+      <span class="lp-badge" style="background:${color}">${typeLabels[d.type] || 'District'}</span>
+      ${d.year ? `<div class="lp-row"><strong>Year:</strong> ${safe(d.year)}</div>` : ''}
+      <div class="lp-row"><strong>District:</strong> ${name}</div>
+      ${d.note ? `<div class="lp-row" style="margin-top:4px;">${safe(d.note)}</div>` : ''}
+    `;
+    marker.bindPopup(popupHtml);
+  });
+};
+
+// RENDER ALL DATA
 function renderSite(s, eduItems, projects, pubs, expItems, customSections, customItems) {
   window._cardIntervals.forEach(clearInterval);
   window._cardIntervals = [];
@@ -867,6 +960,11 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   const body = document.body;
   order.forEach(id => { const el = document.getElementById(id); if (el) body.insertBefore(el, document.querySelector('footer')); });
 
+  // Map Data
+  window._mapData = s.mapData || null;
+  if (window._mapData && window._renderLeafletMap) window._renderLeafletMap(window._mapData);
+
+  // Milestones Configured with same-year/elevation offsets
   const cmsMilestones = Array.isArray(s.milestones) ? s.milestones : [];
   window._timelineMilestones = cmsMilestones.map((m, sourceIndex) => ({
     _sourceIndex: sourceIndex,
@@ -882,10 +980,42 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   if (window._buildRoad) window._buildRoad();
 
+  // Stats Counters
+  const statsGrid = document.getElementById('stats-grid');
+  if (statsGrid) {
+    let stats = Array.isArray(s.stats) ? s.stats.filter(st => st.label || st.value) : [];
+    const statsSec = document.getElementById('stats');
+    if (stats.length < 2) {
+      if (statsSec) statsSec.style.display = 'none';
+    } else {
+      if (statsSec) statsSec.style.display = '';
+      statsGrid.innerHTML = '';
+      stats.forEach(st => {
+        const div = document.createElement('div');
+        div.className = 'stat-item reveal';
+        div.innerHTML = `<span class="stat-number" data-target="${st.value || '0'}" data-suffix="${st.suffix||''}" data-prefix="${st.prefix||''}">0</span><div class="stat-label">${safe(st.label)}</div>`;
+        statsGrid.appendChild(div);
+      });
+      document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+        const target = +el.dataset.target, suffix = el.dataset.suffix || '', prefix = el.dataset.prefix || '';
+        el.textContent = prefix + target + suffix;
+      });
+    }
+  }
+
   document.title = safe(s.name);
   ['nav-name','hero-name','footer-name'].forEach(id=>{ const el = document.getElementById(id); if (el) el.textContent=safe(s.name); });
   const heroBioEl = document.getElementById('hero-bio');
   if (s.heroBio && heroBioEl) heroBioEl.textContent = safe(s.heroBio);
+
+  const heroCvBtn = document.getElementById('hero-cv-btn');
+  const primaryCV = s.cvAcademic || s.cvProfessional;
+  if (primaryCV && heroCvBtn) { heroCvBtn.href = primaryCV; heroCvBtn.style.display = ''; }
+
+  const cvAcad = document.getElementById('cv-academic-link');
+  const cvProf = document.getElementById('cv-professional-link');
+  if (s.cvAcademic && cvAcad) { cvAcad.href=s.cvAcademic; }
+  if (s.cvProfessional && cvProf) { cvProf.href=s.cvProfessional; }
 
   const pc = document.getElementById('hero-photo-container');
   if (pc) pc.innerHTML = s.photo ? `<img class="hero-photo" src="${imgPath(s.photo)}" alt="${safe(s.name)}"/><div class="hero-photo-overlay"></div>` : `<div class="hero-photo-placeholder"><span>🖼️</span><p>Add photo via CMS</p></div>`;
@@ -914,6 +1044,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     });
   }
 
+  // Projects Filters and Cards
   const allTags=['All',...new Set(projects.flatMap(p=>Array.isArray(p.tags)?p.tags:[]))];
   const fb = document.getElementById('filter-bar');
   if (fb) {
@@ -954,7 +1085,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     });
   }
 
-  // PUBLICATIONS (Supports both DOI and Link)
+  // Publications with explicit DOI and Link support
   const pubEl=document.getElementById('pub-list');
   if (pubEl) {
     pubs.forEach(p=>{
@@ -1021,6 +1152,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     });
   }
 
+  // Work Experience
   const expEl = document.getElementById('exp-list');
   if (expEl) {
     const expItems2 = (expItems||[]).sort((a,b)=>(a.order||99)-(b.order||99));
@@ -1035,7 +1167,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         const hasMore = e.shortDesc || e.body || e.image || (e.gallery && e.gallery.length);
         const div = document.createElement('div');
         div.className = 'exp-item visible' + (hasMore ? ' exp-clickable' : '');
-        div.innerHTML = `<div class="exp-left"><div class="exp-dates">${dateRange}</div>${e.location ? `<div class="exp-location">📍 ${e.location}</div>` : ''}${e.type ? `<span class="exp-type-badge ${typeClass}">${typeLabel}</span>` : ''}</div><div class="exp-right"><div class="exp-title">${safe(e.title)}</div><div class="exp-org">${safe(e.organisation)}</div>${hasMore ? `<span class="pub-more">Read more →</span>` : ''}</div>`;
+        div.innerHTML = `<div class="exp-left"><div class="exp-dates">${dateRange}</div>${e.location ? `<div class="exp-location">📍 ${e.location}</div>` : ''}${e.type ? `<span class="exp-type-badge ${typeClass}">${typeLabel}</span>` : ''}</div><div class="exp-right"><div class="exp-title">${safe(e.title)}</div><div class="exp-org">${safe(e.organisation)}</div>${e.shortDesc ? `<div class="exp-desc">${e.shortDesc.slice(0,120)}...</div>` : ''}${hasMore ? `<span class="pub-more">Read more →</span>` : ''}</div>`;
         if (hasMore) {
           div.addEventListener('click', () => openModal({
             title: e.title, meta: `<span class="project-status-badge">${typeLabel}</span>`, tags: [], image: imgPath(e.image)||'', icon: '💼', subtitle: `${safe(e.organisation)}${e.location?' · '+e.location:''}`, shortDesc: e.shortDesc||'', detail: e.body||'', gallery: Array.isArray(e.gallery) ? e.gallery : [], displayMode: e.displayMode||'popup', slug: e.slug, pageType: 'experience',
@@ -1054,6 +1186,26 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     });
   }
 
+  // Custom Sections
+  const customSectionsEl = document.getElementById('custom-sections-wrap');
+  if (customSectionsEl && customSections && customSections.length) {
+    customSections.filter(sec => sec.visible !== false && sec.visible !== 'false').forEach(sec => {
+      const items = (customItems || []).filter(it => it.sectionId === sec.id).sort((a,b) => (+a.order||99)-(+b.order||99));
+      if (!items.length) return;
+      const secEl = document.createElement('section');
+      secEl.className = 'custom-section'; secEl.id = 'custom-'+sec.id;
+      let innerHtml = `<div class="section-header reveal"><h2 class="section-title">${sec.icon||'📌'} ${safe(sec.title)}</h2><div class="section-line"></div></div>`;
+      innerHtml += `<div class="projects-grid">`;
+      items.forEach(e => {
+        innerHtml += `<div class="project-card"><div class="project-card-top"><div class="project-title">${safe(e.title)}</div></div><div class="project-desc">${safe(e.shortDesc||'')}</div></div>`;
+      });
+      innerHtml += `</div>`;
+      secEl.innerHTML = innerHtml;
+      customSectionsEl.appendChild(secEl);
+    });
+  }
+
+  // Skills
   const skillsEl = document.getElementById('skills-grid');
   if (skillsEl && s.skills && Array.isArray(s.skills.items)) {
     s.skills.items.forEach(group => {
@@ -1064,6 +1216,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     });
   }
 
+  // Contact
   const clEl=document.getElementById('contact-links');
   if (clEl) {
     const cItems=[{icon:'✉️',label:'Email',val:s.email,href:`mailto:${s.email}`},{icon:'📍',label:'Location',val:s.location,href:null},{icon:'📞',label:'Phone',val:s.phone,href:`tel:${s.phone}`}].filter(i=>i.val);
@@ -1075,13 +1228,19 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     });
   }
 
+  const slEl=document.getElementById('social-links');
+  if (slEl) {
+    const socials=[{name:'GitHub',icon:'🐙',url:s.github},{name:'LinkedIn',icon:'💼',url:s.linkedin},{name:'Facebook',icon:'📘',url:s.facebook},{name:'Instagram',icon:'📸',url:s.instagram},{name:'Storygraph',icon:'📚',url:s.storygraph},...(s.customSocials||[]).map(c=>({name:c.name,icon:c.icon||'🔗',url:c.url}))].filter(s=>s.url);
+    socials.forEach(s=>{ slEl.innerHTML+=`<a class="social-btn" href="${s.url}" target="_blank">${s.icon} ${s.name}</a>`; });
+  }
+
   startTyping(Array.isArray(s.taglines)?s.taglines:['Environmental Scientist']);
   document.querySelectorAll('img[data-src]').forEach(img => { loadImg(img, imgPath(img.dataset.src)); });
   setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>observer.observe(el)),100);
   document.getElementById('loading').classList.add('done');
 }
 
-// LOAD DATA
+// BOOT
 async function loadSite() {
   try {
     const [settings, eduItems, projects, pubs, expItems, customSections, skillsData, mapData] = await Promise.all([
@@ -1095,7 +1254,7 @@ async function loadSite() {
 
     renderSite(baseSettings, eduItems, projects, pubs, expItems||[], customSections||[], []);
   } catch(e) {
-    console.error('Load error:',e);
+    console.error('Load error:', e);
     document.getElementById('loading').classList.add('done');
   }
 }
@@ -1207,7 +1366,6 @@ function drawRiverBase() {
   ctx.stroke();
 }
 
-// DRAW ANIMATED FLOW PARTICLES
 let particles = [];
 function initParticles() {
   particles = Array.from({length: 45}, () => ({
@@ -1233,7 +1391,6 @@ function drawFlow() {
     ctx.fill();
   });
 
-  // Highlight active milestone with water ripples
   if (layout && activeMilestoneIndex >= 0 && layout.milestoneAnchors[activeMilestoneIndex]) {
     const activeAnchor = layout.milestoneAnchors[activeMilestoneIndex];
     ctx.beginPath();
@@ -1246,7 +1403,6 @@ function drawFlow() {
   requestAnimationFrame(drawFlow);
 }
 
-// BUILD INTERACTIVE MILESTONES (Fluid Dialogue box, no elevation)
 function buildMilestones() {
   if (!milestonesContainer || !layout) return;
   milestonesContainer.innerHTML = '';
@@ -1291,7 +1447,6 @@ function showMilestoneCard(anchor) {
   card.className = 'jrn-milestone-card';
   card.id = 'active-jrn-card';
 
-  // Keep card bounds safely inside container
   const posX = Math.max(160, Math.min(baseW - 160, anchor.x));
   card.style.left = posX + 'px';
   card.style.top = anchor.y + 'px';
@@ -1360,6 +1515,46 @@ toggle.addEventListener('click', () => {
     closeMilestoneCard();
   }
 });
+})();
+</script>
+
+<!-- HERO BACKGROUND RIVER ANIMATION -->
+<script>
+(function() {
+  const canvas = document.getElementById('river-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  function resize() { canvas.width  = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
+  resize(); window.addEventListener('resize', resize);
+
+  const LINES = 40;
+  const lines = Array.from({length: LINES}, (_, i) => ({
+    y: (i / LINES) * canvas.height, x: Math.random() * canvas.width, speed: 0.3 + Math.random() * 0.5, amp: 18 + Math.random() * 28, freq: 0.006 + Math.random() * 0.006, phase: Math.random() * Math.PI * 2, width: 0.6 + Math.random() * 1.2, opacity: 0.3 + Math.random() * 0.5
+  }));
+
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const base = dark ? '120,200,160' : '30,100,60';
+
+    lines.forEach(ln => {
+      ctx.beginPath(); ctx.lineWidth = ln.width;
+      const pts = 120;
+      for (let i = 0; i <= pts; i++) {
+        const px = (i / pts) * canvas.width;
+        const py = ln.y + Math.sin(px * ln.freq + ln.phase + t * 0.015) * ln.amp + Math.sin(px * ln.freq * 2.3 + t * 0.009) * (ln.amp * 0.3);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      }
+      ctx.strokeStyle = `rgba(${base},${ln.opacity})`; ctx.stroke();
+      ln.x = (ln.x + ln.speed) % canvas.width;
+      const dotY = ln.y + Math.sin(ln.x * ln.freq + ln.phase + t * 0.015) * ln.amp;
+      ctx.beginPath(); ctx.arc(ln.x, dotY, ln.width * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${base},${ln.opacity * 0.9})`; ctx.fill();
+    });
+    t++; requestAnimationFrame(draw);
+  }
+  draw();
 })();
 </script>
 </body>
