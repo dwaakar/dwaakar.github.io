@@ -4,17 +4,9 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Diwakar Adhikari</title>
-  
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
-  
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  
-  <!-- Marked.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
-
   <style>
     :root{--bg:#f7f5f0;--bg2:#eeeae2;--surface:#fff;--border:#ddd9d0;--ink:#1a1814;--ink2:#5a5650;--accent:#2d6a4f;--accent2:#40916c;--gold:#b7832a;--tag-bg:#e8f5ee;--tag-ink:#1b4332;--radius:10px;--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 40px rgba(0,0,0,.12);--nav-h:64px;--t:0.3s cubic-bezier(.4,0,.2,1)}
     [data-theme="dark"]{--bg:#111410;--bg2:#1a1d17;--surface:#20241e;--border:#2e332b;--ink:#e8e4dc;--ink2:#9a9890;--accent:#52b788;--accent2:#74c69d;--gold:#d4a94a;--tag-bg:#1b3a2e;--tag-ink:#95d5b2}
@@ -88,6 +80,40 @@
     .toggle-tab{padding:.5rem 1.2rem;border-radius:6px;font-size:.85rem;font-weight:500;color:var(--ink2);transition:all var(--t)}
     .toggle-tab.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
 
+    /* ── TOGGLE ANIMATIONS ── */
+    @keyframes fadeSlideIn {
+      from { opacity:0; transform:translateY(12px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    @keyframes fadeSlideOut {
+      from { opacity:1; transform:translateY(0); }
+      to   { opacity:0; transform:translateY(-8px); }
+    }
+    .toggle-anim-wrap {
+      position:relative;
+    }
+    .toggle-anim-wrap.animating > * {
+      animation: fadeSlideOut 0.18s ease forwards;
+    }
+    .toggle-enter {
+      animation: fadeSlideIn 0.25s ease forwards !important;
+    }
+    /* staggered children */
+    .toggle-enter:nth-child(1)  { animation-delay: 0.00s !important; }
+    .toggle-enter:nth-child(2)  { animation-delay: 0.04s !important; }
+    .toggle-enter:nth-child(3)  { animation-delay: 0.08s !important; }
+    .toggle-enter:nth-child(4)  { animation-delay: 0.12s !important; }
+    .toggle-enter:nth-child(5)  { animation-delay: 0.16s !important; }
+    .toggle-enter:nth-child(6)  { animation-delay: 0.20s !important; }
+    .toggle-enter:nth-child(7)  { animation-delay: 0.24s !important; }
+    .toggle-enter:nth-child(8)  { animation-delay: 0.28s !important; }
+    .toggle-enter:nth-child(9)  { animation-delay: 0.32s !important; }
+    .toggle-enter:nth-child(10) { animation-delay: 0.36s !important; }
+    /* project cards hidden state */
+    .project-card { transition: opacity 0.2s, transform 0.2s; }
+    .project-card.hidden { display:none; }
+    .project-card.hiding { opacity:0; transform:translateY(8px); pointer-events:none; }
+
     /* ABOUT */
     .about-grid{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
     .about-panel{display:none}.about-panel.active{display:block}
@@ -108,6 +134,8 @@
     .edu-detail{font-size:.88rem;color:var(--ink2);line-height:1.6}
     .edu-more{display:inline-flex;align-items:center;gap:.3rem;margin-top:.8rem;font-size:.82rem;font-weight:500;color:var(--accent)}
 
+
+
     /* PROJECTS */
     .filter-bar{display:flex;flex-wrap:wrap;gap:.6rem;margin-bottom:2.5rem}
     .filter-btn{padding:.45rem 1.1rem;border-radius:20px;border:1.5px solid var(--border);font-size:.83rem;font-weight:500;color:var(--ink2);transition:all var(--t)}
@@ -117,7 +145,9 @@
     .project-card:hover{transform:translateY(-6px);box-shadow:var(--shadow-lg)}
     .project-card.hidden{display:none}
     .pub-card.hidden{display:none}
+    .project-img{width:100%;height:190px;object-fit:cover}
     .project-img-placeholder{width:100%;height:190px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));display:flex;align-items:center;justify-content:center;font-size:2rem}
+    /* card slideshow */
     .card-slide-wrap{position:relative;width:100%;height:190px;overflow:hidden;background:var(--bg2)}
     .card-slide-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.7s ease}
     .card-slide-wrap img.cs-active{opacity:1}
@@ -146,9 +176,16 @@
     .pub-title{font-family:'Cormorant Garamond',serif;font-size:1rem;color:var(--ink);margin-bottom:.4rem;line-height:1.4}
     .pub-authors{font-size:.85rem;color:var(--ink2);margin-bottom:.3rem}
     .pub-journal{font-size:.85rem;color:var(--accent);font-style:italic}
-    .pub-links-bar{display:flex;align-items:center;gap:.9rem;margin-top:.5rem;flex-wrap:wrap}
-    .pub-doi{display:inline-flex;align-items:center;gap:.3rem;font-size:.8rem;color:var(--accent);text-decoration:underline}
+    .pub-doi{display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem;font-size:.8rem;color:var(--accent);text-decoration:underline}
     .pub-more{display:inline-flex;align-items:center;gap:.3rem;margin-top:.5rem;font-size:.8rem;font-weight:500;color:var(--accent)}
+
+    /* AWARDS */
+    .awards-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem}
+    .award-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.3rem;display:flex;gap:1rem;align-items:flex-start;transition:transform var(--t),box-shadow var(--t)}
+    .award-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+    .award-year{font-family:'JetBrains Mono',monospace;font-size:.75rem;color:var(--gold);letter-spacing:.05em;flex-shrink:0;background:rgba(183,131,42,.12);padding:.2rem .5rem;border-radius:4px}
+    .award-title{font-size:.92rem;font-weight:600;color:var(--ink);margin-bottom:.2rem}
+    .award-org{font-size:.82rem;color:var(--ink2)}
 
     /* EXPERIENCE */
     .exp-list{display:flex;flex-direction:column;gap:0}
@@ -163,6 +200,7 @@
     .exp-type-consultancy{background:#fef3e8;color:#7a3a1a}
     [data-theme="dark"] .exp-type-work{background:#1a2a4a;color:#7ab3f5}
     [data-theme="dark"] .exp-type-consultancy{background:#3a2a1a;color:#f5b37a}
+    .exp-right{}
     .exp-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--ink);font-weight:600;margin-bottom:.2rem}
     .exp-org{font-size:.9rem;color:var(--accent);margin-bottom:.6rem;font-weight:500}
     .exp-desc{font-size:.92rem;color:var(--ink2);line-height:1.75}
@@ -184,49 +222,54 @@
     .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2rem;text-align:center}
     .stat-item{color:var(--ink)}
     .stat-number{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,5vw,3.5rem);font-weight:700;line-height:1;display:block;color:var(--accent)}
+    .stat-suffix{font-size:1.5rem;vertical-align:super;font-size:1.2rem}
     .stat-label{font-size:.82rem;opacity:.85;margin-top:.4rem;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 
-    /* JOURNEY ACCORDION & RIVER SYSTEM */
-    #timeline{padding:0;position:relative}
-    .jrn-toggle{width:100%;display:flex;align-items:center;justify-content:space-between;padding:1.4rem clamp(1.5rem,8vw,8rem);background:transparent;border:none;border-top:1px solid var(--border);border-bottom:1px solid var(--border);cursor:pointer;font-family:'Inter',sans-serif;font-size:.88rem;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);transition:color .3s,background .3s}
-    .jrn-toggle:hover{color:var(--accent);background:var(--bg2)}
-    .jrn-toggle-label{display:flex;align-items:center;gap:.75rem}
-    .jrn-toggle-icon{font-size:1rem;transition:transform .4s cubic-bezier(.4,0,.2,1)}
-    .jrn-toggle[aria-expanded="true"] .jrn-toggle-icon{transform:rotate(180deg)}
-    .jrn-toggle-hint{font-size:.72rem;color:var(--ink2);opacity:.55;letter-spacing:.04em;text-transform:none}
+    /* WINDING ROAD JOURNEY */
+    #timeline{padding:4rem clamp(1.5rem,8vw,8rem) 2rem}
+    .road-wrap{position:relative;width:100%;max-width:700px;margin:0 auto}
+    #road-canvas{position:absolute;inset:0;width:100%;pointer-events:none;z-index:0}
+    #road-milestones{position:relative;z-index:1;padding:2rem 0 0}
 
-    .jrn-body{overflow:hidden;max-height:0;transition:max-height .8s cubic-bezier(.4,0,.2,1)}
-    .jrn-body.open{max-height:var(--jrn-open-h,900px)}
-    .jrn-inner{position:relative;overflow:hidden;min-height:560px;background:var(--bg)}
-    .jrn-inner .jrn-layer{opacity:0;transition:opacity 1.1s cubic-bezier(.4,0,.2,1)}
-    .jrn-inner.jrn-revealed .jrn-layer{opacity:1}
-    .jrn-inner.jrn-revealed #jrn-topo{transition-delay:0s}
-    .jrn-inner.jrn-revealed #jrn-river-base{transition-delay:.35s}
-    .jrn-inner.jrn-revealed #jrn-river{transition-delay:.5s}
-    .jrn-inner.jrn-revealed #jrn-milestones{transition-delay:.65s}
+    /* Each milestone row */
+    .rm-row{display:flex;align-items:flex-start;margin-bottom:5rem;position:relative}
+    .rm-row.left {flex-direction:row;        padding-left:10%}
+    .rm-row.right{flex-direction:row-reverse;padding-right:10%}
+    .rm-dot{width:16px;height:16px;border-radius:50%;background:var(--accent);border:3px solid var(--bg);box-shadow:0 0 0 2px var(--accent);flex-shrink:0;margin-top:.35rem;transition:transform .2s}
+    .rm-row:hover .rm-dot{transform:scale(1.4)}
+    .rm-connector{width:2.5rem;height:2px;background:var(--accent);opacity:.35;align-self:center;flex-shrink:0}
+    .rm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1rem 1.2rem;max-width:280px;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s}
+    .rm-card:hover{box-shadow:0 8px 28px rgba(0,0,0,.10);transform:translateY(-3px);border-color:var(--accent)}
+    .rm-year{font-family:'JetBrains Mono',monospace;font-size:.7rem;color:var(--accent);font-weight:700;letter-spacing:.06em;margin-bottom:.3rem}
+    .rm-icon{font-size:1.4rem;margin-bottom:.3rem}
+    .rm-title{font-size:.9rem;font-weight:700;color:var(--ink);line-height:1.35}
+    .rm-sub{font-size:.78rem;color:var(--ink2);margin-top:.2rem}
+    .rm-detail{font-size:.8rem;color:var(--ink2);margin-top:.55rem;line-height:1.55;display:none}
+    .rm-card.open .rm-detail{display:block}
+    .rm-card.open{border-color:var(--accent);box-shadow:0 8px 28px rgba(0,0,0,.10)}
 
-    #jrn-topo{position:absolute;left:0;right:0;top:-2%;width:100%;height:104%;pointer-events:none;z-index:0;will-change:transform}
-    #jrn-river-base{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
-    #jrn-river{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
-    #jrn-milestones{position:absolute;inset:0;z-index:3}
+    /* Road end — dotted trail + question */
+    .road-end{display:flex;flex-direction:column;align-items:center;padding:1rem 0 4rem;position:relative;z-index:1}
+    .road-dotted-tail{width:2px;height:80px;background:repeating-linear-gradient(to bottom,var(--accent) 0,var(--accent) 8px,transparent 8px,transparent 16px);opacity:.4;margin-bottom:1.2rem}
+    .road-question{display:flex;flex-direction:column;align-items:center;gap:.5rem;animation:floatQ 3s ease-in-out infinite}
+    .road-q-mark{font-family:'Cormorant Garamond',serif;font-size:5rem;font-weight:700;color:var(--accent);opacity:.25;line-height:1}
+    .road-q-label{font-size:.78rem;color:var(--ink2);letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+    @keyframes floatQ{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
-    .jrn-milestone-hit{position:absolute;width:40px;height:40px;padding:0;border:0;border-radius:50%;transform:translate(-50%,-50%);background:transparent;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;touch-action:manipulation;z-index:9}
-    .jrn-milestone-hit::before{content:'';position:absolute;inset:6px;border-radius:50%;border:1.5px solid transparent;transition:transform .18s,background .18s,box-shadow .18s}
-    .jrn-milestone-hit:hover::before,.jrn-milestone-hit.active::before{transform:scale(1.2);background:color-mix(in srgb,var(--accent) 24%,transparent);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 18%,transparent)}
-
-    /* FLUID NON-UNIFORM DIALOGUE BOX (NO ELEVATION BADGE) */
-    .jrn-milestone-card{position:absolute;width:auto;min-width:240px;max-width:min(440px,88vw);height:auto;max-height:80vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:var(--shadow-lg);padding:1.1rem 1.3rem;z-index:50;transition:opacity var(--t),transform var(--t);transform:translate(-50%,-100%) translateY(-14px);pointer-events:auto;white-space:normal;word-break:break-word}
-    .jrn-card-desc{font-size:.88rem;line-height:1.65;color:var(--ink2);margin-top:.6rem;white-space:pre-line}
-
-    /* MAP SECTION */
+    /* NEPAL MAP — Leaflet */
     #nepal-map{padding:6rem clamp(1.5rem,8vw,8rem)}
     .section-sub{color:var(--ink2);font-size:.95rem;margin-top:.5rem;max-width:600px}
     #leaflet-map{height:520px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-top:1.5rem;z-index:1}
+    /* Legend */
     .map-legend{display:flex;flex-wrap:wrap;gap:.6rem 1.4rem;margin-bottom:1rem}
     .legend-item{display:flex;align-items:center;gap:.45rem;font-size:.82rem;color:var(--ink2)}
     .legend-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+    /* Leaflet popup override */
     .leaflet-popup-content-wrapper{border-radius:var(--radius)!important;box-shadow:0 8px 32px rgba(0,0,0,.12)!important;border:1px solid #e0ddd6!important}
     .leaflet-popup-content{margin:.9rem 1.1rem!important;font-family:'Inter',sans-serif!important}
+    .lp-title{font-weight:700;font-size:.92rem;color:#1a1814;margin-bottom:.3rem}
+    .lp-badge{display:inline-block;padding:.15rem .55rem;border-radius:8px;font-size:.72rem;font-weight:600;color:#fff;margin-bottom:.4rem}
+    .lp-row{font-size:.82rem;color:#5a5650;line-height:1.5}
 
     /* CONTACT */
     .contact-inner{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
@@ -248,11 +291,14 @@
     .modal{background:var(--surface);border-radius:16px;max-width:780px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);transform:translateY(24px) scale(.97);transition:transform var(--t)}
     .modal-overlay.open .modal{transform:none}
     .modal-cover{width:100%;height:240px;object-fit:cover;border-radius:16px 16px 0 0;display:block}
+    .modal-cover-placeholder{width:100%;height:160px;background:linear-gradient(135deg,var(--bg2),var(--tag-bg));border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:center;font-size:3rem}
     .modal-header{padding:1.2rem 1.5rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:1rem;position:sticky;top:0;z-index:10;background:var(--surface);border-bottom:1px solid var(--border);border-radius:16px 16px 0 0}
     .modal-header-left{display:flex;align-items:center;gap:.8rem;flex:1;min-width:0}
-    .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;line-height:1.3;color:var(--ink);flex:1;min-width:0}
+    .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.25rem;line-height:1.3;color:var(--ink);flex:1;min-width:0}
     .modal-header-right{display:flex;align-items:center;gap:.6rem;flex-shrink:0}
     .modal-fullpage-btn{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .9rem;border-radius:6px;font-size:.82rem;font-weight:600;background:var(--accent);color:#fff;transition:all var(--t);white-space:nowrap}
+    .modal-fullpage-btn:hover{background:var(--accent2);transform:translateY(-1px)}
+    .modal-title{font-family:'Cormorant Garamond',serif;font-size:1.4rem;line-height:1.3;color:var(--ink)}
     .modal-close{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:1.1rem;transition:all var(--t)}
     .modal-close:hover{border-color:var(--accent);color:var(--accent)}
     .modal-body{padding:0 2rem 2rem}
@@ -260,26 +306,62 @@
     .modal-tags{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:1rem}
     .modal-section-title{font-size:.78rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin:.8rem 0 .4rem;padding-top:.8rem;border-top:1px solid var(--border)}
     .modal-short-desc{font-size:.97rem;color:var(--ink2);line-height:1.85;margin-bottom:1.2rem;padding-bottom:1.2rem;border-bottom:1px solid var(--border)}
+    .modal-short-desc p{margin-bottom:.7rem}
+    .modal-short-desc p:last-child{margin-bottom:0}
+    .modal-short-desc strong{color:var(--ink);font-weight:600}
+    .modal-short-desc h1,.modal-short-desc h2,.modal-short-desc h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:.8rem 0 .4rem;font-size:1.1rem}
+    .modal-short-desc ul,.modal-short-desc ol{padding-left:1.3rem;margin-bottom:.7rem}
+    .modal-short-desc li{margin-bottom:.25rem}
     .modal-detail{font-size:.97rem;color:var(--ink2);line-height:1.85}
+    .modal-detail p{margin-bottom:.9rem}
+    .modal-detail h2,.modal-detail h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:1.2rem 0 .5rem}
+    .modal-detail ul,.modal-detail ol{padding-left:1.4rem;margin-bottom:.9rem}
+    .modal-detail blockquote{border-left:3px solid var(--accent);padding:.8rem 1rem;background:var(--bg2);border-radius:0 8px 8px 0;margin:1rem 0;font-style:italic}
+    /* SLIDESHOW (auto - education & projects) */
     .slideshow-wrap{position:relative;width:100%;border-radius:12px;overflow:hidden;margin:.8rem 0;background:var(--bg2)}
     .slideshow-inner{position:relative;width:100%;height:260px}
     .slide{position:absolute;inset:0;opacity:0;transition:opacity .7s ease;pointer-events:none}
     .slide.active{opacity:1;pointer-events:all}
     .slide img{width:100%;height:100%;object-fit:cover;display:block}
+    .slide-caption{position:absolute;bottom:0;left:0;right:0;padding:.5rem .8rem;background:rgba(0,0,0,.5);color:#fff;font-size:.8rem}
     .slideshow-dots{display:flex;justify-content:center;gap:.4rem;padding:.6rem 0}
-    .slide-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background var(--t),transform var(--t)}
+    .slide-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:background var(--t),transform var(--t);cursor:default}
     .slide-dot.active{background:var(--accent);transform:scale(1.3)}
+
+    /* MANUAL SLIDER (publications) */
+    .slider-wrap{position:relative;width:100%;margin:.8rem 0}
+    .slider-inner{position:relative;width:100%;height:260px;border-radius:12px;overflow:hidden;background:var(--bg2)}
+    .slider-slide{position:absolute;inset:0;opacity:0;transition:opacity .4s ease}
+    .slider-slide.active{opacity:1}
+    .slider-slide img{width:100%;height:100%;object-fit:cover;display:block}
+    .slider-caption{position:absolute;bottom:0;left:0;right:0;padding:.5rem .8rem;background:rgba(0,0,0,.5);color:#fff;font-size:.8rem}
+    .slider-controls{display:flex;justify-content:space-between;align-items:center;padding:.5rem 0}
+    .slider-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:var(--ink2);transition:all var(--t)}
+    .slider-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .slider-counter{font-size:.82rem;color:var(--ink2);font-family:'JetBrains Mono',monospace}
+
+    .modal-video{margin:.8rem 0}
+    .modal-video-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:10px}
+    .modal-video-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
+    .modal-coursework{display:flex;flex-wrap:wrap;gap:.4rem;margin:.5rem 0}
+    .modal-course-tag{padding:.25rem .7rem;border-radius:12px;background:var(--bg2);color:var(--ink2);font-size:.8rem}
     .modal-actions{display:flex;gap:.8rem;flex-wrap:wrap;margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid var(--border)}
     .modal-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.65rem 1.2rem;border-radius:6px;font-size:.86rem;font-weight:500;transition:all var(--t)}
     .modal-btn-primary{background:var(--accent);color:#fff}
+    .modal-btn-primary:hover{background:var(--accent2);transform:translateY(-2px)}
     .modal-btn-outline{border:1.5px solid var(--border);color:var(--ink2)}
+    .modal-btn-outline:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+    .modal-btn-dark{background:var(--ink);color:#fff}
+    .modal-btn-dark:hover{background:var(--ink2);transform:translateY(-2px)}
 
     /* LIGHTBOX */
     .lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--t)}
     .lightbox.open{opacity:1;pointer-events:all}
     .lightbox img{max-width:90vw;max-height:85vh;object-fit:contain;border-radius:8px}
-    .lb-close{position:absolute;top:1.5rem;right:1.5rem;color:#fff;font-size:1.3rem;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center}
-    .lb-nav{position:absolute;top:50%;transform:translateY(-50%);color:#fff;font-size:1.8rem;width:48px;height:48px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center}
+    .lb-close{position:absolute;top:1.5rem;right:1.5rem;color:#fff;font-size:1.3rem;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;transition:all var(--t)}
+    .lb-close:hover{background:rgba(255,255,255,.1)}
+    .lb-nav{position:absolute;top:50%;transform:translateY(-50%);color:#fff;font-size:1.8rem;width:48px;height:48px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;transition:all var(--t)}
+    .lb-nav:hover{background:rgba(255,255,255,.1)}
     .lb-prev{left:1.5rem}.lb-next{right:1.5rem}
     .lb-caption{position:absolute;bottom:2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.8);font-size:.9rem;text-align:center}
 
@@ -289,10 +371,12 @@
     .admin-link{font-size:.75rem;color:var(--ink2);opacity:.4;transition:opacity var(--t)}
     .admin-link:hover{opacity:1;color:var(--accent)}
 
+    /* LOADING */
     #loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;transition:opacity .5s}
     #loading.done{opacity:0;pointer-events:none}
     .loader{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 
+    /* ANIMATIONS */
     @keyframes spin{to{transform:rotate(360deg)}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
     @keyframes blink{50%{opacity:0}}
@@ -352,38 +436,40 @@
     <p class="hero-bio" id="hero-bio">Working at the intersection of climate change, water resources, circular economy, and environmental governance.</p>
     <div class="hero-cta">
       <a id="hero-cv-btn" href="#" class="btn btn-primary" style="display:none">📄 View CV</a>
-      <a href="#projects" class="btn btn-primary">🔬 Projects</a>
+      <a href="#projects" class="btn btn-primary">🔬 Research</a>
       <a href="#contact" class="btn btn-outline">✉️ Contact Me</a>
     </div>
   </div>
   <div id="hero-photo-container" class="hero-photo-wrap"></div>
 </section>
 
+<!-- STATS COUNTER -->
 <section id="stats">
   <div class="stats-grid" id="stats-grid"></div>
 </section>
 
-<!-- JOURNEY TIMELINE -->
+<!-- WINDING ROAD JOURNEY -->
 <section id="timeline">
-  <button class="jrn-toggle" id="jrn-toggle" aria-expanded="false" aria-controls="jrn-body">
-    <span class="jrn-toggle-label">
-      <span class="jrn-toggle-icon">▾</span>
-      <span id="jrn-toggle-label-text">Explore My Journey</span>
-    </span>
-    <span class="jrn-toggle-hint" id="jrn-toggle-hint">Click to expand</span>
-  </button>
-
-  <div class="jrn-body" id="jrn-body" role="region">
-    <div class="jrn-inner" id="jrn-inner">
-      <canvas id="jrn-topo" class="jrn-layer"></canvas>
-      <canvas id="jrn-river-base" class="jrn-layer"></canvas>
-      <canvas id="jrn-river" class="jrn-layer"></canvas>
-      <div id="jrn-milestones" class="jrn-layer"></div>
+  <div class="section-header reveal">
+    <h2 class="section-title">Journey</h2>
+    <div class="section-line"></div>
+  </div>
+  <div class="road-wrap">
+    <canvas id="road-canvas"></canvas>
+    <div id="road-milestones"></div>
+    <div class="road-end">
+      <div class="road-dotted-tail"></div>
+      <div class="road-question">
+        <span class="road-q-mark">?</span>
+        <span class="road-q-label">What comes next</span>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- NEPAL MAP SECTION -->
+<!-- NEPAL MAP (Leaflet + OpenStreetMap) -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <section id="nepal-map">
   <div class="section-header reveal">
     <h2 class="section-title">Field Presence</h2>
@@ -441,6 +527,7 @@
   <div class="pub-list" id="pub-list"></div>
 </section>
 
+
 <section id="experience">
   <div class="section-header reveal">
     <h2 class="section-title">Experience</h2>
@@ -478,6 +565,7 @@
   </div>
 </section>
 
+<!-- CUSTOM SECTIONS -->
 <div id="custom-sections-wrap"></div>
 
 <footer>
@@ -517,11 +605,10 @@
   <div class="lb-caption" id="lb-caption"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script>
-window._cardIntervals = window._cardIntervals || [];
-
+// ── HELPERS ──────────────────────────────────────────────────
 function parseFM(text) {
-  text = text.replace(/\r\n/g, '\n');
   const m = text.match(/^---\n([\s\S]*?)\n---/);
   if (!m) return { data:{}, content:text };
   const data = {};
@@ -535,6 +622,7 @@ function parseFM(text) {
     const key = line.slice(0, ci).trim();
     let val = line.slice(ci + 1).trim();
     i++;
+    // YAML block scalars (Decap CMS writes markdown fields as >- or |-)
     if (val === '>' || val === '>-' || val === '>+' || val === '|' || val === '|-' || val === '|+') {
       const isLiteral = val.startsWith('|');
       const parts = [];
@@ -543,12 +631,14 @@ function parseFM(text) {
         i++;
       }
       if (isLiteral) {
+        // Literal (|-): preserve all newlines exactly
         data[key] = parts.join('\n').trimEnd();
       } else {
+        // Folded (>-): blank lines = paragraph break, non-blank lines join with space
         const paras = []; let cur = [];
-        parts.forEach(l => {
-          if (l === '') { if (cur.length) { paras.push(cur.join(' ')); cur = []; } }
-          else cur.push(l);
+        parts.forEach(line => {
+          if (line === '') { if (cur.length) { paras.push(cur.join(' ')); cur = []; } }
+          else cur.push(line);
         });
         if (cur.length) paras.push(cur.join(' '));
         data[key] = paras.join('\n\n').trim();
@@ -556,12 +646,14 @@ function parseFM(text) {
       continue;
     }
     if (val === '' || val === '[]') {
+      // Indented list follows
       const items = [];
       while (i < lines.length && lines[i].match(/^  /)) {
         const itemLine = lines[i];
         if (itemLine.match(/^  - /)) {
           const itemVal = itemLine.slice(4).trim();
           if (itemVal.includes(':')) {
+            // Object item e.g. "  - src: /images/x.png"
             const obj = {};
             const ici = itemVal.indexOf(':');
             obj[itemVal.slice(0,ici).trim()] = itemVal.slice(ici+1).trim().replace(/^["']|["']$/g,'');
@@ -589,36 +681,50 @@ function parseFM(text) {
   }
   return { data, content: text.slice(m[0].length).trim() };
 }
-
 const safe = v => v || '';
+// Normalise image paths — handle both /images/ and /public/images/ and relative
 function imgPath(p) {
   if (!p) return '';
   if (p.startsWith('http')) return p;
+  // Strip /public/ prefix — only /images/ works on Cloudflare
   if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
   if (p.startsWith('public/images/')) return '/images/' + p.slice('public/images/'.length);
   if (p.startsWith('/images/')) return p;
   if (p.startsWith('images/')) return '/' + p;
   return p;
 }
-function loadImg(el, src) { if (src) el.src = src; }
-
+// Smart image loader — tries primary path, falls back to alternate
+function loadImg(el, src) {
+  if (!src) return;
+  // imgPath already normalises to /images/ — just set directly
+  el.src = src;
+}
+// md() — render markdown with natural line breaks:
+// Single newline → <br> (like typing Enter in a text box)
+// Blank line (double newline) → new paragraph
+// 3+ newlines → paragraph gap preserved via spacer
 function md(t) {
   if (!t) return '';
   if (typeof marked === 'undefined') return t.replace(/\n/g,'<br>');
+  // Normalise Windows line endings
   t = t.replace(/\r\n/g,'\n');
+  // Split into blocks by blank lines
   const blocks = t.split(/\n{2,}/);
   const rendered = blocks.map(block => {
-    if (/^(#{1,6} |[*-] |\d+\. |> |```|    )/.test(block.trim())) return marked.parse(block);
-    const withBreaks = block.replace(/\n/g, '  \n');
+    // If block looks like a markdown structure (heading, list, blockquote, code) — leave as-is
+    if (/^(#{1,6} |[*-] |\d+\. |> |```|    )/.test(block.trim())) {
+      return marked.parse(block);
+    }
+    // Plain text block: convert single newlines to <br> then wrap
+    const withBreaks = block.replace(/\n/g, '  \n'); // 2 trailing spaces = <br> in markdown
     return marked.parse(withBreaks);
   });
   return rendered.join('\n');
 }
-
 async function fj(u) { try { const r=await fetch(u); if(!r.ok) return null; return r.json(); } catch(e){ return null; } }
 async function ft(u) { try { const r=await fetch(u); if(!r.ok) return null; return r.text(); } catch(e){ return null; } }
-
 async function fileList(dir) {
+  // Always try manifest.json first — generated by build command
   try {
     const r = await fetch(dir+'manifest.json');
     if (r.ok) {
@@ -628,6 +734,7 @@ async function fileList(dir) {
       if (txt.trim().startsWith('[')) return JSON.parse(txt);
     }
   } catch(e){}
+  // Fallback list — update this when adding new files manually
   const fb={
     '/content/projects/':['hydroclimatic-variability-marsyangdi.md','sediment-dynamics-hydropower.md','water-soil-food-nexus.md','sisdol-landfill-pollution.md','nepal-waste-map.md','climate-adaptation-marginalized.md','spring-water-karnali.md'],
     '/content/publications/':['drinking-water-marsyangdi.md','trace-elements-gandaki.md','ecological-restoration-nepal.md','sediment-dynamics-hydropower.md','hydroclimatic-variability-submitted.md'],
@@ -637,7 +744,6 @@ async function fileList(dir) {
   };
   return fb[dir]||[];
 }
-
 async function loadMDs(dir) {
   const files = await fileList(dir);
   const items = await Promise.all(files.map(async f => {
@@ -650,38 +756,83 @@ async function loadMDs(dir) {
   return items.filter(Boolean).sort((a,b)=>(+a.order||99)-(+b.order||99));
 }
 
-// THEME
-function safeGetTheme() { try { return localStorage.getItem('theme') || 'light'; } catch (e) { return 'light'; } }
-function safeSetTheme(v) { try { localStorage.setItem('theme', v); } catch (e) {} }
+// ── THEME ────────────────────────────────────────────────────
 const themeBtn = document.getElementById('theme-btn');
-const savedTheme = safeGetTheme();
+const savedTheme = localStorage.getItem('theme')||'light';
 document.documentElement.setAttribute('data-theme', savedTheme);
 themeBtn.textContent = savedTheme==='dark'?'☀️':'🌙';
 themeBtn.addEventListener('click',()=>{
   const n=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
   document.documentElement.setAttribute('data-theme',n);
-  safeSetTheme(n);
+  localStorage.setItem('theme',n);
   themeBtn.textContent=n==='dark'?'☀️':'🌙';
 });
 
+// ── NAV ──────────────────────────────────────────────────────
 window.addEventListener('scroll',()=>document.getElementById('navbar').classList.toggle('scrolled',scrollY>60));
 document.getElementById('hamburger').addEventListener('click',()=>document.getElementById('nav-links').classList.toggle('open'));
 
+// ── CV DROPDOWN ──────────────────────────────────────────────
 const cvBtn = document.getElementById('cv-btn');
 const cvMenu = document.getElementById('cv-menu');
 cvBtn.addEventListener('click', e=>{ e.stopPropagation(); cvMenu.classList.toggle('open'); });
 document.addEventListener('click',()=>cvMenu.classList.remove('open'));
+
+// ── ABOUT TABS ───────────────────────────────────────────────
+// ── TOGGLE ANIMATION HELPER ──────────────────────────────────
+function animateToggle(wrapEl, renderFn) {
+  // fade out existing children
+  const children = Array.from(wrapEl.children);
+  children.forEach(el => {
+    el.style.animation = 'fadeSlideOut 0.15s ease forwards';
+  });
+  setTimeout(() => {
+    renderFn();
+    // stagger fade in new children
+    Array.from(wrapEl.children).forEach((el, i) => {
+      el.style.animation = '';
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(12px)';
+      setTimeout(() => {
+        el.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+      }, i * 45);
+    });
+  }, 150);
+}
 
 document.querySelectorAll('[data-tab]').forEach(btn=>{
   btn.addEventListener('click',()=>{
     document.querySelectorAll('[data-tab]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     const target = document.getElementById('about-'+btn.dataset.tab);
-    document.querySelectorAll('.about-panel').forEach(p=>p.classList.remove('active'));
-    target.classList.add('active');
+    const current = document.querySelector('.about-panel.active');
+    if (current && current !== target) {
+      current.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+      current.style.opacity = '0';
+      current.style.transform = 'translateY(-8px)';
+      setTimeout(() => {
+        current.classList.remove('active');
+        current.style.opacity = '';
+        current.style.transform = '';
+        target.classList.add('active');
+        target.style.opacity = '0';
+        target.style.transform = 'translateY(10px)';
+        setTimeout(() => {
+          target.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+          target.style.opacity = '1';
+          target.style.transform = 'translateY(0)';
+        }, 20);
+      }, 150);
+    } else {
+      document.querySelectorAll('.about-panel').forEach(p=>p.classList.remove('active'));
+      target.classList.add('active');
+    }
   });
 });
 
+// ── PROJECT CATEGORY TABS ────────────────────────────────────
 let currentCat = 'all', currentTag = 'All';
 function applyProjectFilters() {
   document.querySelectorAll('.project-card').forEach(card=>{
@@ -696,11 +847,31 @@ document.querySelectorAll('[data-cat]').forEach(btn=>{
     document.querySelectorAll('[data-cat]').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentCat = btn.dataset.cat;
-    applyProjectFilters();
+    // animate out then filter
+    const grid = document.getElementById('projects-grid');
+    const visible = Array.from(grid.querySelectorAll('.project-card:not(.hidden)'));
+    visible.forEach(card => {
+      card.style.transition = 'opacity 0.15s ease, transform 0.15s ease';
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(8px)';
+    });
+    setTimeout(() => {
+      applyProjectFilters();
+      const nowVisible = Array.from(grid.querySelectorAll('.project-card:not(.hidden)'));
+      nowVisible.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(12px)';
+        setTimeout(() => {
+          card.style.transition = 'opacity 0.25s ease, transform 0.25s ease';
+          card.style.opacity = '1';
+          card.style.transform = 'translateY(0)';
+        }, i * 40);
+      });
+    }, 160);
   });
 });
 
-// LIGHTBOX
+// ── LIGHTBOX ─────────────────────────────────────────────────
 let lbImgs=[], lbIdx=0;
 function openLB(imgs,idx){
   lbImgs=imgs; lbIdx=idx; updateLB();
@@ -716,10 +887,14 @@ document.getElementById('lb-close').addEventListener('click',()=>{document.getEl
 document.getElementById('lb-prev').addEventListener('click',()=>{lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length;updateLB();});
 document.getElementById('lb-next').addEventListener('click',()=>{lbIdx=(lbIdx+1)%lbImgs.length;updateLB();});
 
-// MODAL
+// ── MODAL ────────────────────────────────────────────────────
 const overlay = document.getElementById('modal-overlay');
 function openModal(cfg) {
+  // cfg: { title, subtitle, meta, tags, image, icon, detail, coursework, abstract, gallery, videoUrl, report, relatedPubs, link, displayMode, slug, pageType }
+  const icon = cfg.icon||'📄';
+  // Cover image — separate field, respects showImage toggle
   const vis0 = cfg.vis || {};
+  // Use dedicated cover image, or fall back to first gallery image
   const gallery0 = (cfg.gallery||[]);
   const firstGalleryImg = gallery0.length > 0 ? imgPath(typeof gallery0[0]==='string' ? gallery0[0] : (gallery0[0].src||'')) : '';
   const coverSrc = cfg.image ? imgPath(cfg.image) : firstGalleryImg;
@@ -738,48 +913,122 @@ function openModal(cfg) {
   document.getElementById('modal-meta').innerHTML = cfg.meta||'';
   document.getElementById('modal-tags').innerHTML = (cfg.tags||[]).map(t=>`<span class="project-tag">${t}</span>`).join('');
 
+  // vis: visibility toggles
+  // If vis object is provided with explicit values, respect them exactly
+  // default is true only if vis key is absent (not explicitly set to false)
   const vis = cfg.vis || {};
   const show = (key) => vis[key] === true;
 
   let html = '';
+  // subtitle shown as small plain text (e.g. institution · year for education, authors for pubs)
   if (cfg.subtitle) html += `<p style="font-size:.9rem;color:var(--ink2);margin-bottom:1rem;opacity:.8">${cfg.subtitle}</p>`;
-  const gallery = (cfg.gallery||[]).slice(0,10);
-  if (cfg.shortDesc) html += `<div class="modal-short-desc">${md(cfg.shortDesc)}</div>`;
-  if (show('showAbstract') && cfg.abstract) html += `<div class="modal-section-title">Abstract</div><p style="font-size:.95rem;color:var(--ink2);line-height:1.8">${cfg.abstract}</p>`;
-  if (show('showDetail') && cfg.detail) html += `<div class="modal-section-title">Detail</div><div class="modal-detail">${md(cfg.detail)}</div>`;
-  if (show('showCoursework') && cfg.coursework && cfg.coursework.length) html += `<div class="modal-section-title">Key Coursework</div><div class="modal-coursework">${cfg.coursework.map(c=>`<span class="modal-course-tag">${c}</span>`).join('')}</div>`;
 
+  const gallery = (cfg.gallery||[]).slice(0,10);
+
+  // Short Description — always shown first in popup, rendered as rich text
+  if (cfg.shortDesc) {
+    html += `<div class="modal-short-desc">${md(cfg.shortDesc)}</div>`;
+  }
+
+  // Abstract (publications) — toggle controlled
+  if (show('showAbstract') && cfg.abstract) {
+    html += `<div class="modal-section-title">Abstract</div><p style="font-size:.95rem;color:var(--ink2);line-height:1.8">${cfg.abstract}</p>`;
+  }
+
+  // Detail
+  if (show('showDetail') && cfg.detail) {
+    html += `<div class="modal-section-title">Detail</div><div class="modal-detail">${md(cfg.detail)}</div>`;
+  }
+
+  // Coursework (education only)
+  if (show('showCoursework') && cfg.coursework && cfg.coursework.length) {
+    html += `<div class="modal-section-title">Key Coursework</div><div class="modal-coursework">${cfg.coursework.map(c=>`<span class="modal-course-tag">${c}</span>`).join('')}</div>`;
+  }
+
+  // Gallery / Slideshow
   if (show('showGallery')) {
     if (gallery.length === 1) {
       const src = imgPath(typeof gallery[0]==='string' ? gallery[0] : (gallery[0].src||''));
       const cap = typeof gallery[0]==='object' && gallery[0].caption ? gallery[0].caption : '';
       html += `<div class="modal-section-title">Image</div><div style="border-radius:12px;overflow:hidden;margin:.8rem 0"><img src="${src}" style="width:100%;max-height:260px;object-fit:cover;display:block" loading="lazy"/>${cap?`<p style="font-size:.8rem;color:var(--ink2);padding:.4rem 0">${cap}</p>`:''}</div>`;
     } else if (gallery.length > 1) {
-      const slides = gallery.map((g,i) => `<div class="slide${i===0?' active':''}" data-idx="${i}"><img data-src="${typeof g==='string'?g:(g.src||g)}" loading="lazy"/></div>`).join('');
-      const dots = gallery.map((_,i)=>`<div class="slide-dot${i===0?' active':''}" data-dot="${i}"></div>`).join('');
-      html += `<div class="modal-section-title">Gallery</div><div class="slideshow-wrap" id="modal-slideshow"><div class="slideshow-inner">${slides}</div><div class="slideshow-dots">${dots}</div></div>`;
+      if (cfg.pageType === 'publication') {
+        const slides = gallery.map((g,i) => {
+          const src = typeof g==='string'?g:(g.src||g);
+          const cap = typeof g==='object'&&g.caption?g.caption:'';
+          return `<div class="slider-slide${i===0?' active':''}" data-idx="${i}"><img data-src="${src}" loading="lazy"/>${cap?`<div class="slider-caption">${cap}</div>`:''}</div>`;
+        }).join('');
+        html += `<div class="modal-section-title">Figures</div>
+          <div class="slider-wrap" id="modal-slider">
+            <div class="slider-inner">${slides}</div>
+            <div class="slider-controls">
+              <button class="slider-btn" id="sl-prev">‹</button>
+              <span class="slider-counter" id="sl-counter">1 / ${gallery.length}</span>
+              <button class="slider-btn" id="sl-next">›</button>
+            </div>
+          </div>`;
+      } else {
+        const slides = gallery.map((g,i) => {
+          const src = typeof g==='string'?g:(g.src||g);
+          const cap = typeof g==='object'&&g.caption?g.caption:'';
+          return `<div class="slide${i===0?' active':''}" data-idx="${i}"><img data-src="${src}" loading="lazy"/>${cap?`<div class="slide-caption">${cap}</div>`:''}</div>`;
+        }).join('');
+        const dots = gallery.map((_,i)=>`<div class="slide-dot${i===0?' active':''}" data-dot="${i}"></div>`).join('');
+        html += `<div class="modal-section-title">Gallery</div>
+          <div class="slideshow-wrap" id="modal-slideshow">
+            <div class="slideshow-inner">${slides}</div>
+            <div class="slideshow-dots">${dots}</div>
+          </div>`;
+      }
     }
   }
 
+  // Video
+  if (show('showVideo') && cfg.videoUrl) {
+    const vid = cfg.videoUrl.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+    if (vid) html += `<div class="modal-section-title">Video</div><div class="modal-video"><div class="modal-video-wrap"><iframe src="https://www.youtube.com/embed/${vid[1]}" allowfullscreen></iframe></div></div>`;
+  }
+
+  // Related Publications
+  if (show('showRelatedPubs') && cfg.relatedPubs && cfg.relatedPubs.length) {
+    html += `<div class="modal-section-title">Related Publications</div>${cfg.relatedPubs.map(p=>`<div style="padding:.5rem 0;border-bottom:1px solid var(--border);font-size:.88rem;color:var(--ink2)">📚 ${p}</div>`).join('')}`;
+  }
+  // If nothing to show beyond shortDesc/subtitle, show minimal message
+  // (shortDesc alone is enough — no message needed)
   const hasRealContent = cfg.shortDesc || html.includes('modal-section-title') || html.includes('modal-detail');
-  if (!hasRealContent) html += '<p style="color:var(--ink2);font-size:.9rem;padding:1rem 0;text-align:center;opacity:.6">No additional information.</p>';
+  if (!hasRealContent) {
+    html += '<p style="color:var(--ink2);font-size:.9rem;padding:1rem 0;text-align:center;opacity:.6">No additional information.</p>';
+  }
   document.getElementById('modal-content').innerHTML = html;
-  document.getElementById('modal-content').querySelectorAll('img[data-src]').forEach(img => { loadImg(img, imgPath(img.dataset.src)); });
 
+  // Load all images with fallback
+  document.getElementById('modal-content').querySelectorAll('img[data-src]').forEach(img => {
+    loadImg(img, imgPath(img.dataset.src));
+  });
+
+  // Init auto slideshow (education & projects)
   clearSlideshows();
-  if (gallery.length > 1) initAutoSlideshow();
+  if (gallery.length > 1 && cfg.pageType !== 'publication') {
+    initAutoSlideshow();
+  }
 
+  // Init manual slider (publications)
+  if (gallery.length > 1 && cfg.pageType === 'publication') {
+    initManualSlider(gallery.length);
+  }
+
+  // Full page button — shown sticky in header
   const fpSlot = document.getElementById('modal-fullpage-slot');
   if (cfg.displayMode==='fullpage' && cfg.slug) {
     const page = cfg.pageType==='education' ? `/education.html?slug=${cfg.slug}` : cfg.pageType==='publication' ? `/publication.html?slug=${cfg.slug}` : `/project.html?slug=${cfg.slug}`;
     fpSlot.innerHTML = `<a class="modal-fullpage-btn" href="${page}">Full Page ↗</a>`;
-  } else { fpSlot.innerHTML = ''; }
-
-  let btns = '';
-  if (cfg.link) {
-    const linkLabel = cfg.pageType==='publication' ? (cfg.isDoi ? '↗ View via DOI' : '↗ Read Article') : '↗ External Link';
-    btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">${linkLabel}</a>`;
+  } else {
+    fpSlot.innerHTML = '';
   }
+  // Other actions at bottom
+  let btns = '';
+  if (show('showReport') && cfg.report && cfg.report.file) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.report.file}" download>📄 ${cfg.report.label||'Download Report'}</a>`;
+  if (cfg.link) btns += `<a class="modal-btn modal-btn-outline" href="${cfg.link}" target="_blank">↗ ${cfg.pageType==='publication'?'View Publication':'GitHub'}</a>`;
   const actEl = document.getElementById('modal-actions');
   actEl.innerHTML = btns;
   actEl.style.display = btns ? 'flex' : 'none';
@@ -787,9 +1036,13 @@ function openModal(cfg) {
   overlay.classList.add('open');
   document.body.style.overflow='hidden';
 }
-
+// ── SLIDESHOW LOGIC ─────────────────────────────────────────
 let slideshowTimer = null;
-function clearSlideshows() { if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer = null; } }
+
+function clearSlideshows() {
+  if (slideshowTimer) { clearInterval(slideshowTimer); slideshowTimer = null; }
+}
+
 function initAutoSlideshow() {
   const wrap = document.getElementById('modal-slideshow');
   if (!wrap) return;
@@ -798,19 +1051,42 @@ function initAutoSlideshow() {
   if (slides.length <= 1) return;
   let cur = 0;
   slideshowTimer = setInterval(() => {
-    slides[cur].classList.remove('active'); dots[cur].classList.remove('active');
+    slides[cur].classList.remove('active');
+    dots[cur].classList.remove('active');
     cur = (cur + 1) % slides.length;
-    slides[cur].classList.add('active'); dots[cur].classList.add('active');
+    slides[cur].classList.add('active');
+    dots[cur].classList.add('active');
   }, 3000);
+}
+
+function initManualSlider(total) {
+  const wrap = document.getElementById('modal-slider');
+  if (!wrap) return;
+  const slides = wrap.querySelectorAll('.slider-slide');
+  const counter = document.getElementById('sl-counter');
+  let cur = 0;
+  function goTo(n) {
+    slides[cur].classList.remove('active');
+    cur = (n + total) % total;
+    slides[cur].classList.add('active');
+    counter.textContent = `${cur + 1} / ${total}`;
+  }
+  document.getElementById('sl-prev').addEventListener('click', () => goTo(cur - 1));
+  document.getElementById('sl-next').addEventListener('click', () => goTo(cur + 1));
 }
 
 document.getElementById('modal-close').addEventListener('click', closeModal);
 overlay.addEventListener('click', e=>{ if(e.target===overlay) closeModal(); });
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){ closeModal(); document.getElementById('lightbox').classList.remove('open'); document.body.style.overflow=''; }
+  if(document.getElementById('lightbox').classList.contains('open')){
+    if(e.key==='ArrowLeft'){lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length;updateLB();}
+    if(e.key==='ArrowRight'){lbIdx=(lbIdx+1)%lbImgs.length;updateLB();}
+  }
 });
 function closeModal(){ clearSlideshows(); overlay.classList.remove('open'); document.body.style.overflow=''; }
 
+// ── TYPING ───────────────────────────────────────────────────
 function startTyping(tags){
   if(!tags||!tags.length) return;
   const el=document.getElementById('typing-text');
@@ -825,125 +1101,20 @@ function startTyping(tags){
   tick();
 }
 
-const observer = new IntersectionObserver(entries=>{ entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); }); },{threshold:0.1});
+// ── SCROLL REVEAL ────────────────────────────────────────────
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
+},{threshold:0.1});
 
-// LEAFLET MAP ENGINE
-window._leafletMapInstance = null;
-window._renderLeafletMap = function(mapConfig) {
-  const mapEl = document.getElementById('leaflet-map');
-  if (!mapEl || typeof L === 'undefined') return;
-
-  if (window._leafletMapInstance) {
-    window._leafletMapInstance.remove();
-    window._leafletMapInstance = null;
-  }
-
-  const map = L.map('leaflet-map', {
-    center: [28.3949, 84.1240],
-    zoom: 7,
-    minZoom: 6,
-    maxZoom: 11,
-    scrollWheelZoom: false
-  });
-  window._leafletMapInstance = map;
-
-  const isDarkTheme = document.documentElement.getAttribute('data-theme') === 'dark';
-  const tileUrl = isDarkTheme
-    ? 'https://{s}[.basemaps.cartocdn.com/dark_all/](https://.basemaps.cartocdn.com/dark_all/){z}/{x}/{y}{r}.png'
-    : 'https://{s}[.basemaps.cartocdn.com/light_all/](https://.basemaps.cartocdn.com/light_all/){z}/{x}/{y}{r}.png';
-
-  L.tileLayer(tileUrl, {
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
-  }).addTo(map);
-
-  const legendEl = document.getElementById('map-legend');
-  const typeColors = {
-    research: '#2d6a4f',
-    community: '#d4a94a',
-    eia: '#c85a17',
-    visited: '#4a90e2',
-    other: '#708090'
-  };
-  const typeLabels = {
-    research: 'Research Project',
-    community: 'Community Initiative',
-    eia: 'Environmental Assessment',
-    visited: 'Field Presence / Visited',
-    other: 'General Engagement'
-  };
-
-  if (legendEl) {
-    legendEl.innerHTML = Object.keys(typeColors).map(type => `
-      <div class="legend-item">
-        <span class="legend-dot" style="background:${typeColors[type]}"></span>
-        <span>${typeLabels[type]}</span>
-      </div>
-    `).join('');
-  }
-
-  const districts = (mapConfig && Array.isArray(mapConfig.districts)) ? mapConfig.districts : [];
-
-  // District centroid approximations
-  const districtCoords = {
-    "KATHMANDU": [27.7172, 85.3240], "LALITPUR": [27.6588, 85.3247], "BHAKTAPUR": [27.6710, 85.4298],
-    "MUSTANG": [28.9985, 83.8473], "MANANG": [28.6600, 84.1500], "GORKHA": [28.2889, 84.6890],
-    "LAMJUNG": [28.2439, 84.4172], "KASKI": [28.3949, 83.9856], "CHITWAN": [27.5291, 84.3542],
-    "DHADING": [27.8644, 84.9089], "RASUWA": [28.1356, 85.2934], "SINDHUPALCHOK": [27.9528, 85.6856],
-    "SOLUKHUMBU": [27.7052, 86.7110], "SANKHUWASABHA": [27.5878, 87.2144], "TAPLEJUNG": [27.5888, 87.8222],
-    "JUMLA": [29.2747, 82.1838], "DOLPA": [29.0300, 83.0000], "HUMLA": [30.0000, 81.8000],
-    "KALIKOT": [29.1417, 81.7583], "MUGU": [29.7400, 82.3500], "SURKHET": [28.6000, 81.6333],
-    "DAILEKH": [28.8378, 81.7103], "JAJARKOT": [28.7000, 82.2000], "RUKUM": [28.6333, 82.4833],
-    "ROLPA": [28.3000, 82.6333], "SALYAN": [28.3667, 82.1667], "DANG": [28.0333, 82.3000],
-    "BANKE": [28.1167, 81.7000], "BARDIYA": [28.3500, 81.3500], "KAILALI": [28.7167, 80.6000],
-    "KANCHANPUR": [28.9167, 80.3333], "DADELDHURA": [29.3000, 80.5833], "BAITADI": [29.5500, 80.5500],
-    "DARCHULA": [29.8500, 80.5333], "BAJHANG": [29.7500, 81.2000], "BAJURA": [29.6000, 81.5000],
-    "ACHHAM": [29.1167, 81.3000], "DOTI": [29.2667, 80.9833], "PALPA": [27.8667, 83.5500],
-    "GULMI": [28.0833, 83.2500], "ARGHAKHANCHI": [27.9500, 83.1000], "SYANGJA": [28.0833, 83.8333],
-    "TANAHU": [27.9500, 84.2667], "NAWALPARASI": [27.6500, 83.9500], "RUPANDEHI": [27.5000, 83.4500],
-    "KAPILBASTU": [27.5833, 83.0500], "PARBAT": [28.2000, 83.7000], "BAGLUNG": [28.2667, 83.6000],
-    "MYAGDI": [28.4500, 83.5667], "PYUTHAN": [28.1000, 82.8833], "MAKWANPUR": [27.4167, 85.0333],
-    "NUWAKOT": [27.9167, 85.1667], "KAVRE": [27.5333, 85.5500], "RAMECHHAP": [27.3333, 86.0833],
-    "DOLAKHA": [27.6833, 86.0667], "SINDHULI": [27.2500, 85.9667], "BARA": [27.0500, 85.0000],
-    "PARSA": [27.0833, 84.8667], "RAUTAHAT": [26.9667, 85.3167], "SARLAHI": [26.9500, 85.5500],
-    "MAHOTTARI": [26.9167, 85.8333], "DHANUSA": [26.7833, 86.0000], "SIRAHA": [26.6500, 86.2000],
-    "SAPTARI": [26.5833, 86.7500], "UDAYAPUR": [26.9000, 86.5167], "OKHALDHUNGA": [27.3167, 86.5000],
-    "KHOTANG": [27.2000, 86.7833], "BHOJPUR": [27.1667, 87.0500], "DHANKUTA": [26.9833, 87.3333],
-    "TERHATHUM": [27.1333, 87.5500], "PANCHTHAR": [27.2000, 87.8333], "ILAM": [26.9167, 87.9333],
-    "JHAPA": [26.6333, 87.9833], "MORANG": [26.6500, 87.4500], "SUNSARI": [26.6500, 87.1667]
-  };
-
-  districts.forEach(d => {
-    const name = (d.name || '').toUpperCase().trim();
-    const coords = districtCoords[name];
-    if (!coords) return;
-
-    const color = typeColors[d.type] || typeColors.other;
-    const marker = L.circleMarker(coords, {
-      radius: 9,
-      fillColor: color,
-      color: '#ffffff',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.88
-    }).addTo(map);
-
-    const popupHtml = `
-      <div class="lp-title">${safe(d.project || name)}</div>
-      <span class="lp-badge" style="background:${color}">${typeLabels[d.type] || 'District'}</span>
-      ${d.year ? `<div class="lp-row"><strong>Year:</strong> ${safe(d.year)}</div>` : ''}
-      <div class="lp-row"><strong>District:</strong> ${name}</div>
-      ${d.note ? `<div class="lp-row" style="margin-top:4px;">${safe(d.note)}</div>` : ''}
-    `;
-    marker.bindPopup(popupHtml);
-  });
-};
-
-// RENDER ALL DATA
+// ── RENDER ───────────────────────────────────────────────────
 function renderSite(s, eduItems, projects, pubs, expItems, customSections, customItems) {
-  window._cardIntervals.forEach(clearInterval);
-  window._cardIntervals = [];
-
-  function secVisible(key) { return s[key] !== false && s[key] !== 'false'; }
+  // ── SECTION VISIBILITY HELPER ──
+  // Reads show* flags from settings; default true if not set
+  function secVisible(key) {
+    if (s[key] === false || s[key] === 'false') return false;
+    return true; // default ON
+  }
+  // Apply section visibility
   ['about','projects','publications','experience','skills'].forEach(sec => {
     const el = document.getElementById(sec);
     if (!el) return;
@@ -953,583 +1124,574 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     if (navLink) navLink.parentElement.style.display = visible ? '' : 'none';
   });
 
+  // ── SECTION ORDER ──────────────────────────────────────────
+  // sectionOrder in settings: array of section ids in desired order
+  // e.g. ["about","experience","projects","publications","skills","contact"]
   const defaultOrder = ['about','timeline','nepal-map','projects','publications','experience','skills','custom-sections-wrap','contact'];
   const order = Array.isArray(s.sectionOrder) && s.sectionOrder.length
     ? [...s.sectionOrder, 'custom-sections-wrap', 'contact'].filter((v,i,a)=>a.indexOf(v)===i)
     : defaultOrder;
   const body = document.body;
-  order.forEach(id => { const el = document.getElementById(id); if (el) body.insertBefore(el, document.querySelector('footer')); });
+  // Collect all reorderable section elements
+  order.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    // Move to end of body (before footer and modal/lightbox)
+    const footer = document.querySelector('footer');
+    body.insertBefore(el, footer);
+  });
+  // Re-build nav links in same order (excluding contact which stays last)
+  const navLinksList = document.getElementById('nav-links');
+  const cvLi = navLinksList.querySelector('li:has(#cv-dropdown)');
+  const themeLi = navLinksList.querySelector('li:has(.theme-btn)');
+  order.filter(id => !['custom-sections-wrap','contact'].includes(id)).forEach(id => {
+    const a = navLinksList.querySelector(`a[href="#${id}"]`);
+    if (!a) return;
+    const li = a.parentElement;
+    navLinksList.insertBefore(li, cvLi);
+  });
 
-  // Map Data
+  // ── NEPAL MAP ────────────────────────────────────────────
   window._mapData = s.mapData || null;
-  if (window._mapData && window._renderLeafletMap) window._renderLeafletMap(window._mapData);
-
-  // Milestones Configured with same-year/elevation offsets
-  const cmsMilestones = Array.isArray(s.milestones) ? s.milestones : [];
-  window._timelineMilestones = cmsMilestones.map((m, sourceIndex) => ({
-    _sourceIndex: sourceIndex,
-    year: m?.year != null ? String(m.year) : '',
-    title: m?.title != null ? String(m.title) : '',
-    date: m?.date != null && m.date !== '' ? String(m.date) : (m?.year != null ? String(m.year) : ''),
-    description: m?.description != null ? String(m.description) : (m?.detail != null ? String(m.detail) : (m?.sub != null ? String(m.sub) : '')),
-    sub: m?.sub != null ? String(m.sub) : '',
-    icon: m?.icon != null && m.icon !== '' ? String(m.icon) : '📌',
-    elevation: m?.elevation !== undefined && m.elevation !== '' ? Number(m.elevation) : null,
-    sameYearOffset: m?.sameYearOffset || 'none'
-  }));
-
-  if (window._buildRoad) window._buildRoad();
-
-  // Stats Counters
-  const statsGrid = document.getElementById('stats-grid');
-  if (statsGrid) {
-    let stats = Array.isArray(s.stats) ? s.stats.filter(st => st.label || st.value) : [];
-    const statsSec = document.getElementById('stats');
-    if (stats.length < 2) {
-      if (statsSec) statsSec.style.display = 'none';
-    } else {
-      if (statsSec) statsSec.style.display = '';
-      statsGrid.innerHTML = '';
-      stats.forEach(st => {
-        const div = document.createElement('div');
-        div.className = 'stat-item reveal';
-        div.innerHTML = `<span class="stat-number" data-target="${st.value || '0'}" data-suffix="${st.suffix||''}" data-prefix="${st.prefix||''}">0</span><div class="stat-label">${safe(st.label)}</div>`;
-        statsGrid.appendChild(div);
-      });
-      document.querySelectorAll('.stat-number[data-target]').forEach(el => {
-        const target = +el.dataset.target, suffix = el.dataset.suffix || '', prefix = el.dataset.prefix || '';
-        el.textContent = prefix + target + suffix;
-      });
-    }
+  if (window._mapData && window._renderLeafletMap) {
+    window._renderLeafletMap(window._mapData);
   }
 
-  document.title = safe(s.name);
-  ['nav-name','hero-name','footer-name'].forEach(id=>{ const el = document.getElementById(id); if (el) el.textContent=safe(s.name); });
-  const heroBioEl = document.getElementById('hero-bio');
-  if (s.heroBio && heroBioEl) heroBioEl.textContent = safe(s.heroBio);
+  // ── TIMELINE ─────────────────────────────────────────────
+  if (s.milestones && s.milestones.length) {
+    window._timelineMilestones = s.milestones.map(m => ({
+      year:   m.year   || '',
+      icon:   m.icon   || '📌',
+      title:  m.title  || '',
+      sub:    m.sub    || '',
+      detail: m.detail || ''
+    }));
+    // Rebuild winding road with CMS milestones
+    if (window._buildRoad) window._buildRoad();
+  }
 
+  // ── STATS ──────────────────────────────────────────────
+  const statsGrid = document.getElementById('stats-grid');
+  if (statsGrid) {
+    const defaultStats = [
+      {value:'4', suffix:'+', label:'Years Experience'},
+      {value:'30', suffix:'+', label:'Districts Visited'},
+      {value:'100', prefix:'$', suffix:'K+', label:'Grants Raised'},
+      {value:'500', suffix:'+', label:'Workers Trained'},
+      {value:'30', suffix:'K+', label:'Households Mapped'},
+      {value:'19', suffix:'+', label:'Citations'}
+    ];
+    const stats = (s.stats && s.stats.length) ? s.stats : defaultStats;
+    statsGrid.innerHTML = '';
+    stats.forEach(st => {
+      const div = document.createElement('div');
+      div.className = 'stat-item reveal';
+      div.innerHTML = `<span class="stat-number"
+        data-target="${st.value||0}"
+        data-suffix="${st.suffix||''}"
+        data-prefix="${st.prefix||''}"
+        >0</span><div class="stat-label">${safe(st.label)}</div>`;
+      statsGrid.appendChild(div);
+    });
+    // Re-trigger counter observer for newly added elements
+    document.querySelectorAll('.stat-number[data-target]').forEach(el => {
+      if (window._statObserver) window._statObserver.observe(el);
+    });
+  }
+
+  // ── NAMES & BIO ──
+  document.title = safe(s.name);
+  ['nav-name','hero-name','footer-name'].forEach(id=>document.getElementById(id).textContent=safe(s.name));
+  const heroBioEl = document.getElementById('hero-bio');
+  if (s.heroBio) heroBioEl.textContent = safe(s.heroBio);
+  // Hero CV button
   const heroCvBtn = document.getElementById('hero-cv-btn');
   const primaryCV = s.cvAcademic || s.cvProfessional;
   if (primaryCV && heroCvBtn) { heroCvBtn.href = primaryCV; heroCvBtn.style.display = ''; }
 
+  // CV links
   const cvAcad = document.getElementById('cv-academic-link');
   const cvProf = document.getElementById('cv-professional-link');
-  if (s.cvAcademic && cvAcad) { cvAcad.href=s.cvAcademic; }
-  if (s.cvProfessional && cvProf) { cvProf.href=s.cvProfessional; }
+  if (s.cvAcademic) { cvAcad.href=s.cvAcademic; } else { cvAcad.style.opacity='.4'; cvAcad.removeAttribute('download'); }
+  if (s.cvProfessional) { cvProf.href=s.cvProfessional; } else { cvProf.style.opacity='.4'; cvProf.removeAttribute('download'); }
 
+  // Hero photo
   const pc = document.getElementById('hero-photo-container');
-  if (pc) pc.innerHTML = s.photo ? `<img class="hero-photo" src="${imgPath(s.photo)}" alt="${safe(s.name)}"/><div class="hero-photo-overlay"></div>` : `<div class="hero-photo-placeholder"><span>🖼️</span><p>Add photo via CMS</p></div>`;
+  pc.innerHTML = s.photo
+    ? `<img class="hero-photo" src="${imgPath(s.photo)}" alt="${safe(s.name)}"/><div class="hero-photo-overlay"></div>`
+    : `<div class="hero-photo-placeholder"><span>🖼️</span><p>Add your photo via<br><strong>Admin → Site Settings</strong></p></div>`;
 
-  const aboutRObj = document.getElementById('about-research-obj');
-  if (aboutRObj) aboutRObj.textContent = safe(s.aboutResearchObjective);
+  // About research
+  document.getElementById('about-research-obj').textContent = safe(s.aboutResearchObjective);
   const riEl = document.getElementById('research-interests');
-  if (riEl) (s.researchInterests||[]).forEach(r=>{ riEl.innerHTML+=`<li><span class="ri-dot"></span>${r}</li>`; });
+  (s.researchInterests||[]).forEach(r=>{ riEl.innerHTML+=`<li><span class="ri-dot"></span>${r}</li>`; });
 
-  const aboutPObj = document.getElementById('about-professional-obj');
-  if (aboutPObj) aboutPObj.textContent = safe(s.aboutProfessionalObjective);
+  // About professional
+  document.getElementById('about-professional-obj').textContent = safe(s.aboutProfessionalObjective);
   const piEl = document.getElementById('professional-interests');
-  if (piEl) (s.professionalInterests||[]).forEach(r=>{ piEl.innerHTML+=`<li><span class="ri-dot"></span>${r}</li>`; });
+  (s.professionalInterests||[]).forEach(r=>{ piEl.innerHTML+=`<li><span class="ri-dot"></span>${r}</li>`; });
 
+  // Education cards
   const eduEl = document.getElementById('education-block');
-  if (eduEl) {
-    eduItems.forEach(e=>{
-      const card = document.createElement('div');
-      card.className = 'edu-card reveal';
-      card.innerHTML = `<div class="edu-degree">${safe(e.title)}</div><div class="edu-inst">${safe(e.institution)}</div><div class="edu-year">${safe(e.year)}</div>${e.grade?`<div class="edu-detail">${e.grade}</div>`:''}${e.specialisation?`<div class="edu-detail" style="margin-top:.3rem">📌 ${e.specialisation}</div>`:''}<span class="edu-more">View details →</span>`;
-      card.addEventListener('click',()=>openModal({
-        title: e.title, subtitle: e.institution + (e.year?' · '+e.year:''), meta: `${e.grade?`<span class="project-status-badge">${e.grade}</span>`:''}`, image: imgPath(e.image)||'', icon: '🎓', shortDesc: e.shortDesc||'', detail: e.detail, coursework: Array.isArray(e.coursework)?e.coursework:[], gallery: Array.isArray(e.gallery)?e.gallery:[], link: e.link||'', displayMode: e.displayMode||'popup', slug: e.slug, pageType: 'education',
-        vis: { showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showDetail: e.showDetail===true||e.showDetail==='true', showCoursework: e.showCoursework===true||e.showCoursework==='true' }
-      }));
-      eduEl.appendChild(card);
-    });
-  }
+  eduItems.forEach(e=>{
+    const card = document.createElement('div');
+    card.className = 'edu-card reveal';
+    card.innerHTML = `
+      <div class="edu-degree">${safe(e.title)}</div>
+      <div class="edu-inst">${safe(e.institution)}</div>
+      <div class="edu-year">${safe(e.year)}</div>
+      ${e.grade?`<div class="edu-detail">${e.grade}</div>`:''}
+      ${e.specialisation?`<div class="edu-detail" style="margin-top:.3rem">📌 ${e.specialisation}</div>`:''}
+      <span class="edu-more">View details →</span>`;
+    card.addEventListener('click',()=>openModal({
+      title: e.title,
+      subtitle: e.institution + (e.year?' · '+e.year:''),
+      meta: `${e.grade?`<span class="project-status-badge">${e.grade}</span>`:''}`,
+      image: imgPath(e.image)||'',
+      icon: '🎓',
+      shortDesc: e.shortDesc||'',
+      detail: e.detail,
+      coursework: Array.isArray(e.coursework)?e.coursework:[],
+      gallery: Array.isArray(e.gallery)?e.gallery:[],
+      link: e.link||'',
+      displayMode: e.displayMode||'popup',
+      slug: e.slug,
+      pageType: 'education',
+      vis: { showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showDetail: e.showDetail===true||e.showDetail==='true', showCoursework: e.showCoursework===true||e.showCoursework==='true' },
+      fpVis: { showImage: e.fpShowImage!==false, showGallery: e.fpShowGallery!==false, showDetail: e.fpShowDetail!==false, showCoursework: e.fpShowCoursework!==false }
+    }));
+    eduEl.appendChild(card);
+  });
 
-  // Projects Filters and Cards
+  // Projects filter bar — collect all unique tags
   const allTags=['All',...new Set(projects.flatMap(p=>Array.isArray(p.tags)?p.tags:[]))];
   const fb = document.getElementById('filter-bar');
-  if (fb) {
-    allTags.forEach((tag,i)=>{
-      const btn=document.createElement('button');
-      btn.className='filter-btn'+(i===0?' active':'');
-      btn.textContent=tag;
-      btn.addEventListener('click',()=>{ document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); currentTag=tag; applyProjectFilters(); });
-      fb.appendChild(btn);
+  allTags.forEach((tag,i)=>{
+    const btn=document.createElement('button');
+    btn.className='filter-btn'+(i===0?' active':'');
+    btn.textContent=tag;
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTag=tag;
+      applyProjectFilters();
     });
-  }
+    fb.appendChild(btn);
+  });
 
+  // Projects grid
   const pgEl=document.getElementById('projects-grid');
-  if (pgEl) {
-    projects.forEach(p=>{
-      const tags=Array.isArray(p.tags)?p.tags:[];
-      const tagHtml=tags.map(t=>`<span class="project-tag">${t}</span>`).join('');
-      const rawGallery = Array.isArray(p.gallery) ? p.gallery : [];
-      const allImgs = rawGallery.map(g => imgPath(typeof g==='string'?g:(g.src||g))).filter(Boolean);
-      if (p.image && !allImgs.includes(imgPath(p.image))) allImgs.unshift(imgPath(p.image));
+  const tagIcons={Research:'🔬',Program:'📋',Hydrology:'💧','Climate Change':'🌍',Sediment:'🪨',Hydropower:'⚡',Pollution:'⚠️','Water Quality':'🧪','Field Work':'🏔️','Food Systems':'🌾','Waste Management':'♻️'};
+  projects.forEach(p=>{
+    const tags=Array.isArray(p.tags)?p.tags:[];
+    const tagHtml=tags.map(t=>`<span class="project-tag">${t}</span>`).join('');
+    const icon=tagIcons[tags[0]]||'📁';
+    // Build image list: gallery first, then cover image, deduplicated
+    const rawGallery = Array.isArray(p.gallery) ? p.gallery : [];
+    const allImgs = rawGallery.map(g => imgPath(typeof g==='string'?g:(g.src||g))).filter(Boolean);
+    if (p.image && !allImgs.includes(imgPath(p.image))) allImgs.unshift(imgPath(p.image));
 
-      const div=document.createElement('div');
-      div.className='project-card reveal';
-      div.dataset.tags=tags.join(',');
-      div.dataset.cat=p.category||'research';
+    const div=document.createElement('div');
+    div.className='project-card reveal';
+    div.dataset.tags=tags.join(',');
+    div.dataset.cat=p.category||'research';
 
-      let topHtml = '';
-      if (allImgs.length === 0) topHtml = `<div class="project-img-placeholder">📁</div>`;
-      else if (allImgs.length === 1) topHtml = `<div class="card-slide-wrap"><img class="cs-active" src="${allImgs[0]}" alt="${safe(p.title)}"/></div>`;
-      else topHtml = `<div class="card-slide-wrap" data-cs-count="${allImgs.length}">${allImgs.map((src,i) => `<img class="${i===0?'cs-active':''}" src="${src}" alt="${safe(p.title)} ${i+1}"/>`).join('')}<div class="card-slide-dots">${allImgs.map((_,i) => `<span class="card-slide-dot${i===0?' cs-active':''}"></span>`).join('')}</div></div>`;
+    // Build top image area
+    let topHtml = '';
+    if (allImgs.length === 0) {
+      topHtml = `<div class="project-img-placeholder">${icon}</div>`;
+    } else if (allImgs.length === 1) {
+      topHtml = `<div class="card-slide-wrap"><img class="cs-active" src="${allImgs[0]}" alt="${safe(p.title)}"/></div>`;
+    } else {
+      const imgTags = allImgs.map((src,i) => `<img class="${i===0?'cs-active':''}" src="${src}" alt="${safe(p.title)} ${i+1}"/>`).join('');
+      const dotTags = allImgs.map((_,i) => `<span class="card-slide-dot${i===0?' cs-active':''}"></span>`).join('');
+      topHtml = `<div class="card-slide-wrap" data-cs-count="${allImgs.length}">${imgTags}<div class="card-slide-dots">${dotTags}</div></div>`;
+    }
 
-      div.innerHTML=`${topHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}</div></div>${p.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${p.organisation}</p>`:''}<div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
-      div.addEventListener('click',()=>openModal({
-        title:p.title, meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>`, shortDesc:p.shortDesc||'', tags, image:imgPath(p.image)||'', icon:'📁', detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[], link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project',
-        vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showDetail: p.showDetail===true||p.showDetail==='true' }
-      }));
-      pgEl.appendChild(div);
+    div.innerHTML=`${topHtml}<div class="project-card-top"><div class="project-meta"><span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span></div><div class="project-title">${safe(p.title)}</div></div>${p.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${p.organisation}</p>`:''}<div class="project-card-bottom"><div class="project-tags">${tagHtml}</div><span class="read-more-link">More →</span></div>`;
+    div.addEventListener('click',()=>openModal({
+      title:p.title,
+      meta:`<span class="project-year">${safe(p.year)}</span><span class="project-status-badge">${safe(p.status)}</span>${p.organisation?`<span style="font-size:.82rem;color:var(--accent)">🏢 ${p.organisation}</span>`:''}`,
+      shortDesc:p.shortDesc||'', tags, image:imgPath(p.image)||'', icon, detail:p.detail||'', gallery:Array.isArray(p.gallery)?p.gallery:[],
+      videoUrl:p.videoUrl||'', report:p.report||null, relatedPubs:p.relatedPubs||[],
+      link:p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'project',
+      vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showDetail: p.showDetail===true||p.showDetail==='true', showVideo: p.showVideo===true||p.showVideo==='true', showReport: p.showReport===true||p.showReport==='true', showRelatedPubs: p.showRelatedPubs===true||p.showRelatedPubs==='true' },
+      fpVis: { showImage: p.fpShowImage!==false, showGallery: p.fpShowGallery!==false, showDetail: p.fpShowDetail!==false, showVideo: p.fpShowVideo!==false, showReport: p.fpShowReport!==false, showRelatedPubs: p.fpShowRelatedPubs!==false }
+    }));
+    pgEl.appendChild(div);
+
+    // Start card slideshow if multiple images
+    if (allImgs.length > 1) {
+      const wrap = div.querySelector('.card-slide-wrap');
+      const slides = wrap.querySelectorAll('img');
+      const dots = wrap.querySelectorAll('.card-slide-dot');
+      let cur = 0;
+      // stagger start so all cards don't flip at same time
+      const delay = 2800 + Math.random() * 1200;
+      setInterval(() => {
+        slides[cur].classList.remove('cs-active');
+        dots[cur].classList.remove('cs-active');
+        cur = (cur + 1) % slides.length;
+        slides[cur].classList.add('cs-active');
+        dots[cur].classList.add('cs-active');
+      }, delay);
+    }
+  });
+
+  // Publications — category filter bar
+  const pubCats = ['All', ...new Set(pubs.map(p=>p.category).filter(Boolean))];
+  const pubFB = document.getElementById('pub-filter-bar');
+  let currentPubCat = 'All';
+  if (pubCats.length > 1) {
+    pubCats.forEach((cat, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'filter-btn' + (i===0?' active':'');
+      btn.textContent = cat;
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#pub-filter-bar .filter-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active');
+        currentPubCat = cat;
+        document.querySelectorAll('.pub-card').forEach(card=>{
+          card.classList.toggle('hidden', currentPubCat!=='All' && card.dataset.cat!==currentPubCat);
+        });
+      });
+      pubFB.appendChild(btn);
     });
   }
 
-  // Publications with explicit DOI and Link support
+  // Publications list
   const pubEl=document.getElementById('pub-list');
-  if (pubEl) {
-    pubs.forEach(p=>{
-      let linksHtml = '';
-      let activePrimaryUrl = '';
-      let isDoi = false;
+  pubs.forEach(p=>{
+    const doiHtml=p.doi?`<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>`:'';
+    const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
+    const div=document.createElement('div');
+    div.className='pub-card reveal';
+    div.dataset.cat = p.category||'';
+    const statusHtml = p.status ? `<span class="pub-status">${safe(p.status)}</span>` : '';
+    const catHtml = p.category ? `<span class="pub-category-badge">${safe(p.category)}</span>` : '';
+    div.innerHTML=`<div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">${statusHtml}${catHtml}</div><div class="pub-body"><div class="pub-title">${safe(p.title)}</div><div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div><div class="pub-journal">${safe(p.journal)}</div>${doiHtml}<div style="flex:1"></div>${hasMore?`<span class="pub-more">Read more →</span>`:''}</div>`;
+    if(hasMore){
+      div.addEventListener('click',()=>openModal({
+        title:p.title,
+        meta:`${p.status?`<span class="pub-status">${safe(p.status)}</span>`:''}${p.category?`<span class="pub-category-badge">${safe(p.category)}</span>`:''}`,
+        tags:[], image:imgPath(p.image)||'', icon:'📚',
+        subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
+        shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
+        gallery:Array.isArray(p.gallery)?p.gallery:[],
+        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
+        vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
+        fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
+      }));
+    }
+    pubEl.appendChild(div);
+  });
 
-      if (p.doi) {
-        const dUrl = p.doi.startsWith('http') ? p.doi : `[https://doi.org/$](https://doi.org/$){p.doi}`;
-        linksHtml += `<a class="pub-doi" href="${dUrl}" target="_blank">↗ DOI</a>`;
-        activePrimaryUrl = dUrl;
-        isDoi = true;
-      }
-      if (p.link) {
-        linksHtml += `<a class="pub-doi" href="${p.link}" target="_blank">↗ Read Article</a>`;
-        if (!activePrimaryUrl) activePrimaryUrl = p.link;
-      }
-
-      const hasMore = (p.abstract || p.detail || p.image || (p.gallery && p.gallery.length));
+  // Experience
+  const expEl = document.getElementById('exp-list');
+  const expItems2 = (expItems||[]).sort((a,b)=>(a.order||99)-(b.order||99));
+  function renderExp(filter) {
+    const filtered = filter === 'all' ? expItems2 : expItems2.filter(e => e.type === filter);
+    expEl.innerHTML = '';
+    filtered.forEach(e => {
+      const endLabel = (e.current==='true'||e.current===true) ? '<span class="exp-current-dot"></span>Present' : (e.endDate || '');
+      const dateRange = e.startDate ? `${e.startDate}${endLabel ? ' — ' + endLabel : ''}` : endLabel;
+      const typeClass = `exp-type-${e.type || 'work'}`;
+      const typeLabel = (e.type || 'work').charAt(0).toUpperCase() + (e.type || 'work').slice(1);
+      const hasMore = e.shortDesc || e.body || e.image || (e.gallery && e.gallery.length);
       const div = document.createElement('div');
-      div.className = 'pub-card reveal';
-      div.dataset.cat = p.category||'';
+      div.className = 'exp-item visible' + (hasMore ? ' exp-clickable' : '');
       div.innerHTML = `
-        <div style="display:flex;flex-direction:column;gap:.4rem;flex-shrink:0">
-          ${p.status?`<span class="pub-status">${safe(p.status)}</span>`:''}
-          ${p.category?`<span class="pub-category-badge">${safe(p.category)}</span>`:''}
+        <div class="exp-left">
+          <div class="exp-dates">${dateRange}</div>
+          ${e.location ? `<div class="exp-location">📍 ${e.location}</div>` : ''}
+          ${e.type ? `<span class="exp-type-badge ${typeClass}">${typeLabel}</span>` : ''}
         </div>
-        <div class="pub-body">
-          <div class="pub-title">${safe(p.title)}</div>
-          <div class="pub-authors">${safe(p.authors)}${p.year?' ('+p.year+')':''}</div>
-          <div class="pub-journal">${safe(p.journal)}</div>
-          <div class="pub-links-bar">${linksHtml}</div>
-          <div style="flex:1"></div>
-          ${hasMore?`<span class="pub-more">Read more →</span>`:''}
-        </div>
-      `;
-
+        <div class="exp-right">
+          <div class="exp-title">${safe(e.title)}</div>
+          <div class="exp-org">${safe(e.organisation)}</div>
+          ${e.shortDesc ? `<div class="exp-desc">${e.shortDesc.replace(/\*\*|__|\*|_|`/g,'').split('\n')[0].slice(0,120)}${e.shortDesc.length>120?'…':''}</div>` : ''}
+          ${hasMore ? `<span class="pub-more">Read more →</span>` : ''}
+        </div>`;
       if (hasMore) {
-        div.addEventListener('click',()=>openModal({
-          title: p.title,
-          meta: `${p.status?`<span class="pub-status">${safe(p.status)}</span>`:''}${p.category?`<span class="pub-category-badge">${safe(p.category)}</span>`:''}`,
+        div.addEventListener('click', () => openModal({
+          title: e.title,
+          meta: `<span class="project-status-badge">${typeLabel}</span>`,
           tags: [],
-          image: imgPath(p.image)||'',
-          icon: '📚',
-          subtitle: `${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
-          shortDesc: p.shortDesc||'',
-          abstract: p.abstract||'',
-          detail: p.detail||'',
-          gallery: Array.isArray(p.gallery)?p.gallery:[],
-          link: activePrimaryUrl,
-          isDoi: isDoi,
-          displayMode: p.displayMode||'popup',
-          slug: p.slug,
-          pageType: 'publication',
-          vis: {
-            showImage: p.showImage===true||p.showImage==='true',
-            showGallery: p.showGallery===true||p.showGallery==='true',
-            showAbstract: p.showAbstract===true||p.showAbstract==='true',
-            showDetail: p.showDetail===true||p.showDetail==='true'
-          }
+          image: imgPath(e.image)||'',
+          icon: '💼',
+          subtitle: `${safe(e.organisation)}${e.location?' · '+e.location:''}`,
+          shortDesc: e.shortDesc||'',
+          detail: e.body||'',
+          gallery: Array.isArray(e.gallery) ? e.gallery : [],
+          displayMode: e.displayMode||'popup',
+          slug: e.slug, pageType: 'experience',
+          vis: { showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showAbstract: e.showAbstract===true||e.showAbstract==='true'||true, showDetail: e.showDetail===true||e.showDetail==='true' },
+          fpVis: { showImage: e.fpShowImage===true||e.fpShowImage==='true', showGallery: e.fpShowGallery===true||e.fpShowGallery==='true', showDetail: e.fpShowDetail===true||e.fpShowDetail==='true' }
         }));
       }
-      pubEl.appendChild(div);
+      expEl.appendChild(div);
     });
   }
-
-  // Work Experience
-  const expEl = document.getElementById('exp-list');
-  if (expEl) {
-    const expItems2 = (expItems||[]).sort((a,b)=>(a.order||99)-(b.order||99));
-    function renderExp(filter) {
-      const filtered = filter === 'all' ? expItems2 : expItems2.filter(e => e.type === filter);
-      expEl.innerHTML = '';
-      filtered.forEach(e => {
-        const endLabel = (e.current==='true'||e.current===true) ? '<span class="exp-current-dot"></span>Present' : (e.endDate || '');
-        const dateRange = e.startDate ? `${e.startDate}${endLabel ? ' — ' + endLabel : ''}` : endLabel;
-        const typeClass = `exp-type-${e.type || 'work'}`;
-        const typeLabel = (e.type || 'work').charAt(0).toUpperCase() + (e.type || 'work').slice(1);
-        const hasMore = e.shortDesc || e.body || e.image || (e.gallery && e.gallery.length);
-        const div = document.createElement('div');
-        div.className = 'exp-item visible' + (hasMore ? ' exp-clickable' : '');
-        div.innerHTML = `<div class="exp-left"><div class="exp-dates">${dateRange}</div>${e.location ? `<div class="exp-location">📍 ${e.location}</div>` : ''}${e.type ? `<span class="exp-type-badge ${typeClass}">${typeLabel}</span>` : ''}</div><div class="exp-right"><div class="exp-title">${safe(e.title)}</div><div class="exp-org">${safe(e.organisation)}</div>${e.shortDesc ? `<div class="exp-desc">${e.shortDesc.slice(0,120)}...</div>` : ''}${hasMore ? `<span class="pub-more">Read more →</span>` : ''}</div>`;
-        if (hasMore) {
-          div.addEventListener('click', () => openModal({
-            title: e.title, meta: `<span class="project-status-badge">${typeLabel}</span>`, tags: [], image: imgPath(e.image)||'', icon: '💼', subtitle: `${safe(e.organisation)}${e.location?' · '+e.location:''}`, shortDesc: e.shortDesc||'', detail: e.body||'', gallery: Array.isArray(e.gallery) ? e.gallery : [], displayMode: e.displayMode||'popup', slug: e.slug, pageType: 'experience',
-            vis: { showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showDetail: e.showDetail===true||e.showDetail==='true' }
-          }));
-        }
-        expEl.appendChild(div);
-      });
-    }
-    renderExp('all');
-    document.querySelectorAll('[data-exp]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        document.querySelectorAll('[data-exp]').forEach(b => b.classList.remove('active')); btn.classList.add('active');
+  renderExp('all');
+  document.querySelectorAll('[data-exp]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-exp]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      animateToggle(expEl, () => {
         renderExp(btn.dataset.exp);
+        expEl.querySelectorAll('.reveal').forEach(el => observer.observe(el));
       });
     });
-  }
+  });
+  ['research','work','consultancy'].forEach(type => {
+    const hasItems = expItems2.some(e => e.type === type);
+    const btn = document.querySelector(`[data-exp="${type}"]`);
+    if (btn && !hasItems) btn.style.display = 'none';
+  });
 
-  // Custom Sections
+  // ── CUSTOM SECTIONS ──────────────────────────────────────
   const customSectionsEl = document.getElementById('custom-sections-wrap');
   if (customSectionsEl && customSections && customSections.length) {
     customSections.filter(sec => sec.visible !== false && sec.visible !== 'false').forEach(sec => {
-      const items = (customItems || []).filter(it => it.sectionId === sec.id).sort((a,b) => (+a.order||99)-(+b.order||99));
+      const items = (customItems || []).filter(it => it.sectionId === sec.id)
+                      .sort((a,b) => (+a.order||99)-(+b.order||99));
       if (!items.length) return;
+
       const secEl = document.createElement('section');
-      secEl.className = 'custom-section'; secEl.id = 'custom-'+sec.id;
-      let innerHtml = `<div class="section-header reveal"><h2 class="section-title">${sec.icon||'📌'} ${safe(sec.title)}</h2><div class="section-line"></div></div>`;
-      innerHtml += `<div class="projects-grid">`;
-      items.forEach(e => {
-        innerHtml += `<div class="project-card"><div class="project-card-top"><div class="project-title">${safe(e.title)}</div></div><div class="project-desc">${safe(e.shortDesc||'')}</div></div>`;
-      });
-      innerHtml += `</div>`;
+      secEl.className = 'custom-section';
+      secEl.id = 'custom-'+sec.id;
+
+      let innerHtml = `<div class="section-header reveal">
+        <h2 class="section-title">${sec.icon||'📌'} ${safe(sec.title)}</h2>
+        <div class="section-line"></div>
+      </div>`;
+
+      if (sec.display === 'timeline') {
+        // Timeline display — like Experience
+        innerHtml += `<div class="exp-list">`;
+        items.forEach(e => {
+          const endLabel = (e.current===true||e.current==='true') ? '<span class="exp-current-dot"></span>Present' : (e.endDate||'');
+          const dateRange = e.startDate ? `${e.startDate}${endLabel?' — '+endLabel:''}` : endLabel;
+          const hasMore = e.shortDesc || e.body || (e.gallery&&e.gallery.length);
+          innerHtml += `<div class="exp-item${hasMore?' exp-clickable':''}" data-cs-id="${sec.id}" data-cs-item='${JSON.stringify({...e,_sec:sec})}'>
+            <div class="exp-left">
+              <div class="exp-dates">${dateRange}</div>
+              ${e.location?`<div class="exp-location">📍 ${e.location}</div>`:''}
+              ${e.type?`<span class="exp-type-badge exp-type-work">${e.type}</span>`:''}
+            </div>
+            <div class="exp-right">
+              <div class="exp-title">${safe(e.title)}</div>
+              <div class="exp-org">${safe(e.organisation)}</div>
+              ${hasMore?`<span class="pub-more">Read more →</span>`:''}
+            </div>
+          </div>`;
+        });
+        innerHtml += `</div>`;
+      } else {
+        // Cards display — like Projects
+        innerHtml += `<div class="projects-grid">`;
+        items.forEach(e => {
+          const rawGallery = Array.isArray(e.gallery) ? e.gallery : [];
+          const allImgs = rawGallery.map(g => imgPath(typeof g==='string'?g:(g.src||g))).filter(Boolean);
+          if (e.image && !allImgs.includes(imgPath(e.image))) allImgs.unshift(imgPath(e.image));
+          let topHtml = '';
+          if (!allImgs.length) {
+            topHtml = `<div class="project-img-placeholder">${sec.icon||'📌'}</div>`;
+          } else if (allImgs.length === 1) {
+            topHtml = `<div class="card-slide-wrap"><img class="cs-active" src="${allImgs[0]}" alt="${safe(e.title)}"/></div>`;
+          } else {
+            const imgTags = allImgs.map((src,i)=>`<img class="${i===0?'cs-active':''}" src="${src}" alt="${safe(e.title)}"/>`).join('');
+            const dotTags = allImgs.map((_,i)=>`<span class="card-slide-dot${i===0?' cs-active':''}"></span>`).join('');
+            topHtml = `<div class="card-slide-wrap" data-multi="1">${imgTags}<div class="card-slide-dots">${dotTags}</div></div>`;
+          }
+          const hasMore = e.shortDesc || e.body || (e.gallery&&e.gallery.length);
+          innerHtml += `<div class="project-card${hasMore?' exp-clickable':''}" data-cs-id="${sec.id}" data-cs-item='${JSON.stringify({...e,_sec:sec})}'>
+            ${topHtml}
+            <div class="project-card-top">
+              <div class="project-meta">
+                <span class="project-year">${safe(e.year)}</span>
+                <span class="project-status-badge">${safe(e.type||'')}</span>
+              </div>
+              <div class="project-title">${safe(e.title)}</div>
+            </div>
+            ${e.organisation?`<p style="font-size:.82rem;color:var(--accent);padding:0 1.5rem;margin-bottom:.4rem">🏢 ${e.organisation}</p>`:''}
+            <div class="project-card-bottom"><div></div>${hasMore?`<span class="read-more-link">More →</span>`:''}</div>
+          </div>`;
+        });
+        innerHtml += `</div>`;
+      }
+
       secEl.innerHTML = innerHtml;
       customSectionsEl.appendChild(secEl);
+
+      // Wire click events for items with more info
+      secEl.querySelectorAll('[data-cs-item]').forEach(el => {
+        const e = JSON.parse(el.dataset.csItem);
+        const sec2 = e._sec;
+        const hasMore = e.shortDesc || e.body || (e.gallery&&e.gallery.length);
+        if (!hasMore) return;
+        el.addEventListener('click', () => openModal({
+          title: e.title,
+          icon: sec2.icon||'📌',
+          subtitle: `${safe(e.organisation)}${e.location?' · '+e.location:''}`,
+          meta: e.type ? `<span class="project-status-badge">${e.type}</span>` : '',
+          image: imgPath(e.image)||'',
+          gallery: Array.isArray(e.gallery)?e.gallery:[],
+          shortDesc: e.shortDesc||'',
+          detail: e.body||'',
+          link: e.link||'',
+          displayMode: e.displayMode||'popup',
+          slug: e.slug,
+          pageType: 'custom',
+          vis: { showGallery: !!e.gallery&&e.gallery.length>0, showDetail: !!e.body }
+        }));
+      });
+
+      // Start card slideshows
+      secEl.querySelectorAll('[data-multi]').forEach(wrap => {
+        const slides = wrap.querySelectorAll('img');
+        const dots = wrap.querySelectorAll('.card-slide-dot');
+        let cur = 0;
+        setInterval(() => {
+          slides[cur].classList.remove('cs-active'); dots[cur].classList.remove('cs-active');
+          cur = (cur+1)%slides.length;
+          slides[cur].classList.add('cs-active'); dots[cur].classList.add('cs-active');
+        }, 2800 + Math.random()*1200);
+      });
+
+      // Nav link for custom section
+      const navLinks = document.getElementById('nav-links');
+      const contactLi = navLinks.querySelector('li:has(#cv-dropdown)');
+      const li = document.createElement('li');
+      li.innerHTML = `<a href="#custom-${sec.id}">${sec.title}</a>`;
+      navLinks.insertBefore(li, contactLi);
     });
   }
 
-  // Skills
+  // ── SKILLS ──────────────────────────────────────────────
   const skillsEl = document.getElementById('skills-grid');
   if (skillsEl && s.skills && Array.isArray(s.skills.items)) {
     s.skills.items.forEach(group => {
       const div = document.createElement('div');
       div.className = 'skill-group reveal';
-      div.innerHTML = `<div class="skill-group-title">${safe(group.group)}</div><div class="skill-tags">${(group.items||[]).map(sk=>`<span class="skill-tag">${sk}</span>`).join('')}</div>`;
+      div.innerHTML = `<div class="skill-group-title">${safe(group.group)}</div>
+        <div class="skill-tags">${(group.items||[]).map(sk=>`<span class="skill-tag">${sk}</span>`).join('')}</div>`;
       skillsEl.appendChild(div);
     });
   }
 
   // Contact
   const clEl=document.getElementById('contact-links');
-  if (clEl) {
-    const cItems=[{icon:'✉️',label:'Email',val:s.email,href:`mailto:${s.email}`},{icon:'📍',label:'Location',val:s.location,href:null},{icon:'📞',label:'Phone',val:s.phone,href:`tel:${s.phone}`}].filter(i=>i.val);
-    cItems.forEach(item=>{
-      const el=document.createElement(item.href?'a':'div'); el.className='contact-link reveal';
-      if(item.href){el.href=item.href;if(!item.href.startsWith('mailto')&&!item.href.startsWith('tel'))el.target='_blank';}
-      el.innerHTML=`<div class="contact-link-icon">${item.icon}</div><div class="contact-link-text"><small>${item.label}</small><span>${item.val}</span></div>`;
-      clEl.appendChild(el);
-    });
-  }
+  const cItems=[
+    {icon:'✉️',label:'Email',val:s.email,href:`mailto:${s.email}`},
+    {icon:'📍',label:'Location',val:s.location,href:null},
+    {icon:'📞',label:'Phone',val:s.phone,href:`tel:${s.phone}`},
+  ].filter(i=>i.val);
+  cItems.forEach(item=>{
+    const el=document.createElement(item.href?'a':'div');
+    el.className='contact-link reveal';
+    if(item.href){el.href=item.href;if(!item.href.startsWith('mailto')&&!item.href.startsWith('tel'))el.target='_blank';}
+    el.innerHTML=`<div class="contact-link-icon">${item.icon}</div><div class="contact-link-text"><small>${item.label}</small><span>${item.val}</span></div>`;
+    clEl.appendChild(el);
+  });
 
+  // Social links
   const slEl=document.getElementById('social-links');
-  if (slEl) {
-    const socials=[{name:'GitHub',icon:'🐙',url:s.github},{name:'LinkedIn',icon:'💼',url:s.linkedin},{name:'Facebook',icon:'📘',url:s.facebook},{name:'Instagram',icon:'📸',url:s.instagram},{name:'Storygraph',icon:'📚',url:s.storygraph},...(s.customSocials||[]).map(c=>({name:c.name,icon:c.icon||'🔗',url:c.url}))].filter(s=>s.url);
-    socials.forEach(s=>{ slEl.innerHTML+=`<a class="social-btn" href="${s.url}" target="_blank">${s.icon} ${s.name}</a>`; });
-  }
+  const socials=[
+    {name:'GitHub',icon:'🐙',url:s.github},
+    {name:'LinkedIn',icon:'💼',url:s.linkedin},
+    {name:'Facebook',icon:'📘',url:s.facebook},
+    {name:'Instagram',icon:'📸',url:s.instagram},
+    {name:'Storygraph',icon:'📚',url:s.storygraph},
+    ...(s.customSocials||[]).map(c=>({name:c.name,icon:c.icon||'🔗',url:c.url}))
+  ].filter(s=>s.url);
+  socials.forEach(s=>{
+    slEl.innerHTML+=`<a class="social-btn" href="${s.url}" target="_blank">${s.icon} ${s.name}</a>`;
+  });
 
+  // Typing
   startTyping(Array.isArray(s.taglines)?s.taglines:['Environmental Scientist']);
-  document.querySelectorAll('img[data-src]').forEach(img => { loadImg(img, imgPath(img.dataset.src)); });
+
+  // Load all data-src images with fallback
+  document.querySelectorAll('img[data-src]').forEach(img => {
+    loadImg(img, imgPath(img.dataset.src));
+  });
+
+  // Reveal
   setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>observer.observe(el)),100);
   document.getElementById('loading').classList.add('done');
 }
 
-// BOOT
+// ── BOOT ─────────────────────────────────────────────────────
 async function loadSite() {
   try {
     const [settings, eduItems, projects, pubs, expItems, customSections, skillsData, mapData] = await Promise.all([
-      fj('/content/settings.json'), loadMDs('/content/education/'), loadMDs('/content/projects/'), loadMDs('/content/publications/'), loadMDs('/content/experience/'),
-      fj('/content/sections.json').then(r => r||[]), fj('/content/skills.json').then(r => r||null), fj('/content/map.json').then(r => r||null)
+      fj('/content/settings.json'),
+      loadMDs('/content/education/'),
+      loadMDs('/content/projects/'),
+      loadMDs('/content/publications/'),
+      loadMDs('/content/experience/'),
+      fj('/content/sections.json').then(r => r||[]),
+      fj('/content/skills.json').then(r => r||null),
+      fj('/content/map.json').then(r => r||null)
     ]);
-    
-    const baseSettings = settings || { name: 'Diwakar Adhikari' };
-    if (skillsData) baseSettings.skills = skillsData;
-    if (mapData) baseSettings.mapData = mapData;
+    // Merge skills into settings so renderSite can access via s.skills
+    if (skillsData) settings.skills = skillsData;
+    if (mapData) settings.mapData = mapData;
 
-    renderSite(baseSettings, eduItems, projects, pubs, expItems||[], customSections||[], []);
+    // Load all custom section items in parallel
+    let customItems = [];
+    if (customSections && customSections.length) {
+      const visible = customSections.filter(s => s.visible !== false && s.visible !== 'false');
+      const allItems = await Promise.all(
+        visible.map(sec => loadMDs('/content/custom/'+sec.id+'/').catch(()=>[]))
+      );
+      allItems.forEach((items, i) => {
+        const sec = visible[i];
+        customItems = customItems.concat(items.map(it => ({...it, sectionId: sec.id})));
+      });
+    }
+
+    renderSite(
+      settings||{name:'Diwakar Adhikari'},
+      eduItems, projects, pubs, expItems||[],
+      customSections||[], customItems
+    );
   } catch(e) {
-    console.error('Load error:', e);
+    console.error('Load error:',e);
     document.getElementById('loading').classList.add('done');
   }
 }
+
 loadSite();
 </script>
 
-<!-- TOPOGRAPHIC RIVER JOURNEY LOGIC -->
-<script>
-(function() {
-'use strict';
-function esc(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
-
-const toggle = document.getElementById('jrn-toggle');
-const body   = document.getElementById('jrn-body');
-const inner  = document.getElementById('jrn-inner');
-const topoCanvas = document.getElementById('jrn-topo');
-const riverBaseCanvas = document.getElementById('jrn-river-base');
-const riverCanvas = document.getElementById('jrn-river');
-const milestonesContainer = document.getElementById('jrn-milestones');
-
-let baseW = 0, baseH = 0;
-let layout = null;
-let activeMilestoneIndex = -1;
-
-function isDark() { return document.documentElement.getAttribute('data-theme') === 'dark'; }
-function smoothstep(x, a, b) { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); }
-
-function getRiverXFrac(norm) {
-  const n = Math.max(0, Math.min(1, norm));
-  const points = [[0.00, 0.14], [0.12, 0.16], [0.22, 0.24], [0.34, 0.78], [0.47, 0.28], [0.60, 0.74], [0.71, 0.38], [0.80, 0.88], [0.87, 0.91], [0.94, 0.62], [1.00, 0.50]];
-  let x = points[points.length - 1][1];
-  for (let i = 0; i < points.length - 1; i++) {
-    const a = points[i], b = points[i + 1];
-    if (n >= a[0] && n <= b[0]) { const u = smoothstep(n, a[0], b[0]); x = a[1] + (b[1] - a[1]) * u; break; }
-  }
-  return Math.max(0.10, Math.min(0.90, x));
-}
-
-const ELEV_TOP = 6500, ELEV_BOTTOM = 60;
-function elevToFrac(elev) {
-  const e = Math.max(ELEV_BOTTOM, Math.min(ELEV_TOP, +elev));
-  const norm = (ELEV_TOP - e) / (ELEV_TOP - ELEV_BOTTOM);
-  return Math.pow(norm, 0.82) * 0.80 + 0.06;
-}
-
-function buildLayout(W, H, milestones) {
-  return {
-    milestoneAnchors: (milestones || []).map((m, i) => {
-      let frac = (m.elevation != null && m.elevation !== '') 
-        ? Math.max(0.06, Math.min(0.86, elevToFrac(m.elevation)))
-        : (0.10 + (i / Math.max(1, (milestones.length || 1) - 1)) * 0.72);
-
-      // Coordinate shift for multiple milestones in the same year/elevation
-      if (m.sameYearOffset === 'upstream') {
-        frac = Math.max(0.05, frac - 0.035);
-      } else if (m.sameYearOffset === 'downstream') {
-        frac = Math.min(0.92, frac + 0.035);
-      }
-
-      let x = getRiverXFrac(frac) * W;
-      if (m.sameYearOffset === 'left') x -= 26;
-      if (m.sameYearOffset === 'right') x += 26;
-
-      return {
-        milestone: m,
-        frac,
-        x,
-        y: frac * H,
-        index: i
-      };
-    }).sort((a, b) => a.frac - b.frac)
-  };
-}
-
-function resizeAll() {
-  baseW = inner.offsetWidth || window.innerWidth;
-  baseH = Math.max(inner.offsetHeight, 620);
-  inner.style.height = baseH + 'px';
-
-  [topoCanvas, riverBaseCanvas, riverCanvas].forEach(c => {
-    if (!c) return;
-    c.width = baseW;
-    c.height = baseH;
-  });
-
-  layout = buildLayout(baseW, baseH, window._timelineMilestones || []);
-}
-
-function drawRiverBase() {
-  if (!riverBaseCanvas) return;
-  const ctx = riverBaseCanvas.getContext('2d');
-  ctx.clearRect(0, 0, baseW, baseH);
-
-  ctx.beginPath();
-  const samples = 180;
-  for (let i = 0; i <= samples; i++) {
-    const t = i / samples;
-    const px = getRiverXFrac(t) * baseW;
-    const py = t * baseH;
-    i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-  }
-  ctx.lineWidth = 14;
-  ctx.strokeStyle = isDark() ? 'rgba(70,150,215,0.22)' : 'rgba(30,110,190,0.18)';
-  ctx.lineCap = 'round';
-  ctx.stroke();
-
-  ctx.lineWidth = 4;
-  ctx.strokeStyle = isDark() ? 'rgba(150,205,255,0.7)' : 'rgba(20,95,175,0.6)';
-  ctx.stroke();
-}
-
-let particles = [];
-function initParticles() {
-  particles = Array.from({length: 45}, () => ({
-    t: Math.random(),
-    speed: 0.0006 + Math.random() * 0.0012,
-    size: 2 + Math.random() * 2.5
-  }));
-}
-
-function drawFlow() {
-  if (!riverCanvas) return;
-  const ctx = riverCanvas.getContext('2d');
-  ctx.clearRect(0, 0, baseW, baseH);
-
-  particles.forEach(p => {
-    p.t = (p.t + p.speed) % 1.0;
-    const px = getRiverXFrac(p.t) * baseW;
-    const py = p.t * baseH;
-
-    ctx.beginPath();
-    ctx.arc(px, py, p.size, 0, Math.PI * 2);
-    ctx.fillStyle = isDark() ? 'rgba(255,255,255,0.75)' : 'rgba(15,75,150,0.65)';
-    ctx.fill();
-  });
-
-  if (layout && activeMilestoneIndex >= 0 && layout.milestoneAnchors[activeMilestoneIndex]) {
-    const activeAnchor = layout.milestoneAnchors[activeMilestoneIndex];
-    ctx.beginPath();
-    ctx.arc(activeAnchor.x, activeAnchor.y, 14, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(183,131,42,0.85)';
-    ctx.lineWidth = 2.5;
-    ctx.stroke();
-  }
-
-  requestAnimationFrame(drawFlow);
-}
-
-function buildMilestones() {
-  if (!milestonesContainer || !layout) return;
-  milestonesContainer.innerHTML = '';
-
-  layout.milestoneAnchors.forEach((anchor, idx) => {
-    const m = anchor.milestone;
-
-    const hit = document.createElement('button');
-    hit.className = 'jrn-milestone-hit';
-    hit.style.left = anchor.x + 'px';
-    hit.style.top = anchor.y + 'px';
-    hit.setAttribute('aria-label', m.title || 'Milestone');
-
-    const pin = document.createElement('div');
-    pin.style.width = '14px';
-    pin.style.height = '14px';
-    pin.style.borderRadius = '50%';
-    pin.style.background = 'var(--accent)';
-    pin.style.border = '2.5px solid var(--surface)';
-    pin.style.boxShadow = '0 0 10px var(--accent)';
-    pin.style.margin = '13px auto';
-    hit.appendChild(pin);
-
-    hit.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const isAlreadyOpen = activeMilestoneIndex === idx;
-      closeMilestoneCard();
-      if (!isAlreadyOpen) {
-        activeMilestoneIndex = idx;
-        hit.classList.add('active');
-        showMilestoneCard(anchor);
-      }
-    });
-
-    milestonesContainer.appendChild(hit);
-  });
-}
-
-function showMilestoneCard(anchor) {
-  const m = anchor.milestone;
-  const card = document.createElement('div');
-  card.className = 'jrn-milestone-card';
-  card.id = 'active-jrn-card';
-
-  const posX = Math.max(160, Math.min(baseW - 160, anchor.x));
-  card.style.left = posX + 'px';
-  card.style.top = anchor.y + 'px';
-
-  const descHtml = m.description ? `<div class="jrn-card-desc">${esc(m.description)}</div>` : '';
-  const subHtml = m.sub ? `<div style="font-size:0.83rem;color:var(--accent);margin-top:0.25rem;">${esc(m.sub)}</div>` : '';
-  const dateHtml = (m.date || m.year) ? `<span style="font-family:'JetBrains Mono',monospace;font-size:0.75rem;color:var(--ink2);">${esc(m.date || m.year)}</span>` : '';
-
-  card.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:0.6rem;">
-      ${dateHtml}
-      <button class="jrn-card-close" style="cursor:pointer;font-size:0.95rem;color:var(--ink2);border:none;background:none;padding:2px 6px;">✕</button>
-    </div>
-    <div style="font-size:1.05rem;font-weight:600;color:var(--ink);margin-top:0.35rem;line-height:1.35;">${m.icon ? m.icon + ' ' : ''}${esc(m.title)}</div>
-    ${subHtml}
-    ${descHtml}
-  `;
-
-  card.querySelector('.jrn-card-close').addEventListener('click', (e) => {
-    e.stopPropagation();
-    closeMilestoneCard();
-  });
-
-  milestonesContainer.appendChild(card);
-}
-
-function closeMilestoneCard() {
-  activeMilestoneIndex = -1;
-  const existing = document.getElementById('active-jrn-card');
-  if (existing) existing.remove();
-  document.querySelectorAll('.jrn-milestone-hit').forEach(h => h.classList.remove('active'));
-}
-
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.jrn-milestone-card') && !e.target.closest('.jrn-milestone-hit')) {
-    closeMilestoneCard();
-  }
-});
-
-window._buildRoad = function() {
-  resizeAll();
-  drawRiverBase();
-  buildMilestones();
-};
-
-window.addEventListener('resize', () => {
-  if (body && body.classList.contains('open')) {
-    window._buildRoad();
-  }
-});
-
-toggle.addEventListener('click', () => {
-  const opening = !body.classList.contains('open');
-  if (opening) {
-    body.classList.add('open');
-    toggle.setAttribute('aria-expanded', 'true');
-    inner.classList.add('jrn-revealed');
-    setTimeout(() => {
-      window._buildRoad();
-      initParticles();
-      drawFlow();
-    }, 100);
-  } else {
-    body.classList.remove('open');
-    toggle.setAttribute('aria-expanded', 'false');
-    closeMilestoneCard();
-  }
-});
-})();
-</script>
-
-<!-- HERO BACKGROUND RIVER ANIMATION -->
+<!-- ═══════════════════════════════════════════════════
+     FLOWING RIVER / WATER RIPPLE BACKGROUND
+═══════════════════════════════════════════════════ -->
 <script>
 (function() {
   const canvas = document.getElementById('river-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  function resize() { canvas.width  = canvas.offsetWidth; canvas.height = canvas.offsetHeight; }
-  resize(); window.addEventListener('resize', resize);
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
 
   const LINES = 40;
   const lines = Array.from({length: LINES}, (_, i) => ({
-    y: (i / LINES) * canvas.height, x: Math.random() * canvas.width, speed: 0.3 + Math.random() * 0.5, amp: 18 + Math.random() * 28, freq: 0.006 + Math.random() * 0.006, phase: Math.random() * Math.PI * 2, width: 0.6 + Math.random() * 1.2, opacity: 0.3 + Math.random() * 0.5
+    y:       (i / LINES) * canvas.height,
+    x:       Math.random() * canvas.width,
+    speed:   0.3 + Math.random() * 0.5,
+    amp:     18  + Math.random() * 28,
+    freq:    0.006 + Math.random() * 0.006,
+    phase:   Math.random() * Math.PI * 2,
+    width:   0.6 + Math.random() * 1.2,
+    opacity: 0.3 + Math.random() * 0.5
   }));
 
   let t = 0;
@@ -1539,23 +1701,296 @@ toggle.addEventListener('click', () => {
     const base = dark ? '120,200,160' : '30,100,60';
 
     lines.forEach(ln => {
-      ctx.beginPath(); ctx.lineWidth = ln.width;
+      // Flowing sine wave line
+      ctx.beginPath();
+      ctx.lineWidth = ln.width;
       const pts = 120;
       for (let i = 0; i <= pts; i++) {
         const px = (i / pts) * canvas.width;
-        const py = ln.y + Math.sin(px * ln.freq + ln.phase + t * 0.015) * ln.amp + Math.sin(px * ln.freq * 2.3 + t * 0.009) * (ln.amp * 0.3);
+        const py = ln.y
+          + Math.sin(px * ln.freq + ln.phase + t * 0.015) * ln.amp
+          + Math.sin(px * ln.freq * 2.3   + t * 0.009)   * (ln.amp * 0.3);
         i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
       }
-      ctx.strokeStyle = `rgba(${base},${ln.opacity})`; ctx.stroke();
+      ctx.strokeStyle = `rgba(${base},${ln.opacity})`;
+      ctx.stroke();
+
+      // Ripple highlight dot travelling along the wave
       ln.x = (ln.x + ln.speed) % canvas.width;
       const dotY = ln.y + Math.sin(ln.x * ln.freq + ln.phase + t * 0.015) * ln.amp;
-      ctx.beginPath(); ctx.arc(ln.x, dotY, ln.width * 1.8, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(${base},${ln.opacity * 0.9})`; ctx.fill();
+      ctx.beginPath();
+      ctx.arc(ln.x, dotY, ln.width * 1.8, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${base},${ln.opacity * 0.9})`;
+      ctx.fill();
     });
-    t++; requestAnimationFrame(draw);
+
+    t++;
+    requestAnimationFrame(draw);
   }
   draw();
 })();
 </script>
+
+<!-- ═══════════════════════════════════════════════════
+     ANIMATED STATS COUNTERS
+═══════════════════════════════════════════════════ -->
+<script>
+(function() {
+  function animateCounter(el) {
+    const target = +el.dataset.target;
+    const suffix = el.dataset.suffix || '';
+    const prefix = el.dataset.prefix || '';
+    const duration = 1800;
+    const start = performance.now();
+    function step(now) {
+      const p = Math.min((now - start) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      el.textContent = prefix + Math.floor(ease * target) + suffix;
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      animateCounter(e.target);
+      io.unobserve(e.target);
+    });
+  }, {threshold: 0.4});
+
+  window._statObserver = io;
+  document.querySelectorAll('.stat-number[data-target]').forEach(el => io.observe(el));
+})();
+</script>
+
+
+<!-- ═══════════════════════════════════════════════════
+     WINDING ROAD JOURNEY
+═══════════════════════════════════════════════════ -->
+<script>
+(function() {
+  const DEFAULT_MILESTONES = [
+    {year:'2018', icon:'🎓', title:'BSc Environmental Science', sub:'Tribhuvan University', detail:'Graduated with distinction in Environmental Science, focusing on watershed management and ecology.'},
+    {year:'2018', icon:'🗺️', title:'Nepal Waste Map', sub:'CLEAN UP NEPAL', detail:'Mapped waste infrastructure across 30,000+ households. Built digital reporting system for municipalities.'},
+    {year:'2019', icon:'🌱', title:'Environmental Consultant', sub:'Field Research', detail:'Led environmental impact assessments and community-based natural resource management projects.'},
+    {year:'2021', icon:'📊', title:'Research Assistant', sub:'Tribhuvan University', detail:'Conducted hydroclimatic variability studies in the Marsyangdi River Basin.'},
+    {year:'2022', icon:'💧', title:'Water–Soil–Food Nexus', sub:'Research Project', detail:'Studied linkages between water security, soil health, and food systems in Nepal mid-hills.'},
+    {year:'2023', icon:'🏔️', title:'MSc Environmental Science', sub:'Tribhuvan University', detail:'Advanced research in sediment dynamics, hydropower impacts, and climate adaptation.'},
+    {year:'2023', icon:'📄', title:'First Publication', sub:'Peer Reviewed', detail:'Published findings on drinking water quality in the Marsyangdi Basin.'},
+    {year:'2024', icon:'🏅', title:'MSc Thesis', sub:'Distinction', detail:'Assessed suspended sediment load and hydropower impacts in the Marsyangdi River Basin.'},
+    {year:'2025', icon:'🤖', title:'ML & Remote Sensing', sub:'Independent Research', detail:'Applying machine learning to rainfall imputation in high-relief Himalayan terrain.'},
+  ];
+
+  function buildRoad() {
+    const MILESTONES = (window._timelineMilestones && window._timelineMilestones.length)
+      ? window._timelineMilestones : DEFAULT_MILESTONES;
+
+    const wrap     = document.querySelector('.road-wrap');
+    const canvas   = document.getElementById('road-canvas');
+    const container= document.getElementById('road-milestones');
+    if (!wrap || !canvas || !container) return;
+
+    container.innerHTML = '';
+
+    // ── Build milestone cards ──────────────────────────
+    MILESTONES.forEach((m, i) => {
+      const side = i % 2 === 0 ? 'left' : 'right';
+      const row  = document.createElement('div');
+      row.className = `rm-row ${side} reveal`;
+      row.innerHTML = `
+        <div class="rm-dot"></div>
+        <div class="rm-connector"></div>
+        <div class="rm-card" tabindex="0" role="button" aria-expanded="false">
+          <div class="rm-year">${m.year}</div>
+          <div class="rm-icon">${m.icon}</div>
+          <div class="rm-title">${m.title}</div>
+          <div class="rm-sub">${m.sub}</div>
+          ${m.detail ? `<div class="rm-detail">${m.detail}</div>` : ''}
+        </div>`;
+      container.appendChild(row);
+
+      // Toggle detail on click
+      const card = row.querySelector('.rm-card');
+      if (m.detail) {
+        card.addEventListener('click', () => {
+          const isOpen = card.classList.toggle('open');
+          card.setAttribute('aria-expanded', isOpen);
+        });
+      }
+    });
+
+    // ── Draw winding road on canvas ────────────────────
+    // Road follows a sine wave along the vertical centre of .road-wrap
+    function drawRoad() {
+      const W = wrap.offsetWidth;
+      const H = wrap.offsetHeight;
+      canvas.width  = W;
+      canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+
+      const dark   = document.documentElement.getAttribute('data-theme') === 'dark';
+      const roadC  = dark  ? 'rgba(82,183,136,0.18)' : 'rgba(45,106,79,0.15)';
+      const centerX = W / 2;
+      const amp     = W * 0.18;   // how far road swings left/right
+      const freq    = 1 / (H * 0.28); // one full S per ~28% of height
+
+      // Path: sine wave from top to ~85% of height
+      ctx.beginPath();
+      const steps = 200;
+      const roadH = H * 0.88;
+      for (let s = 0; s <= steps; s++) {
+        const y = (s / steps) * roadH;
+        const x = centerX + Math.sin(y * freq * Math.PI * 2) * amp;
+        s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = roadC;
+      ctx.lineWidth   = 3;
+      ctx.setLineDash([]);
+      ctx.stroke();
+
+      // Centre dashed line (lane marking)
+      ctx.beginPath();
+      for (let s = 0; s <= steps; s++) {
+        const y = (s / steps) * roadH;
+        const x = centerX + Math.sin(y * freq * Math.PI * 2) * amp;
+        s === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = dark ? 'rgba(82,183,136,0.30)' : 'rgba(45,106,79,0.22)';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([8, 10]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Draw immediately + on resize
+    drawRoad();
+    window.addEventListener('resize', drawRoad);
+
+    // Re-observe new reveal elements
+    document.querySelectorAll('.rm-row.reveal').forEach(el => {
+      if (window._revealObserver) window._revealObserver.observe(el);
+      else el.classList.add('visible');
+    });
+  }
+
+  // Run after DOM is ready; re-run if milestones updated via CMS
+  window._buildRoad = buildRoad;
+  buildRoad();
+})();
+</script>
+
+
+
+
+<!-- ═══════════════════════════════════════════════════
+     NEPAL MAP — LEAFLET + OPENSTREETMAP
+═══════════════════════════════════════════════════ -->
+<script>
+(function() {
+  const TYPE_CONFIG = {
+    research:  { color:'#2D6A4F', label:'Research'                       },
+    community: { color:'#1E6091', label:'Community Project'              },
+    eia:       { color:'#B7832A', label:'Environmental Impact Assessment' },
+    visited:   { color:'#6B4C9A', label:'District Visited'               },
+    other:     { color:'#7B4B3A', label:'Other'                          },
+  };
+
+  let leafletMap = null;
+
+  function buildLegend(usedTypes) {
+    const el = document.getElementById('map-legend');
+    if (!el || !usedTypes.size) return;
+    el.innerHTML = [...usedTypes].map(t => {
+      const cfg = TYPE_CONFIG[t] || TYPE_CONFIG.other;
+      return `<div class="legend-item">
+        <div class="legend-dot" style="background:${cfg.color}"></div>
+        <span>${cfg.label}</span>
+      </div>`;
+    }).join('');
+  }
+
+  window._renderLeafletMap = function(mapData) {
+    if (!window.L) { setTimeout(() => window._renderLeafletMap(mapData), 200); return; }
+
+    // Destroy existing map if re-rendering
+    if (leafletMap) { leafletMap.remove(); leafletMap = null; }
+
+    // Index district data
+    const districtIndex = {};
+    const usedTypes = new Set();
+    (mapData.districts || []).forEach(d => {
+      districtIndex[(d.name||'').toUpperCase().trim()] = d;
+      if (d.type) usedTypes.add(d.type);
+    });
+
+    buildLegend(usedTypes);
+
+    // Init Leaflet — centred on Nepal, showing India + China context
+    leafletMap = L.map('leaflet-map', {
+      center:  [28.3, 84.0],
+      zoom:    7,
+      minZoom: 5,
+      maxZoom: 14,
+      // Restrict panning loosely around the region
+      maxBounds: [[22, 75], [36, 95]],
+    });
+
+    // OpenStreetMap tiles — free, no API key needed
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19
+    }).addTo(leafletMap);
+
+    // Load district GeoJSON and colour by type
+    fetch('/nepal-districts.geojson')
+      .then(r => r.json())
+      .then(geo => {
+        L.geoJSON(geo, {
+          style: feature => {
+            const name = (feature.properties.DISTRICT || '').toUpperCase().trim();
+            const data = districtIndex[name];
+            if (!data) return {
+              fillColor: 'transparent',
+              fillOpacity: 0,
+              color: '#ccc',
+              weight: 0.6,
+              opacity: 0.4
+            };
+            const cfg = TYPE_CONFIG[data.type] || TYPE_CONFIG.other;
+            return {
+              fillColor:   cfg.color,
+              fillOpacity: 0.55,
+              color:       cfg.color,
+              weight:      1.5,
+              opacity:     0.8
+            };
+          },
+          onEachFeature: (feature, layer) => {
+            const name = (feature.properties.DISTRICT || '').toUpperCase().trim();
+            const data = districtIndex[name];
+            if (!data) return;
+            const cfg = TYPE_CONFIG[data.type] || TYPE_CONFIG.other;
+            layer.bindPopup(`
+              <div class="lp-title">📍 ${data.name}</div>
+              <span class="lp-badge" style="background:${cfg.color}">${cfg.label}</span><br>
+              ${data.project ? `<div class="lp-row"><b>${data.project}</b></div>` : ''}
+              ${data.year    ? `<div class="lp-row">📅 ${data.year}</div>` : ''}
+              ${data.note    ? `<div class="lp-row" style="opacity:.75;margin-top:.3rem">${data.note}</div>` : ''}
+            `, { maxWidth: 240 });
+            layer.on('mouseover', function() { this.setStyle({ fillOpacity: 0.8 }); });
+            layer.on('mouseout',  function() { this.setStyle({ fillOpacity: 0.55 }); });
+          }
+        }).addTo(leafletMap);
+      })
+      .catch(e => console.warn('Map GeoJSON error:', e));
+  };
+
+  // Run if data already set
+  if (window._mapData) window._renderLeafletMap(window._mapData);
+})();
+</script>
+
 </body>
 </html>
