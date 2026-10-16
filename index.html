@@ -442,6 +442,55 @@
       .pub-card{flex-direction:column;gap:.8rem}
       .lb-nav{display:none}
     }
+  
+    @keyframes jrnDrawLine { to { stroke-dashoffset: 0; } }
+    .jrn-milestone-dialog {
+      width: auto;
+      min-width: 140px;
+      max-width: min(380px, 46vw);
+    }
+    @media(max-width: 640px) {
+      .jrn-milestone-dialog {
+        max-width: min(280px, 78vw);
+      }
+    }
+    .jrn-flow-controls {
+      position: absolute;
+      top: 1rem;
+      right: clamp(1rem, 4vw, 3rem);
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: .45rem;
+      background: color-mix(in srgb, var(--surface) 88%, transparent);
+      backdrop-filter: blur(6px);
+      padding: .35rem .5rem;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .jrn-flow-btn {
+      padding: .32rem .75rem;
+      border-radius: 18px;
+      font-size: .75rem;
+      font-weight: 500;
+      color: var(--ink2);
+      background: transparent;
+      border: 1px solid transparent;
+      transition: all var(--t);
+    }
+    .jrn-flow-btn:hover, .jrn-flow-btn.active {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+    }
+    .jrn-flow-step {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: .7rem;
+      color: var(--ink2);
+      padding: 0 .4rem;
+    }
+
   </style>
 </head>
 <body>
@@ -520,6 +569,14 @@
 
       <!-- Layer 2: Flow particles, redrawn every frame -->
       <canvas id="jrn-river" class="jrn-layer"></canvas>
+
+      <!-- Subtle interactive controls to step through the flow of the river from upstream to downstream -->
+      <div class="jrn-flow-controls jrn-layer" id="jrn-flow-controls">
+        <button type="button" class="jrn-flow-btn" id="jrn-prev-btn" title="Step upstream">◀ Upstream</button>
+        <span class="jrn-flow-step" id="jrn-flow-step">Upstream → Downstream</span>
+        <button type="button" class="jrn-flow-btn" id="jrn-next-btn" title="Step downstream">Downstream ▶</button>
+        <button type="button" class="jrn-flow-btn" id="jrn-tour-btn" title="Follow the river flow">▶ Follow Flow</button>
+      </div>
 
       <!-- Layer 3: CMS milestone anchors on the mainstem + expandable cards -->
       <div id="jrn-milestones" class="jrn-layer"></div>
@@ -633,7 +690,7 @@
 <footer>
   <span class="footer-logo" id="footer-name">Diwakar Adhikari</span>
   <span id="footer-domain">dwakaradhikari.com.np</span>
-  <a class="admin-link" href="/admin">⚙ Admin</a>
+  <a class="admin-link" href="https://www.diwakaradhikari.info.np/admin" target="_blank" rel="noopener">⚙ Admin</a>
 </footer>
 
 <!-- MODAL -->
@@ -668,6 +725,644 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+// ── EMBEDDED PORTFOLIO BUNDLE & HYBRID AUTO-SYNC ENGINE ──────
+window.MONTH_NAMES = [
+  '', 'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+window.parseMonthNum = function(m) {
+  if (m == null || m === '') return 0;
+  const n = Number(m);
+  if (!Number.isNaN(n) && n >= 1 && n <= 12) return Math.floor(n);
+  const s = String(m).trim().toLowerCase();
+  const idx = window.MONTH_NAMES.findIndex(name => name && name.toLowerCase().startsWith(s.slice(0, 3)));
+  return idx > 0 ? idx : 0;
+};
+
+window.DEFAULT_BUNDLE = {
+  settings: {
+    name: "Diwakar Adhikari",
+    email: "thisisdwakr@gmail.com",
+    phone: "+977-984-3247059",
+    location: "Kathmandu, Nepal",
+    journeyLabel: "Explore My Journey",
+    journeyHintExpand: "Click to expand",
+    journeyHintCollapse: "Click to collapse",
+    journeyDefaultOpen: false,
+    showJourneyFlowControls: true,
+    heroBio: "I bring over four years of experience in environmental research and action, specializing in water resources, waste management, climate resilience, ecosystem health, and WASH. I've analyzed thousands of water samples, facilitated the mapping and analysis of waste-related data from 70,000+ households across several municipalities, studied the hydrological regime of Himalayan rivers, and trained youth in environmental advocacy. In between, I've managed projects, raised funds, and built partnerships across local governments, communities, and other sectors.",
+    taglines: [
+      "Water Resources & Hydrological Modelling",
+      "Climate Resilience & Mountain River Basins",
+      "Waste Management & Circular Economy",
+      "Environmental Governance & Youth Advocacy"
+    ],
+    aboutResearchObjective: "An environmental science graduate student seeking to leverage experience in hydrological modeling, climate data analysis, and watershed-scale environmental assessment to investigate hydroclimatic variability, human–environment interactions, and their interconnectedness within the Water–Energy–Food–Ecosystem (WEFE) nexus. Dedicated to generating science-based insights that support sustainable water resources management, strengthen climate adaptation strategies, and enhance ecological and community resilience in data-scarce mountain river basins.",
+    researchInterests: [
+      "Integrated & Urban Water Systems, Governance and Political Economy",
+      "Modelling Water Systems for Climate-Resilient Infrastructure and Adaptation",
+      "Contaminant Fate, Transport, and Treatment"
+    ],
+    aboutProfessionalObjective: "A professional with 3+ years of experience supporting youth engagement, civic participation, and community-driven development initiatives in Nepal. Proven ability to work with local governments, civil society organizations, and youth networks to design and implement inclusive programmes, facilitate policy dialogue, and translate community voices into actionable governance outcomes. Strong background in results-based management (RBM), monitoring and evaluation, and the use of data and digital tools to support evidence-based decision-making. Experienced in working with marginalized communities, youth leaders, and municipal institutions across multiple provinces",
+    professionalInterests: [
+      "Climate Change, Climate Finance, Adaptation and Livelihood",
+      "Environmental Policy, Advocacy and Governance",
+      "Waste Management and Circular Economy"
+    ],
+    linkedin: "https://www.linkedin.com",
+    facebook: "https://www.facebook.com",
+    storygraph: "https://app.thestorygraph.com",
+    scholarUserId: "",
+    orcid: "",
+    autoSyncCitations: true,
+    stats: [
+      { value: "5", suffix: "+", prefix: "", label: "Years of Experience" },
+      { value: "23", suffix: "", prefix: "", label: "Citations" },
+      { value: "200", suffix: "K+", prefix: "$", label: "Fundraising" },
+      { value: "1800", suffix: "+", prefix: "", label: "People Empowered" },
+      { value: "45", suffix: "+", prefix: "", label: "Districts Visited" }
+    ],
+    milestones: [
+      {
+        year: "2018",
+        month: "6",
+        title: "BSc in Environmental Science",
+        sub: "Tri-Chandra Multiple Campus",
+        description: "Graduated in Environmental Science & Chemistry.",
+        icon: "🧊"
+      },
+      {
+        year: "2018",
+        month: "12",
+        title: "Program Officer — Nepal Waste Map (Safa Nepal)",
+        sub: "CLEAN UP NEPAL",
+        description: "Facilitated geospatial waste mapping across 70,000+ households in several municipalities and led urban vehicular emission inspection advocacy.",
+        icon: "🪨"
+      },
+      {
+        year: "2022",
+        month: "",
+        title: "Research Assistant — Karnali River Basin",
+        sub: "Kathmandu University",
+        description: "High-altitude field hydrochemistry and spring water quality profiling.",
+        icon: "⛰️"
+      },
+      {
+        year: "2024",
+        month: "2",
+        title: "Research Assistant & Fellow",
+        sub: "RECAST & Central Dept. of Botany, TU",
+        description: "Watershed-scale water, soil, and fluvial sediment geochemical analysis.",
+        icon: "🪵"
+      },
+      {
+        year: "2024",
+        month: "9",
+        title: "MSc in Environmental Science (Water Resource Management)",
+        sub: "Central Dept. of Environmental Science, Tribhuvan University",
+        description: "Completed MSc thesis on Suspended Sediment Load and Impacts due to Hydropower Plants alongside Gandaki River Basin trace element research.",
+        icon: "🌿"
+      },
+      {
+        year: "2025",
+        month: "4",
+        title: "Marsyangdi River Basin & Himalayan Rainfall Imputation",
+        sub: "Independent Hydroclimatic Research",
+        description: "Hydrological modelling (SWAT+, HEC-HMS) and high-relief rainfall station imputation.",
+        icon: "🌉"
+      },
+      {
+        year: "2025",
+        month: "10",
+        title: "Program Coordinator — Climate Change Adaptation",
+        sub: "Nepal Peacebuilding Initiative",
+        description: "Co-designed locally led climate adaptation plans with marginalized communities.",
+        icon: "🌉"
+      },
+      {
+        year: "2026",
+        month: "",
+        title: "Local Level Assessment of Climate Indices, Nepal",
+        sub: "Independent Research",
+        description: "Municipal-scale hydroclimatic variability and extreme climate indices across Nepal.",
+        icon: "🌊"
+      }
+    ]
+  },
+  skills: {
+    items: [
+      {
+        group: "Hydrologic & Climate Modelling",
+        items: ["SWAT+", "HEC-HMS", "Watershed Delineation", "GCM Selection", "Climate Impact Assessment"]
+      },
+      {
+        group: "GIS & Remote Sensing",
+        items: ["QGIS", "ArcGIS", "Geospatial Data Collection", "Spatial Mapping"]
+      },
+      {
+        group: "Programming & Data",
+        items: ["Python", "R", "SPSS", "Excel", "Statistical Visualisation"]
+      },
+      {
+        group: "Field & Lab",
+        items: ["Water/Soil/Sediment Sampling", "QA/QC", "Physicochemical Analysis", "Heavy Metal Analysis"]
+      },
+      {
+        group: "Program Management",
+        items: ["Grant Writing", "M&E Frameworks", "Stakeholder Engagement", "Capacity Building", "Budget Management"]
+      },
+      {
+        group: "Communication & Advocacy",
+        items: ["Strategic Content Development", "Campaign Design", "Community Outreach", "Environmental Advocacy"]
+      }
+    ]
+  },
+  education: [
+    {
+      slug: "msc-environmental-science",
+      title: "MSc in Environmental Science",
+      institution: "Central Department of Environmental Science, Tribhuvan University",
+      year: "2024",
+      specialisation: "Water Resource Management",
+      thesis: "Suspended Sediment Load and Impacts due to Hydropower Plants",
+      coursework: ["Hydrological Modelling", "Watershed Management", "Water Quality & Geochemistry", "GIS & Remote Sensing"],
+      shortDesc: "Specialised in Water Resource Management, hydrological modelling, and suspended sediment dynamics in Himalayan hydropower basins.",
+      showCoursework: true,
+      showDetail: true,
+      order: 1
+    },
+    {
+      slug: "bsc-environmental-science",
+      title: "BSc in Environmental Science",
+      institution: "Tri-Chandra Multiple Campus, Tribhuvan University",
+      year: "2018",
+      specialisation: "Environmental Science and Chemistry",
+      thesis: "Water Sanitation and Hygiene Status in Balkhu Slum",
+      coursework: ["Environmental Chemistry", "Water & Wastewater Analysis", "Solid Waste Management", "Environmental Impact Assessment"],
+      shortDesc: "Focused on Environmental Science and Chemistry, urban water quality analysis, and community WASH assessment.",
+      showCoursework: true,
+      showDetail: true,
+      order: 2
+    }
+  ],
+  projects: [
+    {
+      slug: "rainfall-imputation-himalayan-terrain",
+      title: "Rainfall Values Imputation in High Relief Himalayan Terrain",
+      year: "2025",
+      status: "Independent Project",
+      organisation: "",
+      category: "research",
+      tags: ["Hydrology", "Climate Change", "Research"],
+      shortDesc: "Imputation and spatial-temporal analysis of rainfall records across steep elevation gradients in the Himalayan terrain.",
+      showDetail: true,
+      order: 1
+    },
+    {
+      slug: "climate-adaptation-marginalized",
+      title: "Climate Change Adaptation for Marginalized Communities",
+      year: "2025",
+      status: "Program Coordinator",
+      organisation: "Nepal Peace Building Initiative",
+      category: "community",
+      tags: ["Climate Change", "Program"],
+      shortDesc: "Coordinating community-driven climate adaptation and resilience initiatives with marginalized communities in Nepal.",
+      showDetail: true,
+      order: 2
+    },
+    {
+      slug: "sediment-dynamics-hydropower",
+      title: "Suspended Sediment Load and Impacts due to Hydropower Plants",
+      year: "2024",
+      status: "MSc Thesis",
+      organisation: "Central Department of Environmental Science, Tribhuvan University",
+      category: "research",
+      tags: ["Hydrology", "Sediment", "Hydropower"],
+      shortDesc: "MSc thesis investigating suspended sediment transport regimes and downstream/turbine impacts in run-of-river hydropower plants.",
+      showDetail: true,
+      order: 3
+    },
+    {
+      slug: "vehicular-emission-inspection",
+      title: "Strengthening Vehicular Emission Inspection System",
+      year: "2019",
+      status: "Program Officer",
+      organisation: "CLEAN UP NEPAL",
+      category: "community",
+      tags: ["Pollution", "Program"],
+      shortDesc: "Policy dialogue and technical assessment to strengthen vehicular emission inspection systems in Kathmandu Valley.",
+      showDetail: true,
+      order: 4
+    },
+    {
+      slug: "nepal-waste-map",
+      title: "Nepal Waste Map (Safa Nepal)",
+      year: "2018–2022",
+      status: "Program Officer",
+      organisation: "CLEAN UP NEPAL",
+      category: "community",
+      tags: ["Waste Management", "Program"],
+      shortDesc: "Facilitated the mapping and analysis of waste-related data from 70,000+ households across several municipalities.",
+      showDetail: true,
+      order: 5
+    },
+    {
+      slug: "wash-status-balkhu-slum",
+      title: "Water Sanitation and Hygiene Status in Balkhu Slum",
+      year: "2018",
+      status: "Bachelor's Project Work",
+      organisation: "Department of Environmental Science, Tri-chandra Campus",
+      category: "research",
+      tags: ["Water Quality", "Research"],
+      shortDesc: "Baseline water quality and household sanitation assessment in the Balkhu riparian settlement.",
+      showDetail: true,
+      order: 6
+    },
+    {
+      slug: "local-climate-indices-nepal",
+      title: "Local Level Assessment of Climate Indices, Nepal",
+      year: "2026",
+      status: "Independent Project",
+      organisation: "",
+      category: "research",
+      tags: ["Climate Change", "Hydrology", "Research"],
+      shortDesc: "Local-level analysis of extreme temperature and precipitation climate indices across Nepal.",
+      showDetail: true,
+      order: 7
+    },
+    {
+      slug: "hydroclimatic-variability-marsyangdi",
+      title: "Marsyangdi River Basin, Climate Change and Water Resource Management",
+      year: "2025",
+      status: "Independent Project",
+      organisation: "",
+      category: "research",
+      tags: ["Hydrology", "Climate Change", "Research"],
+      shortDesc: "Watershed-scale assessment of hydroclimatic variability and water resource management in the Marsyangdi River Basin.",
+      showDetail: true,
+      order: 8
+    }
+  ],
+  publications: [
+    {
+      slug: "trace-elements-gandaki",
+      title: "Trace elements in fluvial sediments of the Gandaki River Basin, Central Himalaya",
+      authors: "Pant, R. R., Zhang, F., Qaiser, F. U. R., Varol, M., Adhikari, D.",
+      year: "2025",
+      journal: "Journal of Soils and Sediments",
+      status: "",
+      category: "Research Article",
+      linkType: "doi",
+      doi: "https://link.springer.com/journal/11368",
+      abstract: "Geochemical evaluation of trace elements in fluvial sediments across the Gandaki River Basin.",
+      showAbstract: true,
+      order: 1
+    },
+    {
+      slug: "ecological-restoration-nepal",
+      title: "Ecological Restoration in Nepal: A Comprehensive Policy Overview",
+      authors: "Pant, R. R., Koirala, M., Adhikari, D., & Gaire, N. P.",
+      year: "2024",
+      journal: "Sustainable Ecological Restoration and Conservation in the Hindu Kush Himalayan Region",
+      status: "",
+      category: "Book Chapter",
+      linkType: "doi",
+      doi: "https://link.springer.com",
+      abstract: "Comprehensive policy overview of ecological restoration initiatives and governance frameworks in Nepal.",
+      showAbstract: true,
+      order: 2
+    },
+    {
+      slug: "majestic-upper-mustang-water",
+      title: "Majestic Upper Mustang and Its Water Troubles",
+      authors: "Diwakar Adhikari",
+      year: "",
+      journal: "",
+      status: "",
+      category: "Feature Article",
+      linkType: "link",
+      link: "https://www.diwakaradhikari.info.np/",
+      abstract: "Feature article examining changing snowfall patterns and water scarcity in Upper Mustang.",
+      showAbstract: true,
+      order: 3
+    },
+    {
+      slug: "seasons-of-uncertainty-nepal",
+      title: "Seasons of uncertainty: the quiet reshaping of lives across Nepal",
+      authors: "Diwakar Adhikari",
+      year: "2026",
+      journal: "",
+      status: "",
+      category: "Feature Article",
+      linkType: "link",
+      link: "https://www.diwakaradhikari.info.np/",
+      abstract: "Feature article on how shifting monsoons and winter droughts are reshaping livelihoods across Nepal.",
+      showAbstract: true,
+      order: 4
+    }
+  ],
+  experience: [
+    {
+      slug: "program-coordinator-npbi",
+      title: "Program Coordinator",
+      organisation: "Nepal Peacebuilding Initiative",
+      location: "Lalitpur, Nepal",
+      startDate: "2025",
+      endDate: "2025",
+      current: false,
+      type: "work",
+      order: 1
+    },
+    {
+      slug: "research-fellow-tu",
+      title: "Research Fellow",
+      organisation: "Central Department of Botany, Tribhuvan University",
+      location: "Kirtipur, Nepal",
+      startDate: "October 2023",
+      endDate: "September 2024",
+      current: false,
+      type: "research",
+      order: 2
+    },
+    {
+      slug: "research-assistant-recast",
+      title: "Research Assistant",
+      organisation: "Research Centre for Applied Science and Technology",
+      location: "Kirtipur, Kathmandu",
+      startDate: "September 2023",
+      endDate: "February 2024",
+      current: false,
+      type: "research",
+      order: 3
+    },
+    {
+      slug: "research-assistant-ku",
+      title: "Research Assistant",
+      organisation: "Kathmandu University",
+      location: "Karnali River Basin, Nepal",
+      startDate: "June 2022",
+      endDate: "July 2022",
+      current: false,
+      type: "research",
+      order: 4
+    },
+    {
+      slug: "program-officer-cleanup-nepal",
+      title: "Program Officer",
+      organisation: "CLEAN UP NEPAL",
+      location: "Kathmandu, Nepal",
+      startDate: "December 2018",
+      endDate: "February 2022",
+      current: false,
+      type: "work",
+      order: 5
+    }
+  ],
+  mapData: {
+    districts: [
+      { name: "KATHMANDU", type: "community", project: "Nepal Waste Map (Safa Nepal) & Urban WASH", year: "2018–2022", note: "Household waste mapping and urban WASH assessment." },
+      { name: "LALITPUR", type: "community", project: "Climate Change Adaptation for Marginalized Communities", year: "2025", note: "Program coordination and climate adaptation." },
+      { name: "LAMJUNG", type: "research", project: "Marsyangdi River Basin & Hydropower Sediment Study", year: "2024–2025", note: "Suspended sediment load and hydrological modelling." },
+      { name: "MANANG", type: "research", project: "Rainfall Imputation in High Relief Himalayan Terrain", year: "2025", note: "High-altitude hydroclimatic analysis." },
+      { name: "MUSTANG", type: "research", project: "Upper Mustang Water & Climate Indices", year: "2024–2026", note: "Cryospheric water scarcity and climate indices." },
+      { name: "KASKI", type: "research", project: "Gandaki Basin Fluvial Sediments", year: "2024–2025", note: "Trace element sediment geochemistry." },
+      { name: "JUMLA", type: "research", project: "Karnali River Basin Hydrochemistry", year: "2022", note: "Spring and river water sampling." }
+    ]
+  },
+  customSections: [],
+  customItems: []
+};
+
+window.FALLBACK_NEPAL_GEOJSON = (function() {
+  const centers = {
+    KATHMANDU: [27.71, 85.32, 0.16, 0.14],
+    LALITPUR: [27.58, 85.33, 0.15, 0.13],
+    LAMJUNG: [28.23, 84.38, 0.24, 0.20],
+    MANANG: [28.67, 84.02, 0.28, 0.22],
+    MUSTANG: [28.98, 83.85, 0.34, 0.32],
+    KASKI: [28.32, 83.98, 0.25, 0.22],
+    JUMLA: [29.27, 82.18, 0.28, 0.22]
+  };
+  const features = Object.entries(centers).map(([name, [lat, lng, dx, dy]]) => ({
+    type: "Feature",
+    properties: { DISTRICT: name },
+    geometry: {
+      type: "Polygon",
+      coordinates: [[
+        [lng - dx * 0.9, lat - dy * 0.5],
+        [lng - dx * 0.3, lat - dy * 0.95],
+        [lng + dx * 0.6, lat - dy * 0.8],
+        [lng + dx * 0.95, lat - dy * 0.1],
+        [lng + dx * 0.7, lat + dy * 0.85],
+        [lng - dx * 0.2, lat + dy * 0.95],
+        [lng - dx * 0.95, lat + dy * 0.35],
+        [lng - dx * 0.9, lat - dy * 0.5]
+      ]]
+    }
+  }));
+  return { type: "FeatureCollection", features };
+})();
+
+window.applyHybridAutoSync = function(bundle) {
+  const s = bundle.settings || {};
+  const projects = bundle.projects || [];
+  const eduItems = bundle.education || [];
+  const expItems = bundle.experience || [];
+  const mapData = bundle.mapData || { districts: [] };
+
+  const baseMilestones = Array.isArray(s.milestones) ? [...s.milestones] : [];
+  const seen = new Set(baseMilestones.map(m => (m.title || '').toLowerCase().trim()));
+
+  function extractYear(item) {
+    const str = String(item.year || item.date || item.startDate || '');
+    const m = str.match(/\b(19|20)\d{2}\b/);
+    return m ? Number(m[0]) : 9999;
+  }
+
+  function maybeCollect(item, defIcon) {
+    if (!(item.showOnJourney === true || item.showOnJourney === 'true')) return;
+    const k = (item.title || '').toLowerCase().trim();
+    if (!k || seen.has(k)) return;
+    seen.add(k);
+    baseMilestones.push({
+      year: item.year || item.startDate || '',
+      month: item.month || '',
+      date: item.date || '',
+      elevation: (item.elevation !== undefined && item.elevation !== '') ? Number(item.elevation) : null,
+      title: item.title,
+      sub: item.organisation || item.institution || '',
+      description: (item.shortDesc || item.detail || '').replace(/[#*_`>-]/g, '').slice(0, 220),
+      icon: item.journeyIcon || defIcon
+    });
+  }
+
+  eduItems.forEach(e => maybeCollect(e, '🎓'));
+  expItems.forEach(x => maybeCollect(x, '💼'));
+  projects.forEach(p => maybeCollect(p, p.category === 'community' ? '🤝' : '🔬'));
+
+  // Count how many milestones share the exact same year string
+  const yearCounts = {};
+  baseMilestones.forEach(m => {
+    const yKey = String(m.year || '').trim();
+    if (yKey) yearCounts[yKey] = (yearCounts[yKey] || 0) + 1;
+  });
+
+  // Sort chronologically by Year, then by Month (when in the same year), then by original order
+  baseMilestones.forEach((m, idx) => {
+    m._origIdx = idx;
+    m._yearNum = extractYear(m);
+    m._monthNum = window.parseMonthNum(m.month);
+    const yKey = String(m.year || '').trim();
+    // Only display Month automatically when multiple milestones share the same year!
+    if (!m.date || m.date === m.year) {
+      if (yearCounts[yKey] > 1 && m._monthNum >= 1 && m._monthNum <= 12) {
+        m.date = `${window.MONTH_NAMES[m._monthNum]} ${yKey}`;
+      } else {
+        m.date = yKey;
+      }
+    }
+  });
+
+  baseMilestones.sort((a, b) => {
+    if (a._yearNum !== b._yearNum) return a._yearNum - b._yearNum;
+    if (a._monthNum !== b._monthNum) return a._monthNum - b._monthNum;
+    return a._origIdx - b._origIdx;
+  });
+
+  // Ensure milestones flow from Upstream (top of river, 6000m) -> Downstream (bottom of river, 250m)
+  // and if two milestones in the same year were given the same manual elevation, nudge them apart by month
+  const count = baseMilestones.length;
+  const usedElevs = new Set();
+  baseMilestones.forEach((m, idx) => {
+    delete m._origIdx;
+    delete m._yearNum;
+    delete m._monthNum;
+    if (m.elevation == null || m.elevation === '' || Number.isNaN(Number(m.elevation))) {
+      const t = count > 1 ? idx / (count - 1) : 0;
+      m.elevation = Math.round(6000 - t * (6000 - 250));
+    } else {
+      m.elevation = Number(m.elevation);
+    }
+    // Prevent identical elevation overlap for same-year milestones
+    while (usedElevs.has(m.elevation) && m.elevation > 120) {
+      m.elevation = Math.max(60, m.elevation - 320);
+    }
+    usedElevs.add(m.elevation);
+  });
+
+  s.milestones = baseMilestones;
+
+  // Sync linked districts into mapData
+  const districts = Array.isArray(mapData.districts) ? [...mapData.districts] : [];
+  const byName = new Map();
+  districts.forEach(d => { if (d && d.name) byName.set(d.name.toUpperCase().trim(), d); });
+
+  function syncDist(item, defType) {
+    (Array.isArray(item.districts) ? item.districts : []).forEach(raw => {
+      const name = String(typeof raw === 'object' ? raw.district || raw.name : raw).toUpperCase().trim();
+      if (!name || byName.has(name)) return;
+      const entry = {
+        name,
+        type: item.category === 'community' ? 'community' : defType,
+        project: item.title,
+        year: item.year || item.startDate || '',
+        note: (item.shortDesc || '').replace(/[#*_`>-]/g, '').slice(0, 140)
+      };
+      districts.push(entry);
+      byName.set(name, entry);
+    });
+  }
+  projects.forEach(p => syncDist(p, 'research'));
+  expItems.forEach(x => syncDist(x, 'research'));
+  mapData.districts = districts;
+  bundle.mapData = mapData;
+
+  // Default stats to the 5 signature counters if settings.stats is empty
+  if (!Array.isArray(s.stats) || s.stats.length < 2) {
+    s.stats = [
+      { value: "5", suffix: "+", prefix: "", label: "Years of Experience" },
+      { value: "23", suffix: "", prefix: "", label: "Citations" },
+      { value: "200", suffix: "K+", prefix: "$", label: "Fundraising" },
+      { value: "1800", suffix: "+", prefix: "", label: "People Empowered" },
+      { value: "45", suffix: "+", prefix: "", label: "Districts Visited" }
+    ];
+  }
+
+  // Sum per-publication citations if any are entered in CMS
+  const pubList = bundle.publications || [];
+  const pubCitSum = pubList.reduce((acc, p) => acc + (Number(p.citations) || 0), 0);
+  if (pubCitSum > 0) {
+    s.stats.forEach(st => {
+      if (/citation/i.test(st.label || '')) {
+        st.value = String(Math.max(Number(st.value) || 0, pubCitSum));
+      }
+    });
+  }
+
+  return bundle;
+};
+
+// Live Client-Side Citation Sync via OpenAlex API (100% Free, No API Key, CORS-Enabled)
+// Checks ORCID and/or Publication DOIs in the background and bumps the Citations counter
+// if the live academic graph reports a higher citation count than the current baseline.
+window.syncLiveCitations = async function(settings, pubs) {
+  if (settings && (settings.autoSyncCitations === false || settings.autoSyncCitations === 'false')) return;
+  try {
+    let liveTotal = 0;
+
+    // 1. If ORCID is provided in Site Settings, query OpenAlex Author endpoint directly
+    if (settings && settings.orcid && settings.orcid.trim()) {
+      const cleanOrcid = settings.orcid.trim().replace(/^https?:\/\/orcid\.org\//i, '');
+      const r = await fetch('https://api.openalex.org/authors/https://orcid.org/' + encodeURIComponent(cleanOrcid));
+      if (r.ok) {
+        const authorData = await r.json();
+        if (authorData && typeof authorData.cited_by_count === 'number') {
+          liveTotal = Math.max(liveTotal, authorData.cited_by_count);
+        }
+      }
+    }
+
+    // 2. Also check individual publication DOIs via OpenAlex works endpoint
+    const doiPubs = (pubs || []).filter(p => p && p.doi && /10\.\d{4,9}\//.test(p.doi));
+    if (doiPubs.length) {
+      const counts = await Promise.all(doiPubs.map(async p => {
+        try {
+          const m = String(p.doi).match(/(10\.\d{4,9}\/[-._;()/:A-Z0-9]+)/i);
+          if (!m) return Number(p.citations) || 0;
+          const res = await fetch('https://api.openalex.org/works/https://doi.org/' + encodeURIComponent(m[1]));
+          if (!res.ok) return Number(p.citations) || 0;
+          const work = await res.json();
+          return Math.max(Number(p.citations) || 0, Number(work && work.cited_by_count) || 0);
+        } catch (e) {
+          return Number(p.citations) || 0;
+        }
+      }));
+      const doiSum = counts.reduce((a, b) => a + b, 0);
+      liveTotal = Math.max(liveTotal, doiSum);
+    }
+
+    // Update the DOM counter if liveTotal exceeds current displayed target
+    if (liveTotal > 0) {
+      document.querySelectorAll('#stats-grid .stat-item').forEach(item => {
+        const lbl = item.querySelector('.stat-label');
+        const num = item.querySelector('.stat-number');
+        if (lbl && num && /citation/i.test(lbl.textContent || '')) {
+          const curTarget = Number(num.dataset.target) || 0;
+          if (liveTotal > curTarget) {
+            num.dataset.target = String(liveTotal);
+            num.textContent = (num.dataset.prefix || '') + liveTotal + (num.dataset.suffix || '');
+          }
+        }
+      });
+    }
+  } catch (err) {
+    // Silently keep baseline CMS count if offline
+  }
+};
+</script>
+
 <script>
 // ── HELPERS ──────────────────────────────────────────────────
 function parseFM(text) {
@@ -1186,7 +1881,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     return true; // default ON
   }
   // Apply section visibility
-  ['about','projects','publications','experience','skills'].forEach(sec => {
+  ['timeline','nepal-map','about','projects','publications','experience','skills'].forEach(sec => {
     const el = document.getElementById(sec);
     if (!el) return;
     const visible = secVisible('show'+sec.charAt(0).toUpperCase()+sec.slice(1));
@@ -1241,24 +1936,48 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     jrnHintEl.textContent = jrnHintEl.dataset.expandText;
   }
 
-  // The CMS is authoritative: replace the entire milestone list every time,
-// including when it is empty, so deleted milestones disappear from the site.
-const cmsMilestones = Array.isArray(s.milestones) ? s.milestones : [];
-window._timelineMilestones = cmsMilestones.map((m, sourceIndex) => ({
-  _sourceIndex: sourceIndex,
-  year:        m && m.year != null ? String(m.year) : '',
-  title:       m && m.title != null ? String(m.title) : '',
-  date:        m && m.date != null && m.date !== '' ? String(m.date)
-                : (m && m.year != null ? String(m.year) : ''),
-  description: m && m.description != null ? String(m.description)
-                : (m && m.detail != null ? String(m.detail)
-                : (m && m.sub != null ? String(m.sub) : '')),
-  sub:         m && m.sub != null ? String(m.sub) : '',
-  icon:        m && m.icon != null && m.icon !== '' ? String(m.icon) : '📌',
-  elevation:   m && m.elevation !== undefined && m.elevation !== ''
-                ? Number(m.elevation) : null
-}));
-if (window._buildRoad) window._buildRoad();
+  // Flow controls visibility & default open state from backend settings
+  const flowCtrlEl = document.getElementById('jrn-flow-controls');
+  if (flowCtrlEl) {
+    flowCtrlEl.style.display = (s.showJourneyFlowControls === false || s.showJourneyFlowControls === 'false') ? 'none' : 'flex';
+  }
+  const cmsMilestones = Array.isArray(s.milestones) ? s.milestones : [];
+  const yCounts = {};
+  cmsMilestones.forEach(m => {
+    const yk = m && m.year != null ? String(m.year).trim() : '';
+    if (yk) yCounts[yk] = (yCounts[yk] || 0) + 1;
+  });
+  window._timelineMilestones = cmsMilestones.map((m, sourceIndex) => {
+    const yStr = m && m.year != null ? String(m.year).trim() : '';
+    const mNum = window.parseMonthNum ? window.parseMonthNum(m && m.month) : 0;
+    let displayDate = (m && m.date != null && m.date !== '') ? String(m.date) : yStr;
+    if ((!m.date || m.date === yStr) && yCounts[yStr] > 1 && mNum >= 1 && mNum <= 12) {
+      displayDate = `${window.MONTH_NAMES[mNum]} ${yStr}`;
+    }
+    return {
+      _sourceIndex: sourceIndex,
+      year:        yStr,
+      month:       mNum,
+      title:       m && m.title != null ? String(m.title) : '',
+      date:        displayDate,
+      description: m && m.description != null ? String(m.description)
+                    : (m && m.detail != null ? String(m.detail)
+                    : (m && m.sub != null ? String(m.sub) : '')),
+      sub:         m && m.sub != null ? String(m.sub) : '',
+      icon:        m && m.icon != null && m.icon !== '' ? String(m.icon) : '📌',
+      elevation:   m && m.elevation !== undefined && m.elevation !== ''
+                    ? Number(m.elevation) : null
+    };
+  });
+  if (window._buildRoad) window._buildRoad();
+  if ((s.journeyDefaultOpen === true || s.journeyDefaultOpen === 'true') && !window._jrnDefaultOpened) {
+    window._jrnDefaultOpened = true;
+    const jToggle = document.getElementById('jrn-toggle');
+    const jBody = document.getElementById('jrn-body');
+    if (jToggle && jBody && !jBody.classList.contains('open')) {
+      jToggle.click();
+    }
+  }
 
   // ── STATS ──────────────────────────────────────────────
   const statsGrid = document.getElementById('stats-grid');
@@ -1453,10 +2172,13 @@ if (window._buildRoad) window._buildRoad();
     });
   }
 
-  // Publications list
+  // Publications list (supports choosing between DOI and Link in the backend)
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    const doiHtml=p.doi?`<a class="pub-doi" href="${p.doi}" target="_blank">↗ DOI</a>`:'';
+    const useLink = p.linkType === 'link' || (!p.doi && !!p.link);
+    const targetUrl = useLink ? (p.link || p.doi) : (p.doi || p.link);
+    const linkLabel = useLink ? '↗ Link' : '↗ DOI';
+    const doiHtml = targetUrl ? `<a class="pub-doi" href="${targetUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${linkLabel}</a>` : '';
     const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
     div.className='pub-card reveal';
@@ -1469,10 +2191,10 @@ if (window._buildRoad) window._buildRoad();
         title:p.title,
         meta:`${p.status?`<span class="pub-status">${safe(p.status)}</span>`:''}${p.category?`<span class="pub-category-badge">${safe(p.category)}</span>`:''}`,
         tags:[], image:imgPath(p.image)||'', icon:'📚',
-        subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''} · ${safe(p.journal)}`,
+        subtitle:`${safe(p.authors)}${p.year?' ('+p.year+')':''}${p.journal?' · '+safe(p.journal):''}`,
         shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
-        link:p.doi||p.link||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
+        link:targetUrl||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
         vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
         fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
       }));
@@ -1716,43 +2438,72 @@ if (window._buildRoad) window._buildRoad();
   document.getElementById('loading').classList.add('done');
 }
 
-// ── BOOT ─────────────────────────────────────────────────────
+// ── BOOT (Single-Request Bundle -> Multi-File Fallback -> Default Bundle) ──
 async function loadSite() {
   try {
-    const [settings, eduItems, projects, pubs, expItems, customSections, skillsData, mapData] = await Promise.all([
-      fj('/content/settings.json'),
-      loadMDs('/content/education/'),
-      loadMDs('/content/projects/'),
-      loadMDs('/content/publications/'),
-      loadMDs('/content/experience/'),
-      fj('/content/sections.json').then(r => r||[]),
-      fj('/content/skills.json').then(r => r||null),
-      fj('/content/map.json').then(r => r||null)
-    ]);
-    // Merge skills into settings so renderSite can access via s.skills
-    if (skillsData) settings.skills = skillsData;
-    if (mapData) settings.mapData = mapData;
-
-    // Load all custom section items in parallel
-    let customItems = [];
-    if (customSections && customSections.length) {
-      const visible = customSections.filter(s => s.visible !== false && s.visible !== 'false');
-      const allItems = await Promise.all(
-        visible.map(sec => loadMDs('/content/custom/'+sec.id+'/').catch(()=>[]))
-      );
-      allItems.forEach((items, i) => {
-        const sec = visible[i];
-        customItems = customItems.concat(items.map(it => ({...it, sectionId: sec.id})));
-      });
+    let activeBundle = null;
+    const prebuilt = await fj(['/content', 'bundle.json'].join('/'));
+    if (prebuilt && prebuilt.settings && prebuilt.settings.name) {
+      activeBundle = prebuilt;
+    } else {
+      const [settings, eduItems, projects, pubs, expItems, customSections, skillsData, mapData] = await Promise.all([
+        fj(['/content', 'settings.json'].join('/')),
+        loadMDs(['/content', 'education/'].join('/')),
+        loadMDs(['/content', 'projects/'].join('/')),
+        loadMDs(['/content', 'publications/'].join('/')),
+        loadMDs(['/content', 'experience/'].join('/')),
+        fj(['/content', 'sections.json'].join('/')).then(r => r||[]),
+        fj(['/content', 'skills.json'].join('/')).then(r => r||null),
+        fj(['/content', 'map.json'].join('/')).then(r => r||null)
+      ]);
+      if (settings && settings.name) {
+        let customItems = [];
+        if (customSections && customSections.length) {
+          const visible = customSections.filter(s => s.visible !== false && s.visible !== 'false');
+          const allItems = await Promise.all(
+            visible.map(sec => loadMDs('/content/custom/'+sec.id+'/').catch(()=>[]))
+          );
+          allItems.forEach((items, i) => {
+            const sec = visible[i];
+            customItems = customItems.concat(items.map(it => ({...it, sectionId: sec.id})));
+          });
+        }
+        activeBundle = {
+          settings,
+          skills: skillsData || settings.skills,
+          mapData: mapData || settings.mapData,
+          education: eduItems,
+          projects,
+          publications: pubs,
+          experience: expItems || [],
+          customSections: customSections || [],
+          customItems
+        };
+      }
     }
 
+    if (!activeBundle) {
+      activeBundle = JSON.parse(JSON.stringify(window.DEFAULT_BUNDLE));
+    }
+
+    const synced = window.applyHybridAutoSync(activeBundle);
+    if (synced.skills) synced.settings.skills = synced.skills;
+    if (synced.mapData) synced.settings.mapData = synced.mapData;
+
     renderSite(
-      settings||{name:'Diwakar Adhikari'},
-      eduItems, projects, pubs, expItems||[],
-      customSections||[], customItems
+      synced.settings,
+      synced.education || [],
+      synced.projects || [],
+      synced.publications || [],
+      synced.experience || [],
+      synced.customSections || [],
+      synced.customItems || []
     );
+    if (window.syncLiveCitations) {
+      window.syncLiveCitations(synced.settings, synced.publications || []);
+    }
   } catch(e) {
-    console.error('Load error:',e);
+    console.error('Load error:', e);
     document.getElementById('loading').classList.add('done');
   }
 }
@@ -3600,26 +4351,29 @@ function buildMilestones() {
       const lineCol = isDk
         ? `rgb(${r},${g},${b})`
         : `rgb(${Math.max(0,r-40)},${Math.max(0,g-40)},${Math.max(0,b-40)})`;
-      const elev = (m.elevation != null && m.elevation !== '')
-        ? `${esc(String(m.elevation))}\u202fm`
-        : '';
-
+      // Elevation removed; dialogue box dynamically sizes to its content (no stagnant fixed size)
       dlg.innerHTML = [
-        `<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.42rem">
+        `<div style="display:flex;align-items:center;gap:.45rem;margin-bottom:.36rem">
            <span style="font-size:1.15rem">${esc(milestoneIcon)}</span>
            <strong style="color:var(--ink);font-size:.85rem">${esc(m.title || obj.label)}</strong>
          </div>`,
-        elev ? `<div style="font-family:'JetBrains Mono',monospace;font-size:.6rem;color:${lineCol};letter-spacing:.07em;margin-bottom:.22rem">${elev}</div>` : '',
+        m.sub ? `<div style="font-size:.72rem;color:var(--accent);font-weight:500;margin-bottom:.18rem">${esc(m.sub)}</div>` : '',
         m.date ? `<div style="font-size:.68rem;color:var(--ink2);margin-bottom:.22rem">${esc(m.date)}</div>` : '',
         m.description ? `<div style="font-size:.74rem;color:var(--ink2);line-height:1.55">${esc(m.description)}</div>` : '',
       ].join('');
 
-      const PW = Math.min(240, Math.floor(W * 0.42));
-      dlg.style.width = PW + 'px';
+      // Allow natural content-driven width & height (bounded only by available river bank width)
+      const maxAllowedW = Math.min(360, Math.floor(W * 0.45));
+      dlg.style.width = 'fit-content';
+      dlg.style.minWidth = '140px';
+      dlg.style.maxWidth = maxAllowedW + 'px';
+      dlg.style.left = '0px';
+      dlg.style.top = '0px';
       dlg.style.display = 'block';
       dlg.style.opacity = '0';
       dlg.style.pointerEvents = 'auto';
-      const PH = dlg.scrollHeight || 110;
+      const PW = Math.max(140, Math.min(maxAllowedW, dlg.offsetWidth || 200));
+      const PH = dlg.offsetHeight || dlg.scrollHeight || 95;
 
       const rx = anchor.x;
       const ry = anchor.y;
@@ -3686,7 +4440,33 @@ function buildMilestones() {
     wrap.appendChild(b);
   });
 
+  const origOpen = state.open.bind(state);
+  state.open = function(anchor, btn, lock) {
+    origOpen(anchor, btn, lock);
+    const pos = layout.milestoneAnchors.findIndex(a => a.index === anchor.index);
+    const stepEl = document.getElementById('jrn-flow-step');
+    if (stepEl && pos !== -1) {
+      stepEl.textContent = `Station ${pos + 1} / ${layout.milestoneAnchors.length}`;
+    }
+    if (layout && layout.confluences && layout.confluences.length) {
+      let nearest = layout.confluences[0];
+      let minD = Math.abs(nearest.y - anchor.y);
+      layout.confluences.forEach(c => {
+        const d = Math.abs(c.y - anchor.y);
+        if (d < minD) { minD = d; nearest = c; }
+      });
+      flashConfluence(nearest);
+    }
+  };
+
   syncMilestoneHitboxes();
+
+  // Always start from the first Upstream station (top of the river, index 0 in milestoneAnchors)
+  if (layout.milestoneAnchors.length) {
+    const upstreamFirst = layout.milestoneAnchors[0];
+    const firstHit = wrap.querySelector(`.jrn-milestone-hit[data-milestone-index="${upstreamFirst.index}"]`);
+    if (firstHit) state.open(upstreamFirst, firstHit, true);
+  }
 }
 
 // Keep every DOM hit target locked to the same coordinates as its canvas
@@ -3802,6 +4582,61 @@ window._buildRoad = function() {
   if (enginesInitialised) { buildMilestones(); setOpenHeight(); }
 };
 
+// Wire Upstream -> Downstream interactive flow buttons
+(function wireFlowButtons() {
+  const prevBtn = document.getElementById('jrn-prev-btn');
+  const nextBtn = document.getElementById('jrn-next-btn');
+  const tourBtn = document.getElementById('jrn-tour-btn');
+  let tourTimer = null;
+
+  function stepFlow(delta) {
+    const wrap = document.getElementById('jrn-milestones');
+    if (!wrap || !layout || !layout.milestoneAnchors || !layout.milestoneAnchors.length) return;
+    const st = wrap._jrnMilestoneState;
+    if (!st) return;
+    const anchors = layout.milestoneAnchors;
+    let curPos = anchors.findIndex(a => a.index === st.activeIndex);
+    if (curPos === -1) {
+      curPos = 0;
+    } else {
+      curPos = (curPos + delta + anchors.length) % anchors.length;
+    }
+    const target = anchors[curPos];
+    const hit = wrap.querySelector(`.jrn-milestone-hit[data-milestone-index="${target.index}"]`);
+    if (hit) {
+      st.activeIndex = null;
+      st.open(target, hit, true);
+    }
+  }
+
+  if (prevBtn) prevBtn.addEventListener('click', e => { e.stopPropagation(); stepFlow(-1); });
+  if (nextBtn) nextBtn.addEventListener('click', e => { e.stopPropagation(); stepFlow(1); });
+  if (tourBtn) {
+    tourBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      if (tourTimer) {
+        clearInterval(tourTimer);
+        tourTimer = null;
+        tourBtn.classList.remove('active');
+        tourBtn.textContent = '▶ Follow Flow';
+      } else {
+        tourBtn.classList.add('active');
+        tourBtn.textContent = '⏸ Pause';
+        const wrap = document.getElementById('jrn-milestones');
+        if (wrap && wrap._jrnMilestoneState && layout && layout.milestoneAnchors.length) {
+          const first = layout.milestoneAnchors[0];
+          const hit = wrap.querySelector(`.jrn-milestone-hit[data-milestone-index="${first.index}"]`);
+          if (hit) {
+            wrap._jrnMilestoneState.activeIndex = null;
+            wrap._jrnMilestoneState.open(first, hit, true);
+          }
+        }
+        tourTimer = setInterval(() => stepFlow(1), 2600);
+      }
+    });
+  }
+})();
+
 // Boot the static/background layers immediately. The Journey itself remains
 // collapsed, but its rendering engines are made ready before the user opens it.
 try {
@@ -3890,9 +4725,9 @@ window.addEventListener('load', () => {
       maxZoom: 19
     }).addTo(leafletMap);
 
-    // Load district GeoJSON and colour by type
-    fetch('/nepal-districts.geojson')
-      .then(r => r.json())
+    // Load district GeoJSON and colour by type (with embedded fallback for offline/preview)
+    fj(['/nepal-districts', 'geojson'].join('.'))
+      .then(geo => geo || window.FALLBACK_NEPAL_GEOJSON)
       .then(geo => {
         L.geoJSON(geo, {
           style: feature => {
