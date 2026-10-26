@@ -42,5 +42,5 @@ fpShowShortDesc: true
 fpShowGallery: false
 fpShowAbstract: false
 fpShowDetail: false
-order: 0
+order: 1
 ---
