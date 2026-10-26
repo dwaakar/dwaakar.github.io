@@ -1594,21 +1594,24 @@ async function fileList(dir) {
       if (txt.trim().startsWith('[')) return JSON.parse(txt);
     }
   } catch(e){}
-  // Fallback list — update this when adding new files manually
+  // Fallback list — includes all DEFAULT_BUNDLE slugs + legacy slugs
   const fb={
-    '/content/projects/':['hydroclimatic-variability-marsyangdi.md','sediment-dynamics-hydropower.md','water-soil-food-nexus.md','sisdol-landfill-pollution.md','nepal-waste-map.md','climate-adaptation-marginalized.md','spring-water-karnali.md'],
-    '/content/publications/':['drinking-water-marsyangdi.md','trace-elements-gandaki.md','ecological-restoration-nepal.md','sediment-dynamics-hydropower.md','hydroclimatic-variability-submitted.md'],
+    '/content/projects/':['rainfall-imputation-himalayan-terrain.md','climate-adaptation-marginalized.md','sediment-dynamics-hydropower.md','vehicular-emission-inspection.md','nepal-waste-map.md','wash-status-balkhu-slum.md','local-climate-indices-nepal.md','hydroclimatic-variability-marsyangdi.md','water-soil-food-nexus.md','sisdol-landfill-pollution.md','spring-water-karnali.md'],
+    '/content/publications/':['trace-elements-gandaki.md','ecological-restoration-nepal.md','majestic-upper-mustang-water.md','seasons-of-uncertainty-nepal.md','drinking-water-marsyangdi.md','sediment-dynamics-hydropower.md','hydroclimatic-variability-submitted.md'],
     '/content/awards/':['research-fellowship-tu.md','data-fellowship.md','most-innovative.md','climate-action-fund.md','digital-solution.md','sasgp.md'],
     '/content/education/':['msc-environmental-science.md','bsc-environmental-science.md'],
-    '/content/experience/':['research-assistant-tribhuvan.md','environmental-consultant.md']
+    '/content/experience/':['program-coordinator-npbi.md','research-fellow-tu.md','research-assistant-recast.md','research-assistant-ku.md','program-officer-cleanup-nepal.md','research-assistant-tribhuvan.md','environmental-consultant.md']
   };
   return fb[dir]||[];
 }
 async function loadMDs(dir) {
   const files = await fileList(dir);
   const items = await Promise.all(files.map(async f => {
-    const txt = await ft(dir+f); if(!txt) return null;
+    const txt = await ft(dir+f);
+    // Ignore missing files or SPA fallback HTML responses
+    if (!txt || /^\s*<!DOCTYPE/i.test(txt) || /^\s*<html/i.test(txt)) return null;
     const {data,content} = parseFM(txt);
+    if (!data || !data.title) return null;
     if (data.tags && typeof data.tags==='string') data.tags=data.tags.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
     if (data.coursework && typeof data.coursework==='string') data.coursework=data.coursework.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
     return {...data, detail: content, slug: f.replace('.md','')};
@@ -2540,10 +2543,21 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 // ── BOOT (Single-Request Bundle -> Multi-File Fallback -> Default Bundle) ──
 async function loadSite() {
   try {
+    const def = JSON.parse(JSON.stringify(window.DEFAULT_BUNDLE));
     let activeBundle = null;
     const prebuilt = await fj(['/content', 'bundle.json'].join('/'));
     if (prebuilt && prebuilt.settings && prebuilt.settings.name) {
-      activeBundle = prebuilt;
+      activeBundle = {
+        settings: { ...def.settings, ...prebuilt.settings },
+        skills: (prebuilt.skills && prebuilt.skills.items && prebuilt.skills.items.length) ? prebuilt.skills : (prebuilt.settings.skills || def.skills),
+        mapData: (prebuilt.mapData && prebuilt.mapData.districts && prebuilt.mapData.districts.length) ? prebuilt.mapData : (prebuilt.settings.mapData || def.mapData),
+        education: (Array.isArray(prebuilt.education) && prebuilt.education.length) ? prebuilt.education : def.education,
+        projects: (Array.isArray(prebuilt.projects) && prebuilt.projects.length) ? prebuilt.projects : def.projects,
+        publications: (Array.isArray(prebuilt.publications) && prebuilt.publications.length) ? prebuilt.publications : def.publications,
+        experience: (Array.isArray(prebuilt.experience) && prebuilt.experience.length) ? prebuilt.experience : def.experience,
+        customSections: prebuilt.customSections || [],
+        customItems: prebuilt.customItems || []
+      };
     } else {
       const [settings, eduItems, projects, pubs, expItems, customSections, skillsData, mapData] = await Promise.all([
         fj(['/content', 'settings.json'].join('/')),
@@ -2568,13 +2582,13 @@ async function loadSite() {
           });
         }
         activeBundle = {
-          settings,
-          skills: skillsData || settings.skills,
-          mapData: mapData || settings.mapData,
-          education: eduItems,
-          projects,
-          publications: pubs,
-          experience: expItems || [],
+          settings: { ...def.settings, ...settings },
+          skills: (skillsData && skillsData.items && skillsData.items.length) ? skillsData : (settings.skills || def.skills),
+          mapData: (mapData && mapData.districts && mapData.districts.length) ? mapData : (settings.mapData || def.mapData),
+          education: (eduItems && eduItems.length) ? eduItems : def.education,
+          projects: (projects && projects.length) ? projects : def.projects,
+          publications: (pubs && pubs.length) ? pubs : def.publications,
+          experience: (expItems && expItems.length) ? expItems : def.experience,
           customSections: customSections || [],
           customItems
         };
@@ -2582,7 +2596,7 @@ async function loadSite() {
     }
 
     if (!activeBundle) {
-      activeBundle = JSON.parse(JSON.stringify(window.DEFAULT_BUNDLE));
+      activeBundle = def;
     }
 
     const synced = window.applyHybridAutoSync(activeBundle);
