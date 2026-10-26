@@ -1973,10 +1973,10 @@ function startTyping(tags){
   tick();
 }
 
-// ── SCROLL REVEAL ────────────────────────────────────────────
-const observer = new IntersectionObserver(entries=>{
+// ── SCROLL REVEAL (With Safe Fallback for Mobile / WebViews) ──
+const observer = ('IntersectionObserver' in window) ? new IntersectionObserver(entries=>{
   entries.forEach(e=>{ if(e.isIntersecting) e.target.classList.add('visible'); });
-},{threshold:0.1});
+},{threshold:0.05}) : { observe: el => el.classList.add('visible') };
 
 // ── RENDER ───────────────────────────────────────────────────
 function renderSite(s, eduItems, projects, pubs, expItems, customSections, customItems) {
@@ -2001,7 +2001,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // e.g. ["about","experience","projects","publications","skills","contact"]
   const defaultOrder = ['about','timeline','nepal-map','projects','publications','experience','skills','custom-sections-wrap','contact'];
   const order = Array.isArray(s.sectionOrder) && s.sectionOrder.length
-    ? [...s.sectionOrder, 'custom-sections-wrap', 'contact'].filter((v,i,a)=>a.indexOf(v)===i)
+    ? [...s.sectionOrder, ...defaultOrder].filter((v,i,a)=>a.indexOf(v)===i)
     : defaultOrder;
   const body = document.body;
   // Collect all reorderable section elements
@@ -2013,15 +2013,17 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     body.insertBefore(el, footer);
   });
   // Re-build nav links in same order (excluding contact which stays last)
-  const navLinksList = document.getElementById('nav-links');
-  const cvLi = navLinksList.querySelector('li:has(#cv-dropdown)');
-  const themeLi = navLinksList.querySelector('li:has(.theme-btn)');
-  order.filter(id => !['custom-sections-wrap','contact'].includes(id)).forEach(id => {
-    const a = navLinksList.querySelector(`a[href="#${id}"]`);
-    if (!a) return;
-    const li = a.parentElement;
-    navLinksList.insertBefore(li, cvLi);
-  });
+  try {
+    const navLinksList = document.getElementById('nav-links');
+    const cvDropdownEl = document.getElementById('cv-dropdown');
+    const cvLi = cvDropdownEl ? cvDropdownEl.closest('li') : null;
+    order.filter(id => !['custom-sections-wrap','contact'].includes(id)).forEach(id => {
+      const a = navLinksList.querySelector(`a[href="#${id}"]`);
+      if (!a || !cvLi) return;
+      const li = a.parentElement;
+      navLinksList.insertBefore(li, cvLi);
+    });
+  } catch (err) { console.warn('Nav reorder skipped:', err); }
 
   // ── NEPAL MAP ────────────────────────────────────────────
   window._mapData = s.mapData || null;
@@ -2327,7 +2329,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         <div class="exp-right">
           <div class="exp-title">${safe(e.title)}</div>
           <div class="exp-org">${safe(e.organisation)}</div>
-          ${e.shortDesc ? `<div class="exp-desc">${e.shortDesc.replace(/\*\*|__|\*|_|`/g,'').split('\n')[0].slice(0,120)}${e.shortDesc.length>120?'…':''}</div>` : ''}
+          ${e.shortDesc ? `<div class="exp-desc">${String(e.shortDesc).replace(/\*\*|__|\*|_|`/g,'').split('\n')[0].slice(0,120)}${String(e.shortDesc).length>120?'…':''}</div>` : ''}
           ${hasMore ? `<span class="pub-more">Read more →</span>` : ''}
         </div>`;
       if (hasMore) {
@@ -2479,10 +2481,12 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
       // Nav link for custom section
       const navLinks = document.getElementById('nav-links');
-      const contactLi = navLinks.querySelector('li:has(#cv-dropdown)');
+      const cvDropEl = document.getElementById('cv-dropdown');
+      const contactLi = cvDropEl ? cvDropEl.closest('li') : null;
       const li = document.createElement('li');
       li.innerHTML = `<a href="#custom-${sec.id}">${sec.title}</a>`;
-      navLinks.insertBefore(li, contactLi);
+      if (contactLi) navLinks.insertBefore(li, contactLi);
+      else navLinks.appendChild(li);
     });
   }
 
@@ -2535,8 +2539,17 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     loadImg(img, imgPath(img.dataset.src));
   });
 
-  // Reveal
-  setTimeout(()=>document.querySelectorAll('.reveal').forEach(el=>observer.observe(el)),100);
+  // Reveal with guaranteed fallback so no section is ever stuck at opacity:0
+  setTimeout(() => {
+    document.querySelectorAll('.reveal').forEach(el => {
+      observer.observe(el);
+    });
+  }, 50);
+  setTimeout(() => {
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
+      el.classList.add('visible');
+    });
+  }, 450);
   document.getElementById('loading').classList.add('done');
 }
 
