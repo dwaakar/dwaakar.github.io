@@ -1782,11 +1782,9 @@ function openModal(cfg) {
   document.getElementById('modal-meta').innerHTML = cfg.meta||'';
   document.getElementById('modal-tags').innerHTML = (cfg.tags||[]).map(t=>`<span class="project-tag">${t}</span>`).join('');
 
-  // vis: visibility toggles
-  // If vis object is provided with explicit values, respect them exactly
-  // default is true only if vis key is absent (not explicitly set to false)
+  // vis: visibility toggles (default to true if not explicitly false)
   const vis = cfg.vis || {};
-  const show = (key) => vis[key] === true;
+  const show = (key) => vis[key] !== false && vis[key] !== 'false';
 
   let html = '';
   // subtitle shown as small plain text (e.g. institution · year for education, authors for pubs)
@@ -2276,9 +2274,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // Publications list (supports choosing between DOI and Link in the backend)
   const pubEl=document.getElementById('pub-list');
   pubs.forEach(p=>{
-    const useLink = p.linkType === 'link' || (!p.doi && !!p.link);
-    const targetUrl = useLink ? (p.link || p.doi) : (p.doi || p.link);
-    const linkLabel = useLink ? '↗ Link' : '↗ DOI';
+    const targetUrl = p.doi || p.link || '';
+    const linkLabel = p.linkType === 'link' ? '↗ Link' : '↗ DOI';
     const doiHtml = targetUrl ? `<a class="pub-doi" href="${targetUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${linkLabel}</a>` : '';
     const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
     const div=document.createElement('div');
@@ -2608,22 +2605,14 @@ async function loadSite() {
     if (!activeBundle) {
       activeBundle = def;
     } else {
-      // Merge DEFAULT_BUNDLE items with loaded items by slug to ensure all fields/images are preserved
+      // CMS files take absolute priority. Only use DEFAULT_BUNDLE items if no CMS files were loaded for that collection.
       ['education', 'projects', 'publications', 'experience'].forEach(col => {
-        const defArr = def[col] || [];
         const loadedArr = activeBundle[col] || [];
-        const loadedMap = new Map(loadedArr.map(item => [item.slug, item]));
-        const merged = defArr.map(defItem => {
-          const found = loadedMap.get(defItem.slug);
-          if (found) {
-            loadedMap.delete(defItem.slug);
-            return { ...defItem, ...found };
-          }
-          return defItem;
-        });
-        // Add any extra items created in CMS that weren't in DEFAULT_BUNDLE
-        loadedMap.forEach(item => merged.push(item));
-        activeBundle[col] = merged.sort((a, b) => (+a.order || 99) - (+b.order || 99));
+        if (!loadedArr.length && def[col]) {
+          activeBundle[col] = def[col];
+        } else {
+          activeBundle[col] = loadedArr.sort((a, b) => (+a.order || 99) - (+b.order || 99));
+        }
       });
     }
 
