@@ -1,4 +1,4 @@
-import { config, fields, collection, singleton } from '@keystatic/core';
+import { config, fields, collection } from '@keystatic/core';
 
 export default config({
   storage: {
@@ -17,8 +17,6 @@ export default config({
         title: fields.slug({ name: { label: 'Title' } }),
         shortDesc: fields.text({ label: 'Short Description', multiline: true }),
         year: fields.text({ label: 'Year' }),
-        status: fields.text({ label: 'Status / Role' }),
-        organisation: fields.text({ label: 'Organisation' }),
         body: fields.document({ label: 'Full Detail', formatting: true, links: true, tables: true }),
       },
     }),
@@ -31,8 +29,6 @@ export default config({
         title: fields.slug({ name: { label: 'Title' } }),
         authors: fields.text({ label: 'Authors' }),
         year: fields.text({ label: 'Year' }),
-        journal: fields.text({ label: 'Journal / Book' }),
-        doi: fields.url({ label: 'DOI URL' }),
         body: fields.document({ label: 'Detailed Overview', formatting: true, links: true }),
       },
     }),
@@ -44,31 +40,35 @@ export default config({
       schema: {
         title: fields.slug({ name: { label: 'Job Title / Role' } }),
         organisation: fields.text({ label: 'Organisation' }),
+        location: fields.text({ label: 'Location' }),
         startDate: fields.text({ label: 'Start Date' }),
         endDate: fields.text({ label: 'End Date' }),
         body: fields.document({ label: 'Full Detail', formatting: true, links: true }),
       },
     }),
-  },
-  singletons: {
-    settings: singleton({
-      label: '⚙️ Site Settings',
-      path: 'content/settings',
-      format: { data: 'json' },
+    education: collection({
+      label: '🎓 Education',
+      slugField: 'title',
+      path: 'content/education/*',
+      format: { contentField: 'body' },
       schema: {
-        siteTitle: fields.text({ label: 'Site Title' }),
-        authorName: fields.text({ label: 'Author Name' }),
+        title: fields.slug({ name: { label: 'Degree / Title' } }),
+        institution: fields.text({ label: 'Institution' }),
+        year: fields.text({ label: 'Year' }),
+        body: fields.document({ label: 'Details', formatting: true, links: true }),
       },
     }),
-    skills: singleton({
-      label: '⚡ Skills',
-      path: 'content/skills',
-      format: { data: 'json' },
+    awards: collection({
+      label: '🏆 Awards',
+      slugField: 'title',
+      path: 'content/awards/*',
+      format: { contentField: 'body' },
       schema: {
-        skillsList: fields.array(
-          fields.text({ label: 'Skill' }),
-          { label: 'Skills', itemLabel: props => props.value }
-        ),
+        title: fields.slug({ name: { label: 'Award Title' } }),
+        org: fields.text({ label: 'Organisation' }),
+        year: fields.text({ label: 'Year' }),
+        order: fields.text({ label: 'Order' }),
+        body: fields.document({ label: 'Details', formatting: true, links: true }),
       },
     }),
   },
