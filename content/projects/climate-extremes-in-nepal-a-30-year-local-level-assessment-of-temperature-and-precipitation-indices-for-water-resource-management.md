@@ -9,6 +9,7 @@ shortDesc: >-
 year: "2026"
 status: Independent Project
 category: research
+link: "https://diwakaradhikari.info.np/Climate-Indices/"
 gallery:
   - src: /images/cluster_bar_profiles_hierarchical.png
   - src: /images/cluster_map_kmeans.png
