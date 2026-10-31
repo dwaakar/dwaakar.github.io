@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Diwakar Adhikari</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin/>
+  <link rel="preload" href="/content/bundle.json" as="fetch" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.6/marked.min.js" defer></script>
   <style>
     :root{--bg:#f7f5f0;--bg2:#eeeae2;--surface:#fff;--border:#ddd9d0;--ink:#1a1814;--ink2:#5a5650;--accent:#2d6a4f;--accent2:#40916c;--gold:#b7832a;--tag-bg:#e8f5ee;--tag-ink:#1b4332;--radius:10px;--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 40px rgba(0,0,0,.12);--nav-h:64px;--t:0.3s cubic-bezier(.4,0,.2,1)}
     [data-theme="dark"]{--bg:#111410;--bg2:#1a1d17;--surface:#20241e;--border:#2e332b;--ink:#e8e4dc;--ink2:#9a9890;--accent:#52b788;--accent2:#74c69d;--gold:#d4a94a;--tag-bg:#1b3a2e;--tag-ink:#95d5b2}
@@ -415,7 +418,7 @@
     .admin-link:hover{opacity:1;color:var(--accent)}
 
     /* LOADING */
-    #loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;transition:opacity .5s}
+    #loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;transition:opacity .25s}
     #loading.done{opacity:0;pointer-events:none}
     .loader{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
 
@@ -692,7 +695,7 @@
 
 <!-- NEPAL MAP (Leaflet + OpenStreetMap) -->
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" defer></script>
 <section id="nepal-map">
   <div class="section-header reveal">
     <h2 class="section-title">Field Presence</h2>
@@ -1542,6 +1545,12 @@ function parseFM(text) {
   return { data, content: text.slice(m[0].length).trim() };
 }
 const safe = v => v || '';
+// Sort-order value: 0 is a real position (first). Only blank/missing/non-numeric goes last.
+function ordNum(v) {
+  if (v === null || v === undefined || String(v).trim() === '') return 99;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 99;
+}
 // Normalise image paths — handle both /images/ and /public/images/ and relative
 function _imgPathLocal(p) {
   if (!p) return '';
@@ -1558,6 +1567,8 @@ function imgPath(p) { const r = _imgPathLocal(p); return (window._ghMode && r &&
 function loadImg(el, src) {
   if (!src) return;
   // imgPath already normalises to /images/ — just set directly
+  el.decoding = 'async';
+  if (!el.hasAttribute('loading')) el.loading = 'lazy';
   el.src = src;
 }
 // md() — render markdown with natural line breaks:
@@ -1592,7 +1603,10 @@ function ghUrl(p) { return GH_RAW + encodeURI(p.startsWith('/') ? p : '/' + p); 
 async function _get(u, asJson) {
   const one = async url => {
     try {
-      const r = await fetch(url); if (!r.ok) return null;
+      const ac = ('AbortController' in window) ? new AbortController() : null;
+      const to = ac ? setTimeout(() => ac.abort(), 8000) : null;
+      let r; try { r = await fetch(url, ac ? { signal: ac.signal } : undefined); } finally { if (to) clearTimeout(to); }
+      if (!r.ok) return null;
       const t = await r.text();
       if (/^\s*<(!doctype|html)/i.test(t)) return null;   // SPA fallback page, not our file
       return asJson ? JSON.parse(t) : t;
@@ -2173,7 +2187,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // Hero photo
   const pc = document.getElementById('hero-photo-container');
   pc.innerHTML = s.photo
-    ? `<img class="hero-photo" src="${imgPath(s.photo)}" alt="${safe(s.name)}"/><div class="hero-photo-overlay"></div>`
+    ? `<img class="hero-photo" fetchpriority="high" decoding="async" src="${imgPath(s.photo)}" alt="${safe(s.name)}"/><div class="hero-photo-overlay"></div>`
     : `<div class="hero-photo-placeholder"><span>🖼️</span><p>Add your photo via<br><strong>Admin → Site Settings</strong></p></div>`;
 
   // About research
@@ -2345,7 +2359,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   // Experience
   const expEl = document.getElementById('exp-list');
-  const expItems2 = (expItems||[]).sort((a,b)=>(a.order||99)-(b.order||99));
+  const expItems2 = (expItems||[]).sort((a,b)=>ordNum(a.order)-ordNum(b.order));
   function renderExp(filter) {
     const filtered = filter === 'all' ? expItems2 : expItems2.filter(e => e.type === filter);
     expEl.innerHTML = '';
@@ -2411,7 +2425,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   if (customSectionsEl && customSections && customSections.length) {
     customSections.filter(sec => sec.visible !== false && sec.visible !== 'false').forEach(sec => {
       const items = (customItems || []).filter(it => it.sectionId === sec.id)
-                      .sort((a,b) => (+a.order||99)-(+b.order||99));
+                      .sort((a,b) => ordNum(a.order)-ordNum(b.order));
       if (!items.length) return;
 
       const secEl = document.createElement('section');
@@ -2657,11 +2671,14 @@ async function loadSite() {
         if (!loadedArr.length && def[col]) {
           activeBundle[col] = def[col];
         } else {
-          activeBundle[col] = loadedArr.sort((a, b) => (+a.order || 99) - (+b.order || 99));
+          activeBundle[col] = loadedArr.sort((a, b) => ordNum(a.order) - ordNum(b.order));
         }
       });
     }
 
+    if (typeof marked === 'undefined') {
+      await new Promise(res => { let n = 0; const iv = setInterval(() => { if (typeof marked !== 'undefined' || ++n > 60) { clearInterval(iv); res(); } }, 50); });
+    }
     const synced = window.applyHybridAutoSync(activeBundle);
     if (synced.skills) synced.settings.skills = synced.skills;
     if (synced.mapData) synced.settings.mapData = synced.mapData;
@@ -2746,7 +2763,14 @@ loadSite();
     });
 
     t++;
-    requestAnimationFrame(draw);
+    raf = running ? requestAnimationFrame(draw) : 0;
+  }
+  let running = true, raf = 0;
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(es => {
+      running = es[0].isIntersecting;
+      if (running && !raf) raf = requestAnimationFrame(draw);
+    }).observe(canvas);
   }
   draw();
 })();
