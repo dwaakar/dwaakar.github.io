@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T15:00:12.369Z",
+  "generatedAt": "2026-11-01T15:08:27.622Z",
   "settings": {
     "name": "Diwakar Adhikari",
     "email": "thisisdwakr@gmail.com",
@@ -232,65 +232,46 @@
       {
         "name": "KATHMANDU",
         "type": "community",
-        "year": "",
-        "project": "Nepal Waste Map",
-        "note": ""
+        "project": "Nepal Waste Map"
       },
       {
         "name": "LAMJUNG",
         "type": "research",
-        "year": "",
-        "project": "Water-Soil-Food nexus in the Marsyangdi River Basin",
-        "note": ""
+        "project": "Water-Soil-Food nexus in the Marsyangdi River Basin"
       },
       {
         "name": "MANANG",
         "type": "research",
-        "year": "",
-        "project": "Water-Soil-Food nexus in the Marsyangdi River Basin",
-        "note": ""
+        "project": "Water-Soil-Food nexus in the Marsyangdi River Basin"
       },
       {
         "name": "GORKHA",
         "type": "community",
-        "year": "2022",
         "project": "Climate Change Adaptation Project",
-        "note": ""
+        "year": "2022"
       },
       {
         "name": "KAVRE",
-        "type": "community",
-        "year": "",
-        "project": "",
-        "note": ""
+        "type": "community"
       },
       {
         "name": "LALITPUR",
-        "type": "community",
-        "year": "",
-        "project": "",
-        "note": ""
+        "type": "community"
       },
       {
         "name": "ACHHAM",
         "type": "research",
-        "year": "",
-        "project": "Spring Water Assessment",
-        "note": ""
+        "project": "Spring Water Assessment"
       },
       {
         "name": "CHITWAN",
         "type": "community",
-        "year": "",
-        "project": "Nepal Waste Map",
-        "note": ""
+        "project": "Nepal Waste Map"
       },
       {
         "name": "KASKI",
         "type": "community",
-        "year": "",
-        "project": "Climate Change Adaptationn",
-        "note": ""
+        "project": "Climate Change Adaptationn"
       },
       {
         "name": "PANCHTHAR",
@@ -495,6 +476,12 @@
         "name": "PARBAT",
         "type": "research",
         "project": "Indigenous Knowledge Assessment"
+      },
+      {
+        "name": "TAPLEJUNG",
+        "type": "community",
+        "project": "School Environment Improvement",
+        "year": "2018"
       }
     ]
   },
