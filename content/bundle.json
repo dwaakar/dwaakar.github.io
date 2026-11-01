@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T14:25:43.748Z",
+  "generatedAt": "2026-11-01T14:27:08.306Z",
   "settings": {
     "name": "Diwakar Adhikari",
     "email": "thisisdwakr@gmail.com",
@@ -698,22 +698,28 @@
       "category": "research",
       "gallery": [
         {
-          "caption": ">-"
+          "src": "/images/FILE1.png",
+          "caption": "Average annual precipitation sum (top) and average annual mean temperature (bottom) for the MRB for the reference period (1985–2014) and future periods (2015–2100). The colored bands represent the ensemble range of four models, and the solid bold lines represent the ensemble mean."
         },
         {
-          "caption": ">-"
+          "src": "/images/FILE2.png",
+          "caption": "Average annual mean discharge for the MRB for the reference period (1985–2014) and future periods (2015–2100). The colored bands represent the ensemble range of four models, and the solid bold lines represent the ensemble mean."
         },
         {
-          "caption": ">-"
+          "src": "/images/FILE3.png",
+          "caption": "Changes in future hydrology of the MRB for the reference period (1985–2014) and future periods (2071–2100). The shadow bands represent the ensemble range of four models, and the bold line represents the ensemble mean for SSP245 and SSP585 scenarios."
         },
         {
-          "caption": ">-"
+          "src": "/images/FILE4.png",
+          "caption": "% Change in water balance components in the MRB for mid (2041 to 2070) and far (2071-2100) compared to reference period across SSP 2-4.5"
         },
         {
-          "caption": ">-"
+          "src": "/images/FILE5.png",
+          "caption": "% Change in water balance components in the MRB for mid (2041 to 2070) and far (2071-2100) compared to reference period across SSP 5-8.5 (bottom) emission scenarios"
         },
         {
-          "caption": ">-"
+          "src": "/images/FILE6.png",
+          "caption": "% Change in average monthly mean snowfall in the MRB under SSP2-4.5 and SSP5-8.5 scenarios"
         }
       ],
       "report": "{}",
