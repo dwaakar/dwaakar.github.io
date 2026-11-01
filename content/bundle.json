@@ -1,128 +1,141 @@
 {
-  "generatedAt": "2026-11-01T12:43:02.843Z",
+  "generatedAt": "2026-11-01T12:59:21.638Z",
   "settings": {
-    "professionalInterests": [
-      "Climate Change, Climate Finance, Adaptation and Livelihood",
-      "Environmental Policy, Advocacy and Governance",
-      "Waste Management and Circular Economy"
-    ],
-    "milestones": [
-      {
-        "icon": "",
-        "year": "1996 ",
-        "title": "Born",
-        "sub": "Nuwakot",
-        "elevation": 6500,
-        "type": "major",
-        "date": "1996"
-      },
-      {
-        "elevation": 6000,
-        "type": "minor",
-        "icon": "",
-        "year": "2000",
-        "title": "Attended School",
-        "date": "2000"
-      },
-      {
-        "elevation": 5500,
-        "type": "major",
-        "icon": "",
-        "year": "2012",
-        "title": "Completed Secondary School",
-        "sub": "Swati Sadan Higher Secondary School",
-        "date": "2012"
-      },
-      {
-        "elevation": 5000,
-        "type": "major",
-        "icon": "",
-        "year": "2014",
-        "date": "2014",
-        "title": "Completed High School",
-        "sub": "Heral International College"
-      },
-      {
-        "elevation": 4500,
-        "type": "major",
-        "icon": "",
-        "year": "2018",
-        "title": "Bachelors in Environmental Science",
-        "date": "2018"
-      },
-      {
-        "elevation": 4500,
-        "type": "minor",
-        "icon": "",
-        "year": "2018",
-        "title": "Joined ECCA Nepal",
-        "date": "2018"
-      },
-      {
-        "elevation": 4500,
-        "type": "minor",
-        "icon": "",
-        "year": "2018",
-        "title": "Joined CLEAN UP NEPAL",
-        "date": "2018"
-      },
-      {
-        "elevation": 4000,
-        "type": "minor",
-        "icon": "",
-        "year": "2021",
-        "title": "Joined Central Department of Environmental Science, Tribhuvan University",
-        "date": "2021"
-      },
-      {
-        "elevation": 3500,
-        "type": "major",
-        "icon": "",
-        "year": "2024",
-        "title": "Graduated in Environmental Science ",
-        "description": "Specialization in Water Resource Management and Restoration Ecology",
-        "date": "2024"
-      },
-      {
-        "elevation": 3000,
-        "type": "minor",
-        "icon": "",
-        "year": "2025 ",
-        "date": "2025",
-        "title": "Joined Nepal Peacebuilding Initiative",
-        "description": ""
-      }
-    ],
-    "github": "",
-    "showPublications": true,
-    "aboutProfessionalObjective": "A professional with 3+ years of experience supporting youth engagement, civic participation, and community-driven development initiatives in Nepal. Proven ability to work with local governments, civil society organizations, and youth networks to design and implement inclusive programmes, facilitate policy dialogue, and translate community voices into actionable governance outcomes. Strong background in results-based management (RBM), monitoring and evaluation, and the use of data and digital tools to support evidence-based decision-making. Experienced in working with marginalized communities, youth leaders, and municipal institutions across multiple provinces",
+    "name": "Diwakar Adhikari",
+    "email": "thisisdwakr@gmail.com",
+    "phone": "+977-984-3247059",
+    "location": "Kathmandu, Nepal",
+    "photo": "/images/photo.jpg",
+    "bio": "I bring over five years of experience in environmental research and action, specializing in water resources, waste management, climate resilience, ecosystem health, and WASH. I’ve analyzed thousands of water samples, facilitated the mapping and analysis of waste-related data from 70,000+ households across several municipalities, studied the hydrological regime of Himalayan rivers, and trained youth in environmental advocacy. In between, I’ve managed projects, raised funds, and built partnerships across local governments, communities, and other sectors.",
     "taglines": [
       "Researcher",
       "Wanderer",
       "Just Another Environmentalist"
     ],
-    "facebook": "https://www.facebook.com/mahaapooroosh",
-    "showExperience": true,
-    "bio": "I bring over five years of experience in environmental research and action, specializing in water resources, waste management, climate resilience, ecosystem health, and WASH. I’ve analyzed thousands of water samples, facilitated the mapping and analysis of waste-related data from 70,000+ households across several municipalities, studied the hydrological regime of Himalayan rivers, and trained youth in environmental advocacy. In between, I’ve managed projects, raised funds, and built partnerships across local governments, communities, and other sectors.",
-    "name": "Diwakar Adhikari",
-    "phone": "+977-984-3247059",
+    "aboutResearchObjective": "An environmental science graduate student seeking to leverage experience in hydrological modeling, climate data analysis, and watershed‑scale environmental assessment to investigate hydroclimatic variability, human–environment interactions, and their interconnectedness within the Water–Energy–Food–Ecosystem (WEFE) nexus. Dedicated to generating science‑based insights that support sustainable water resources management, strengthen climate adaptation strategies, and enhance ecological and community resilience in data‑scarce mountain river basins.",
     "researchInterests": [
       "Integrated & Urban Water Systems, Governance and Political Economy",
       "Modelling Water Systems for Climate-Resilient Infrastructure and Adaptation",
       "Contaminant Fate, Transport, and Treatment"
     ],
-    "showAbout": true,
-    "aboutResearchObjective": "An environmental science graduate student seeking to leverage experience in hydrological modeling, climate data analysis, and watershed‑scale environmental assessment to investigate hydroclimatic variability, human–environment interactions, and their interconnectedness within the Water–Energy–Food–Ecosystem (WEFE) nexus. Dedicated to generating science‑based insights that support sustainable water resources management, strengthen climate adaptation strategies, and enhance ecological and community resilience in data‑scarce mountain river basins.",
-    "photo": "/images/profile.jpg",
-    "instagram": "https://www.instagram.com/mahaapuroosh?igsh=MWRnMWIzZ3RmbG1pcw==",
-    "customSocials": [],
-    "location": "Kathmandu, Nepal",
-    "showProjects": true,
-    "storygraph": "https://app.thestorygraph.com/profile/dwakar",
-    "cvProfessional": "/images/diwakar-adhikari.pdf",
-    "cvAcademic": "/images/dwakar-adhikari.pdf",
-    "email": "thisisdwakr@gmail.com",
+    "aboutProfessionalObjective": "A professional with 3+ years of experience supporting youth engagement, civic participation, and community-driven development initiatives in Nepal. Proven ability to work with local governments, civil society organizations, and youth networks to design and implement inclusive programmes, facilitate policy dialogue, and translate community voices into actionable governance outcomes. Strong background in results-based management (RBM), monitoring and evaluation, and the use of data and digital tools to support evidence-based decision-making. Experienced in working with marginalized communities, youth leaders, and municipal institutions across multiple provinces",
+    "professionalInterests": [
+      "Climate Change, Climate Finance, Adaptation and Livelihood",
+      "Environmental Policy, Advocacy and Governance",
+      "Waste Management and Circular Economy"
+    ],
+    "cvAcademic": "/images/cvAcademic.pdf",
+    "cvProfessional": "/images/cvProfessional.pdf",
     "linkedin": "https://www.linkedin.com/in/diwakaradhikari/",
+    "facebook": "https://www.facebook.com/mahaapooroosh",
+    "instagram": "https://www.instagram.com/mahaapuroosh?igsh=MWRnMWIzZ3RmbG1pcw==",
+    "storygraph": "https://app.thestorygraph.com/profile/dwakar",
+    "showAbout": true,
+    "showProjects": true,
+    "showPublications": true,
+    "showExperience": true,
+    "showTimeline": true,
+    "showNepalMap": true,
+    "showSkills": false,
+    "journeyDefaultOpen": false,
+    "showJourneyFlowControls": true,
+    "milestones": [
+      {
+        "year": "1996 ",
+        "month": "",
+        "elevation": 6500,
+        "title": "Born",
+        "sub": "Nuwakot",
+        "type": "major",
+        "date": "1996"
+      },
+      {
+        "year": "2000",
+        "month": "",
+        "elevation": 6000,
+        "title": "Attended School",
+        "type": "minor",
+        "date": "2000"
+      },
+      {
+        "year": "2012",
+        "month": "",
+        "elevation": 5500,
+        "title": "Completed Secondary School",
+        "sub": "Swati Sadan Higher Secondary School",
+        "type": "major",
+        "date": "2012"
+      },
+      {
+        "year": "2014",
+        "month": "",
+        "elevation": 5000,
+        "title": "Completed High School",
+        "sub": "Heral International College",
+        "type": "major",
+        "date": "2014"
+      },
+      {
+        "year": "2018",
+        "month": "",
+        "elevation": 4500,
+        "title": "Bachelors in Environmental Science",
+        "type": "major",
+        "date": "2018"
+      },
+      {
+        "year": "2018",
+        "month": "",
+        "elevation": 4500,
+        "title": "Joined ECCA Nepal",
+        "type": "minor",
+        "date": "2018"
+      },
+      {
+        "year": "2018",
+        "month": "",
+        "elevation": 4500,
+        "title": "Joined CLEAN UP NEPAL",
+        "type": "minor",
+        "date": "2018"
+      },
+      {
+        "year": "2021",
+        "month": "",
+        "elevation": 4000,
+        "title": "Joined Central Department of Environmental Science, Tribhuvan University",
+        "type": "minor",
+        "date": "2021"
+      },
+      {
+        "year": "2024",
+        "month": "",
+        "elevation": 3500,
+        "title": "Graduated in Environmental Science ",
+        "description": "Specialization in Water Resource Management and Restoration Ecology",
+        "type": "major",
+        "date": "2024"
+      },
+      {
+        "year": "2025 ",
+        "month": "",
+        "elevation": 3000,
+        "title": "Joined Nepal Peacebuilding Initiative",
+        "type": "minor",
+        "date": "2025"
+      },
+      {
+        "year": "2026",
+        "month": "10",
+        "elevation": 2800,
+        "title": "First International Conference",
+        "description": "Presented in Water Security and Climate Change Conference, 2026",
+        "date": "2026"
+      }
+    ],
+    "scholarUserId": "https://scholar.google.com/citations?hl=en&user=kWUo2fAAAAAJ",
+    "orcid": "0009-0009-3119-7065",
+    "autoSyncCitations": true,
     "stats": [
       {
         "value": "5",
@@ -130,7 +143,7 @@
         "suffix": "+"
       },
       {
-        "value": "23",
+        "value": "30",
         "label": "Citations"
       },
       {
@@ -140,7 +153,7 @@
         "suffix": "K+"
       },
       {
-        "value": "1800",
+        "value": "2000",
         "label": "People Empowered",
         "suffix": "+"
       },
@@ -150,7 +163,8 @@
         "suffix": "+"
       }
     ],
-    "showSkills": false
+    "sectionOrder": [],
+    "customSocials": []
   },
   "skills": {
     "items": [
