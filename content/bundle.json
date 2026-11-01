@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T14:04:34.793Z",
+  "generatedAt": "2026-11-01T14:25:43.748Z",
   "settings": {
     "name": "Diwakar Adhikari",
     "email": "thisisdwakr@gmail.com",
@@ -562,9 +562,11 @@
       "category": "research",
       "gallery": [
         {
-          "caption": ">-"
+          "src": "/images/analytical-framework.png",
+          "caption": "Analytical framework: restoration outcomes as an interaction of ecological, governance, and social dimensions"
         },
         {
+          "src": "/images/bagmati-restoration-evolution.png",
           "caption": "Evolution of Bagmati Restoration Approach Over the Decades"
         }
       ],
