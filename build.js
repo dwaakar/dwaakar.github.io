@@ -158,7 +158,11 @@ function buildBundle() {
   const settings = readJsonSafe(path.join(CONTENT_DIR, 'settings.json'), {});
   const skills = readJsonSafe(path.join(CONTENT_DIR, 'skills.json'), { items: [] });
   const mapData = readJsonSafe(path.join(CONTENT_DIR, 'map.json'), { districts: [] });
-  const customSections = readJsonSafe(path.join(CONTENT_DIR, 'sections.json'), []);
+  // sections.json may be a plain array (old format) or { sections: [...] } (Keystatic format)
+  const rawSections = readJsonSafe(path.join(CONTENT_DIR, 'sections.json'), []);
+  const customSections = Array.isArray(rawSections)
+    ? rawSections
+    : (rawSections && Array.isArray(rawSections.sections) ? rawSections.sections : []);
 
   const education = loadMarkdownCollection('education');
   const projects = loadMarkdownCollection('projects');
@@ -167,10 +171,19 @@ function buildBundle() {
 
   let customItems = [];
   if (Array.isArray(customSections)) {
+    // Old layout: content/custom/<sectionId>/*.md
     customSections.forEach(sec => {
       if (!sec || !sec.id) return;
       const items = loadMarkdownCollection(path.join('custom', sec.id));
       customItems = customItems.concat(items.map(it => ({ ...it, sectionId: sec.id })));
+    });
+    // Keystatic / CMS layout: content/custom/*.mdoc with a sectionId field in each file
+    const known = new Set(customSections.filter(s => s && s.id).map(s => s.id));
+    const seen = new Set(customItems.map(it => it.sectionId + '/' + it.slug));
+    loadMarkdownCollection('custom').forEach(it => {
+      const sid = String(it.sectionId || '').trim();
+      if (!sid || !known.has(sid) || seen.has(sid + '/' + it.slug)) return;
+      customItems.push({ ...it, sectionId: sid });
     });
   }
 
