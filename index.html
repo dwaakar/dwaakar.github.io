@@ -1645,7 +1645,7 @@ async function fileList(dir) {
   const m = await fj(dir + 'manifest.json');
   if (Array.isArray(m)) return m;
   const prefix = dir.replace(/^\//, '');
-  const listed = (await ghTree()).filter(p => p.startsWith(prefix) && p.endsWith('.md') && !p.slice(prefix.length).includes('/')).map(p => p.slice(prefix.length));
+  const listed = (await ghTree()).filter(p => p.startsWith(prefix) && /\.md(oc)?$/.test(p) && !p.slice(prefix.length).includes('/')).map(p => p.slice(prefix.length));
   if (listed.length) return listed;
   const fb={
     '/content/projects/':['rainfall-imputation-himalayan-terrain.md','climate-adaptation-marginalized.md','sediment-dynamics-hydropower.md','vehicular-emission-inspection.md','nepal-waste-map.md','wash-status-balkhu-slum.md','local-climate-indices-nepal.md','hydroclimatic-variability-marsyangdi.md'],
@@ -1665,7 +1665,7 @@ async function loadMDs(dir) {
     if (!data || !data.title) return null;
     if (data.tags && typeof data.tags==='string') data.tags=data.tags.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
     if (data.coursework && typeof data.coursework==='string') data.coursework=data.coursework.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean);
-    return {...data, detail: content, slug: f.replace('.md','')};
+    return {...data, detail: content, slug: f.replace(/\.md(oc)?$/,'')};
   }));
   return items.filter(Boolean);
 }
