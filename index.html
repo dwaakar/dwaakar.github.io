@@ -1552,7 +1552,19 @@ function ordNum(v) {
   return Number.isFinite(n) ? n : 99;
 }
 // Normalise image paths — handle both /images/ and /public/images/ and relative
+// Safe gallery helpers — ignore entries that have a caption but no image src
+function gallerySrc(g) {
+  if (typeof g === 'string') return g;
+  if (g && typeof g.src === 'string') return g.src;
+  return '';
+}
+function cleanGallery(a) {
+  return (Array.isArray(a) ? a : []).filter(g => gallerySrc(g).trim() !== '');
+}
 function _imgPathLocal(p) {
+  if (p && typeof p !== 'string') p = gallerySrc(p) || p.url || p.path || '';
+  if (typeof p !== 'string') p = '';
+  p = p.trim();
   if (!p) return '';
   if (p.startsWith('http')) return p;
   // Strip /public/ prefix — only /images/ works on Cloudflare
@@ -1865,7 +1877,7 @@ function openModal(cfg) {
   // Cover image — separate field, respects showImage toggle
   const vis0 = cfg.vis || {};
   // Use dedicated cover image, or fall back to first gallery image
-  const gallery0 = (cfg.gallery||[]);
+  const gallery0 = cleanGallery(cfg.gallery);
   const firstGalleryImg = gallery0.length > 0 ? imgPath(typeof gallery0[0]==='string' ? gallery0[0] : (gallery0[0].src||'')) : '';
   const coverSrc = cfg.image ? imgPath(cfg.image) : firstGalleryImg;
   const showCover = vis0.showImage === true || (vis0.showGallery === true && !!firstGalleryImg && !cfg.image);
@@ -1891,7 +1903,7 @@ function openModal(cfg) {
   // subtitle shown as small plain text (e.g. institution · year for education, authors for pubs)
   if (cfg.subtitle) html += `<p style="font-size:.9rem;color:var(--ink2);margin-bottom:1rem;opacity:.8">${cfg.subtitle}</p>`;
 
-  const gallery = (cfg.gallery||[]).slice(0,10);
+  const gallery = cleanGallery(cfg.gallery).slice(0,10);
 
   // Short Description — always shown first in popup, rendered as rich text
   if (cfg.shortDesc && show('showShortDesc')) {
@@ -1936,7 +1948,7 @@ function openModal(cfg) {
     } else if (gallery.length > 1) {
       if (cfg.pageType === 'publication') {
         const slides = gallery.map((g,i) => {
-          const src = typeof g==='string'?g:(g.src||g);
+          const src = gallerySrc(g);
           const cap = typeof g==='object'&&g.caption?g.caption:'';
           return `<div class="slider-slide${i===0?' active':''}" data-idx="${i}"><img data-src="${src}" loading="lazy"/>${cap?`<div class="slider-caption">${cap}</div>`:''}</div>`;
         }).join('');
@@ -1951,7 +1963,7 @@ function openModal(cfg) {
           </div>`;
       } else {
         const slides = gallery.map((g,i) => {
-          const src = typeof g==='string'?g:(g.src||g);
+          const src = gallerySrc(g);
           const cap = typeof g==='object'&&g.caption?g.caption:'';
           return `<div class="slide${i===0?' active':''}" data-idx="${i}"><img data-src="${src}" loading="lazy"/>${cap?`<div class="slide-caption">${cap}</div>`:''}</div>`;
         }).join('');
@@ -2318,7 +2330,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     const icon=tagIcons[tags[0]]||'📁';
     // Build image list: gallery first, then cover image, deduplicated
     const rawGallery = Array.isArray(p.gallery) ? p.gallery : [];
-    const allImgs = rawGallery.map(g => imgPath(typeof g==='string'?g:(g.src||g))).filter(Boolean);
+    const allImgs = rawGallery.map(g => imgPath(gallerySrc(g))).filter(Boolean);
     if (p.image && !allImgs.includes(imgPath(p.image))) allImgs.unshift(imgPath(p.image));
 
     const div=document.createElement('div');
@@ -2525,7 +2537,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         innerHtml += `<div class="projects-grid">`;
         items.forEach(e => {
           const rawGallery = Array.isArray(e.gallery) ? e.gallery : [];
-          const allImgs = rawGallery.map(g => imgPath(typeof g==='string'?g:(g.src||g))).filter(Boolean);
+          const allImgs = rawGallery.map(g => imgPath(gallerySrc(g))).filter(Boolean);
           if (e.image && !allImgs.includes(imgPath(e.image))) allImgs.unshift(imgPath(e.image));
           let topHtml = '';
           if (!allImgs.length) {
