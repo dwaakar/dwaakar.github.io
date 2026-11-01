@@ -2629,7 +2629,7 @@ async function fetchBundle(def) {
         loadMDs(['/content', 'projects/'].join('/')),
         loadMDs(['/content', 'publications/'].join('/')),
         loadMDs(['/content', 'experience/'].join('/')),
-        fj(['/content', 'sections.json'].join('/')).then(r => r||[]),
+        fj(['/content', 'sections.json'].join('/')).then(r => Array.isArray(r) ? r : ((r && r.sections) || [])),
         fj(['/content', 'skills.json'].join('/')).then(r => r||null),
         fj(['/content', 'map.json'].join('/')).then(r => r||null)
       ]);
