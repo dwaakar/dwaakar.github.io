@@ -8,10 +8,12 @@
  *   Build output directory: /
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = __dirname;
+// package.json has "type": "module", so this file must use import (not require/__dirname).
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const CONTENT_DIR = path.join(ROOT, 'content');
 
 const MONTH_NAMES = [
@@ -121,6 +123,13 @@ function parseFrontMatter(text) {
   return { data, content: normalized.slice(m[0].length).trim() };
 }
 
+// 0 is a valid position (first). Only blank / missing / non-numeric orders go last.
+function ordNum(v) {
+  if (v === null || v === undefined || String(v).trim() === '') return 99;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 99;
+}
+
 function loadMarkdownCollection(folderName) {
   const dir = path.join(CONTENT_DIR, folderName);
   if (!fs.existsSync(dir)) return [];
@@ -137,7 +146,7 @@ function loadMarkdownCollection(folderName) {
       detail: content || data.body || '',
       slug: file.replace(/\.md$/, '')
     };
-  }).sort((a, b) => (+a.order || 99) - (+b.order || 99));
+  }).sort((a, b) => ordNum(a.order) - ordNum(b.order));
 }
 
 function buildBundle() {
