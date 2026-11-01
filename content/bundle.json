@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T06:06:26.585Z",
+  "generatedAt": "2026-11-01T06:13:33.296Z",
   "settings": {
     "professionalInterests": [
       "Climate Change, Climate Finance, Adaptation and Livelihood",
@@ -963,7 +963,7 @@
       "fullpageVisLabel": "\"\"",
       "fpShowShortDesc": true,
       "fpShowGallery": false,
-      "fpShowAbstract": false,
+      "fpShowAbstract": true,
       "fpShowDetail": false,
       "order": "0",
       "body": "",
