@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T13:03:16.830Z",
+  "generatedAt": "2026-11-01T13:03:48.823Z",
   "settings": {
     "name": "Diwakar Adhikari",
     "email": "thisisdwakr@gmail.com",
@@ -973,7 +973,7 @@
       "showGallery": false,
       "showAbstract": false,
       "showDetail": false,
-      "fpShowShortDesc": true,
+      "fpShowShortDesc": false,
       "fpShowGallery": false,
       "fpShowAbstract": false,
       "fpShowDetail": false,
