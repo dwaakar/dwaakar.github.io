@@ -1,0 +1,55 @@
+name: Migrate content to .mdoc (run once)
+
+# One-time job. Keystatic only recognises entries saved as .mdoc, while your
+# content is stored as .md. This renames the files in the five Keystatic
+# collections and rebuilds content/bundle.json so the website is unchanged.
+# Run it from the Actions tab (Run workflow). Safe to delete afterwards.
+#
+# IMPORTANT: upload the new build.js and keystatic.config.ts BEFORE running.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Rename .md to .mdoc
+        run: |
+          for d in awards education experience projects publications; do
+            for f in content/$d/*.md; do
+              [ -e "$f" ] || continue
+              git mv "$f" "${f%.md}.mdoc"
+              echo "renamed $f"
+            done
+          done
+
+      - name: Rebuild bundle
+        run: |
+          node build.js
+          if ! grep -q '"slug"' content/bundle.json; then
+            echo "Bundle has no entries - is the new build.js uploaded? Aborting."
+            exit 1
+          fi
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A content
+          if git diff --staged --quiet; then
+            echo "Nothing to commit"
+          else
+            git commit -m "chore: rename content to .mdoc for Keystatic"
+            git pull --rebase
+            git push
+          fi
