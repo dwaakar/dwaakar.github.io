@@ -133,7 +133,7 @@ function ordNum(v) {
 function loadMarkdownCollection(folderName) {
   const dir = path.join(CONTENT_DIR, folderName);
   if (!fs.existsSync(dir)) return [];
-  const mdFiles = fs.readdirSync(dir).filter(f => f.endsWith('.md')).sort();
+  const mdFiles = fs.readdirSync(dir).filter(f => /\.md(oc)?$/.test(f)).sort();   // .mdoc (Keystatic) or .md
 
   fs.writeFileSync(path.join(dir, 'manifest.json'), JSON.stringify(mdFiles, null, 2));
 
@@ -144,7 +144,7 @@ function loadMarkdownCollection(folderName) {
       ...data,
       body: data.body || content || '',
       detail: content || data.body || '',
-      slug: file.replace(/\.md$/, '')
+      slug: file.replace(/\.md(oc)?$/, '')
     };
   }).sort((a, b) => ordNum(a.order) - ordNum(b.order));
 }
