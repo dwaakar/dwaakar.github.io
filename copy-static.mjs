@@ -12,6 +12,8 @@ if (!fs.existsSync(OUT)) { console.error('[copy-static] dist/ not found - run as
 const ITEMS = [
   ['index.html', false],            // the real site page (root index.html is the single source of truth)
   ['project.html', false],
+  ['experience.html', false],
+  ['publication.html', false],
   ['config.js', false],
   ['nepal-districts.geojson', false],
   ['_redirects', false],

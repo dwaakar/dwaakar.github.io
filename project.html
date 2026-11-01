@@ -391,14 +391,64 @@ function buildImagePanel(gallery, mode) {
   });
 }
 
+
+// ── DATA LOADING ───────────────────────────────────────────────────
+// Fast path: one request for the bundle. Fallback: the raw content file (.mdoc, then .md).
+function normBools(o) {
+  const out = {};
+  Object.keys(o||{}).forEach(k => { const v = o[k]; out[k] = v === 'true' ? true : v === 'false' ? false : v; });
+  return out;
+}
+async function fetchEntry(collection, slug) {
+  slug = String(slug||'').replace(/\.mdoc?$/, '');
+  try {
+    const r = await fetch('/content/bundle.json');
+    if (r.ok) {
+      const b = await r.json();
+      const hit = (b[collection]||[]).find(x => x.slug === slug);
+      if (hit) return { data: normBools(hit), content: hit.detail || hit.body || '' };
+    }
+  } catch (e) {}
+  for (const ext of ['.mdoc', '.md']) {
+    try {
+      const r = await fetch('/content/' + collection + '/' + encodeURIComponent(slug) + ext);
+      if (r.ok) { const { data, content } = parseFM(await r.text()); return { data: normBools(data), content }; }
+    } catch (e) {}
+  }
+  return null;
+}
+// Headed sections (same rules as the main page): a line that starts with a bold label,
+// **Label**, **Label:**, **Label**: text, or a # heading. Checkbox key = prefix + CamelCase(label).
+function sectionKey(title) {
+  return String(title||'').replace(/[^A-Za-z0-9]+/g,' ').trim().split(/\s+/).map(w => w.charAt(0).toUpperCase()+w.slice(1)).join('');
+}
+function splitSections(text) {
+  const lines = String(text||'').replace(/\r\n/g,'\n').split('\n');
+  const intro = []; const sections = []; let cur = null;
+  const isTitle = t => !!t && t.length <= 70 && t.split(/\s+/).length <= 8;
+  lines.forEach(line => {
+    let title = null, rest = '';
+    const m = line.match(/^\s*(?:\*\*|__)\s*([^*_\n]+?)\s*(:)?\s*(?:\*\*|__)\s*(:)?\s*(.*)$/);
+    if (m) { const t = m[1].trim(), colon = !!(m[2]||m[3]), r = (m[4]||'').trim(); if (isTitle(t) && (r === '' || colon)) { title = t; rest = r; } }
+    if (title === null) { const h = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*:?\s*#*\s*$/); if (h && isTitle(h[1].trim())) title = h[1].trim(); }
+    if (title !== null) { cur = { title, lines: rest ? [rest] : [] }; sections.push(cur); }
+    else if (cur) cur.lines.push(line); else intro.push(line);
+  });
+  return { intro: intro.join('\n').trim(), sections: sections.map(x => ({ title: x.title, key: sectionKey(x.title), content: x.lines.join('\n').trim() })) };
+}
+const esc = t => String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const gal = raw => (Array.isArray(raw) ? raw : []).map(g => ({
+  src: imgPath(typeof g==='string' ? g : (g.src||'')),
+  caption: typeof g==='object' ? (g.caption||'') : ''
+})).filter(g => g.src);
+
 // ── LOAD PROJECT ───────────────────────────────────────────────────
 async function load() {
   try {
     const slug = new URLSearchParams(location.search).get('slug')||'';
-    const fname = slug.endsWith('.md') ? slug : slug+'.md';
-    const res = await fetch(`/content/projects/${fname}`);
-    if (!res.ok) throw new Error('Not found');
-    const {data:p, content} = parseFM(await res.text());
+    const entry = await fetchEntry('projects', slug);
+    if (!entry) throw new Error('Not found');
+    const p = entry.data, content = entry.content;
 
     document.title = `${p.title||'Project'} — Diwakar Adhikari`;
 

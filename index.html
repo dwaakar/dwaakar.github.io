@@ -1575,6 +1575,52 @@ function loadImg(el, src) {
 // Single newline → <br> (like typing Enter in a text box)
 // Blank line (double newline) → new paragraph
 // 3+ newlines → paragraph gap preserved via spacer
+// ── Headed sections inside a body text ───────────────────────────
+// An experience keeps several headed parts (Project, Duties and Responsibilities, ...)
+// in one text. A heading is a line that starts with a bold label (**Label**, **Label:**,
+// **Label**: more text) or a # heading. Each heading has its own show/hide checkbox in the
+// CMS, named show + CamelCase(heading), e.g. showDutiesAndResponsibilities.
+function sectionKey(title) {
+  return String(title||'').replace(/[^A-Za-z0-9]+/g,' ').trim().split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase()+w.slice(1)).join('');
+}
+function splitSections(text) {
+  const lines = String(text||'').replace(/\r\n/g,'\n').split('\n');
+  const intro = []; const sections = []; let cur = null;
+  const isTitle = t => !!t && t.length <= 70 && t.split(/\s+/).length <= 8;
+  lines.forEach(line => {
+    let title = null, rest = '';
+    const m = line.match(/^\s*(?:\*\*|__)\s*([^*_\n]+?)\s*(:)?\s*(?:\*\*|__)\s*(:)?\s*(.*)$/);
+    if (m) {
+      const t = m[1].trim(), colon = !!(m[2]||m[3]), r = (m[4]||'').trim();
+      if (isTitle(t) && (r === '' || colon)) { title = t; rest = r; }
+    }
+    if (title === null) {
+      const h = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*:?\s*#*\s*$/);
+      if (h && isTitle(h[1].trim())) title = h[1].trim();
+    }
+    if (title !== null) { cur = { title, lines: rest ? [rest] : [] }; sections.push(cur); }
+    else if (cur) cur.lines.push(line);
+    else intro.push(line);
+  });
+  return {
+    intro: intro.join('\n').trim(),
+    sections: sections.map(x => ({ title: x.title, key: 'show'+sectionKey(x.title), content: x.lines.join('\n').trim() }))
+  };
+}
+// Collect show* checkbox values from an entry as real booleans
+function visFrom(o, prefix) {
+  const v = {};
+  Object.keys(o||{}).forEach(k => {
+    if (k.indexOf(prefix) === 0 && /^[A-Z]/.test(k.charAt(prefix.length))) {
+      const x = o[k];
+      if (x === true || x === 'true') v[k] = true;
+      else if (x === false || x === 'false') v[k] = false;
+    }
+  });
+  return v;
+}
+
 function md(t) {
   if (!t) return '';
   if (typeof marked === 'undefined') return t.replace(/\n/g,'<br>');
@@ -1848,7 +1894,7 @@ function openModal(cfg) {
   const gallery = (cfg.gallery||[]).slice(0,10);
 
   // Short Description — always shown first in popup, rendered as rich text
-  if (cfg.shortDesc) {
+  if (cfg.shortDesc && show('showShortDesc')) {
     html += `<div class="modal-short-desc">${md(cfg.shortDesc)}</div>`;
   }
 
@@ -1857,8 +1903,22 @@ function openModal(cfg) {
     html += `<div class="modal-section-title">Abstract</div><p style="font-size:.95rem;color:var(--ink2);line-height:1.8">${cfg.abstract}</p>`;
   }
 
-  // Detail
-  if (show('showDetail') && cfg.detail) {
+  // Detail. Experience text is split into its headed sections (Project, Duties and
+  // Responsibilities, ...), each with its own checkbox; a heading that has no checkbox of
+  // its own follows the "Detail" checkbox.
+  if (cfg.splitSections && cfg.detail && splitSections(cfg.detail).sections.length) {
+    const parts = splitSections(cfg.detail);
+    if (parts.intro && show('showDetail')) {
+      html += `<div class="modal-section-title">Detail</div><div class="modal-detail">${md(parts.intro)}</div>`;
+    }
+    parts.sections.forEach(sec => {
+      const own = vis[sec.key];
+      const on = (own === undefined) ? show('showDetail') : (own === true || own === 'true');
+      if (on && sec.content) {
+        html += `<div class="modal-section-title">${String(sec.title).replace(/</g,'&lt;')}</div><div class="modal-detail">${md(sec.content)}</div>`;
+      }
+    });
+  } else if (show('showDetail') && cfg.detail) {
     html += `<div class="modal-section-title">Detail</div><div class="modal-detail">${md(cfg.detail)}</div>`;
   }
 
@@ -1917,7 +1977,7 @@ function openModal(cfg) {
   }
   // If nothing to show beyond shortDesc/subtitle, show minimal message
   // (shortDesc alone is enough — no message needed)
-  const hasRealContent = cfg.shortDesc || html.includes('modal-section-title') || html.includes('modal-detail');
+  const hasRealContent = (cfg.shortDesc && show('showShortDesc')) || html.includes('modal-section-title') || html.includes('modal-detail');
   if (!hasRealContent) {
     html += '<p style="color:var(--ink2);font-size:.9rem;padding:1rem 0;text-align:center;opacity:.6">No additional information.</p>';
   }
@@ -1941,8 +2001,9 @@ function openModal(cfg) {
 
   // Full page button — shown sticky in header
   const fpSlot = document.getElementById('modal-fullpage-slot');
-  if (cfg.displayMode==='fullpage' && cfg.slug && ['education','publication','project'].includes(cfg.pageType)) {
-    const page = cfg.pageType==='education' ? `/education.html?slug=${cfg.slug}` : cfg.pageType==='publication' ? `/publication.html?slug=${cfg.slug}` : `/project.html?slug=${cfg.slug}`;
+  if (cfg.displayMode==='fullpage' && cfg.slug && ['education','publication','project','experience'].includes(cfg.pageType)) {
+    const pageFile = { education:'education', publication:'publication', experience:'experience', project:'project' }[cfg.pageType];
+    const page = `/${pageFile}.html?slug=${encodeURIComponent(cfg.slug)}`;
     fpSlot.innerHTML = `<a class="modal-fullpage-btn" href="${page}">Full Page ↗</a>`;
   } else {
     fpSlot.innerHTML = '';
@@ -2334,7 +2395,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     const targetUrl = p.doi || p.link || '';
     const linkLabel = p.linkType === 'link' ? '↗ Link' : '↗ DOI';
     const doiHtml = targetUrl ? `<a class="pub-doi" href="${targetUrl}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${linkLabel}</a>` : '';
-    const hasMore=(p.abstract||p.detail||p.image||p.gallery?.length);
+    const hasMore=((p.displayMode||'popup')!=='none') && (p.shortDesc||p.abstract||p.detail||p.image||p.gallery?.length);   // "No popup" = no Read more
     const div=document.createElement('div');
     div.className='pub-card reveal';
     div.dataset.cat = p.category||'';
@@ -2350,7 +2411,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
         shortDesc:p.shortDesc||'', abstract:p.abstract||'', detail:p.detail||'',
         gallery:Array.isArray(p.gallery)?p.gallery:[],
         link:targetUrl||'', displayMode:p.displayMode||'popup', slug:p.slug, pageType:'publication',
-        vis: { showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' },
+        vis: Object.assign({ showImage: p.showImage===true||p.showImage==='true', showGallery: p.showGallery===true||p.showGallery==='true', showAbstract: p.showAbstract===true||p.showAbstract==='true', showDetail: p.showDetail===true||p.showDetail==='true' }, visFrom(p,'show')),
         fpVis: { showImage: p.fpShowImage===true||p.fpShowImage==='true', showGallery: p.fpShowGallery===true||p.fpShowGallery==='true', showAbstract: p.fpShowAbstract===true||p.fpShowAbstract==='true', showDetail: p.fpShowDetail===true||p.fpShowDetail==='true' }
       }));
     }
@@ -2368,7 +2429,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
       const dateRange = e.startDate ? `${e.startDate}${endLabel ? ' — ' + endLabel : ''}` : endLabel;
       const typeClass = `exp-type-${e.type || 'work'}`;
       const typeLabel = (e.type || 'work').charAt(0).toUpperCase() + (e.type || 'work').slice(1);
-      const hasMore = e.shortDesc || e.body || e.detail || e.image || (e.gallery && e.gallery.length);
+      const popupOn = (e.displayMode||'popup') !== 'none';   // "No popup" = no Read more
+      const hasMore = popupOn && (e.shortDesc || e.body || e.detail || e.image || (e.gallery && e.gallery.length));
       const div = document.createElement('div');
       div.className = 'exp-item visible' + (hasMore ? ' exp-clickable' : '');
       div.innerHTML = `
@@ -2395,8 +2457,8 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
           detail: e.body||e.detail||'',
           gallery: Array.isArray(e.gallery) ? e.gallery : [],
           displayMode: e.displayMode||'popup',
-          slug: e.slug, pageType: 'experience',
-          vis: { showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showAbstract: e.showAbstract===true||e.showAbstract==='true'||true, showDetail: e.showDetail===true||e.showDetail==='true' },
+          slug: e.slug, pageType: 'experience', splitSections: true,
+          vis: Object.assign({ showImage: e.showImage===true||e.showImage==='true', showGallery: e.showGallery===true||e.showGallery==='true', showAbstract: e.showAbstract===true||e.showAbstract==='true'||true, showDetail: e.showDetail===true||e.showDetail==='true'  }, visFrom(e,'show')),
           fpVis: { showImage: e.fpShowImage===true||e.fpShowImage==='true', showGallery: e.fpShowGallery===true||e.fpShowGallery==='true', showDetail: e.fpShowDetail===true||e.fpShowDetail==='true' }
         }));
       }

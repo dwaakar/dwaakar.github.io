@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Publication — Diwakar Adhikari</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root{--bg:#f7f5f0;--bg2:#eeeae2;--surface:#fff;--border:#ddd9d0;--ink:#1a1814;--ink2:#5a5650;--accent:#2d6a4f;--accent2:#40916c;--tag-bg:#e8f5ee;--tag-ink:#1b4332;--radius:10px;--shadow:0 2px 16px rgba(0,0,0,.07);--shadow-lg:0 8px 40px rgba(0,0,0,.13);--nav-h:64px;--t:0.3s cubic-bezier(.4,0,.2,1)}
+    [data-theme="dark"]{--bg:#111410;--bg2:#1a1d17;--surface:#20241e;--border:#2e332b;--ink:#e8e4dc;--ink2:#9a9890;--accent:#52b788;--accent2:#74c69d;--tag-bg:#1b3a2e;--tag-ink:#95d5b2}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;overflow-x:hidden;transition:background var(--t),color var(--t)}
+    a{color:inherit;text-decoration:none}
+    button{cursor:pointer;border:none;background:none;font-family:inherit}
+    ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+
+    /* NAV */
+    #navbar{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.5rem,5vw,4rem);background:var(--surface);box-shadow:var(--shadow)}
+    .nav-logo{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--ink)}
+    .nav-right{display:flex;align-items:center;gap:1rem}
+    .back-btn{display:flex;align-items:center;gap:.5rem;font-size:.85rem;font-weight:500;color:var(--ink2);padding:.5rem 1rem;border:1.5px solid var(--border);border-radius:6px;transition:all var(--t)}
+    .back-btn:hover{border-color:var(--accent);color:var(--accent)}
+    .theme-btn{width:36px;height:36px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:1rem;transition:all var(--t);background:var(--surface)}
+    .theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+    /* HERO — cover image full width */
+    .project-hero{margin-top:var(--nav-h);position:relative;height:55vh;min-height:320px;overflow:hidden;background:var(--bg2)}
+    .project-hero img{width:100%;height:100%;object-fit:cover;display:block}
+    .project-hero-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6) 0%,rgba(0,0,0,.05) 55%,transparent 100%)}
+    .project-hero-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:5rem;background:linear-gradient(135deg,var(--bg2),var(--tag-bg))}
+
+    /* MAIN SPLIT LAYOUT */
+    .project-page{max-width:1200px;margin:0 auto;padding:3rem clamp(1.5rem,4vw,4rem);display:grid;grid-template-columns:1fr 420px;gap:4rem;align-items:start}
+
+    /* LEFT — text */
+    .project-left{}
+    .project-meta-bar{display:flex;gap:.7rem;flex-wrap:wrap;align-items:center;margin-bottom:1.2rem}
+    .project-year{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--ink2);letter-spacing:.08em}
+    .project-status-badge{font-size:.72rem;padding:.2rem .65rem;border-radius:12px;background:var(--tag-bg);color:var(--tag-ink);font-weight:600}
+    .project-tag{font-size:.72rem;padding:.2rem .55rem;border-radius:12px;background:var(--tag-bg);color:var(--tag-ink)}
+    .project-org{font-size:.85rem;color:var(--accent);font-weight:500}
+    .project-title{font-family:'Cormorant Garamond',serif;font-size:clamp(1.8rem,4vw,2.8rem);line-height:1.15;color:var(--ink);margin-bottom:1rem;letter-spacing:-.01em}
+    .project-short{font-size:1rem;color:var(--ink2);line-height:1.8;margin-bottom:2rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+    .project-short p{margin-bottom:.8rem}.project-short p:last-child{margin-bottom:0}
+    .project-short strong{color:var(--ink);font-weight:600}
+    .project-short em{font-style:italic}
+    .project-short h2,.project-short h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:.9rem 0 .4rem}
+    .project-short h2{font-size:1.3rem}.project-short h3{font-size:1.1rem}
+    .project-short ul,.project-short ol{padding-left:1.4rem;margin-bottom:.8rem}
+    .project-short li{margin-bottom:.3rem}
+    .project-detail{font-size:.97rem;color:var(--ink2);line-height:1.9}
+    .project-detail p{margin-bottom:1.1rem}
+    .project-detail h2,.project-detail h3{font-family:'Cormorant Garamond',serif;color:var(--ink);margin:1.8rem 0 .7rem;line-height:1.2}
+    .project-detail h2{font-size:1.5rem}.project-detail h3{font-size:1.2rem}
+    .project-detail ul,.project-detail ol{padding-left:1.4rem;margin-bottom:1.1rem}
+    .project-detail li{margin-bottom:.35rem}
+    .project-detail blockquote{border-left:3px solid var(--accent);padding:.8rem 1.2rem;background:var(--bg2);border-radius:0 8px 8px 0;margin:1.2rem 0;font-style:italic}
+    .project-detail strong{color:var(--ink)}
+    .project-detail a{color:var(--accent);text-decoration:underline}
+    .section-label{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin:2rem 0 .8rem;padding-top:2rem;border-top:1px solid var(--border)}
+    .related-pub{padding:.7rem 0;border-bottom:1px solid var(--border);font-size:.88rem;color:var(--ink2)}
+    .related-pub:last-child{border-bottom:none}
+    .report-btn{display:inline-flex;align-items:center;gap:.6rem;padding:.8rem 1.5rem;background:var(--accent);color:#fff;border-radius:8px;font-size:.9rem;font-weight:500;transition:all var(--t)}
+    .report-btn:hover{background:var(--accent2);transform:translateY(-2px)}
+    .project-links{display:flex;gap:1rem;flex-wrap:wrap;margin-top:2.5rem;padding-top:2rem;border-top:1px solid var(--border)}
+    .link-btn{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.3rem;border-radius:6px;font-size:.88rem;font-weight:500;transition:all var(--t)}
+    .link-btn.primary{background:var(--accent);color:#fff}.link-btn.primary:hover{background:var(--accent2);transform:translateY(-2px)}
+    .link-btn.outline{border:1.5px solid var(--border);color:var(--ink2)}.link-btn.outline:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-2px)}
+
+    /* VIDEO */
+    .video-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:var(--radius);box-shadow:var(--shadow-lg)}
+    .video-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:none}
+
+    /* RIGHT — sticky image panel */
+    .project-right{position:sticky;top:calc(var(--nav-h) + 2rem)}
+
+    /* IMAGE PANEL */
+    .img-panel{background:var(--surface);border-radius:16px;box-shadow:var(--shadow-lg);overflow:hidden;border:1px solid var(--border)}
+    .img-panel-empty{padding:3rem;text-align:center;color:var(--ink2);font-size:.9rem;background:var(--bg2)}
+
+    /* SLIDER TRACK */
+    /* SLIDER TRACK — fixed square, image fits inside */
+    .slider-track{position:relative;width:100%;aspect-ratio:1/1;background:var(--bg2);cursor:zoom-in;overflow:hidden;border-radius:12px 12px 0 0}
+    .slider-img-wrap{position:absolute;inset:0}
+    .slider-img-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;transition:opacity .5s ease;opacity:0;display:block}
+    .slider-img-wrap img.active{opacity:1}
+
+    /* FULLSCREEN BUTTON */
+    .slider-fullscreen{position:absolute;top:.6rem;right:.6rem;z-index:10;width:32px;height:32px;border-radius:6px;background:rgba(0,0,0,.5);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.85rem;transition:all var(--t);border:1px solid rgba(255,255,255,.2)}
+    .slider-fullscreen:hover{background:rgba(0,0,0,.8);transform:scale(1.1)}
+
+    /* MANUAL controls */
+    .slider-controls-manual{display:flex;align-items:center;justify-content:space-between;padding:.7rem 1rem;background:var(--surface);border-top:1px solid var(--border)}
+    .slider-arrow{width:38px;height:38px;border-radius:50%;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--ink2);transition:all var(--t);flex-shrink:0}
+    .slider-arrow:hover{border-color:var(--accent);color:var(--accent);background:var(--tag-bg)}
+    .slider-counter{font-family:'JetBrains Mono',monospace;font-size:.8rem;color:var(--ink2);text-align:center;flex:1}
+
+    /* AUTO controls — dots */
+    .slider-controls-auto{display:flex;align-items:center;justify-content:center;gap:.4rem;padding:.8rem;background:var(--surface);border-top:1px solid var(--border)}
+    .slider-dot{width:7px;height:7px;border-radius:50%;background:var(--border);transition:all var(--t)}
+    .slider-dot.active{background:var(--accent);width:22px;border-radius:4px}
+
+    /* CAPTION */
+    .slider-caption{padding:.7rem 1rem;font-size:.82rem;color:var(--ink2);line-height:1.5;min-height:2.4rem;border-top:1px solid var(--border);background:var(--bg2);font-style:italic;text-align:center}
+
+    /* LIGHTBOX — near full screen */
+    .lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.95);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity var(--t)}
+    .lightbox.open{opacity:1;pointer-events:all}
+    .lightbox img{max-width:96vw;max-height:94vh;object-fit:contain;cursor:zoom-out}
+    .lb-close{position:absolute;top:1rem;right:1rem;color:#fff;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all var(--t);background:rgba(0,0,0,.3)}
+    .lb-close:hover{background:rgba(255,255,255,.15)}
+    .lb-nav{position:absolute;top:50%;transform:translateY(-50%);color:#fff;width:48px;height:48px;border-radius:50%;border:1.5px solid rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:1.6rem;transition:all var(--t);background:rgba(0,0,0,.3)}
+    .lb-nav:hover{background:rgba(255,255,255,.15)}
+    .lb-prev{left:1rem}.lb-next{right:1rem}
+    .lb-caption{position:absolute;bottom:1.2rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.9);font-size:.9rem;text-align:center;max-width:80vw;background:rgba(0,0,0,.4);padding:.3rem .8rem;border-radius:4px}
+    .lb-counter{position:absolute;top:1rem;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.65);font-family:'JetBrains Mono',monospace;font-size:.8rem;background:rgba(0,0,0,.3);padding:.2rem .6rem;border-radius:4px}
+
+    footer{padding:2rem clamp(1.5rem,6vw,6rem);border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;color:var(--ink2);font-size:.85rem;margin-top:2rem}
+    #loading{position:fixed;inset:0;background:var(--bg);z-index:999;display:flex;align-items:center;justify-content:center;transition:opacity .5s}
+    #loading.done{opacity:0;pointer-events:none}
+    .loader{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    @media(max-width:900px){
+      .project-page{grid-template-columns:1fr;gap:2rem}
+      .project-right{position:static}
+      .project-hero{height:45vw;min-height:200px}
+    }
+    @media(max-width:600px){.lb-nav{display:none}}
+  </style>
+</head>
+<body>
+<div id="loading"><div class="loader"></div></div>
+
+<nav id="navbar">
+  <a class="nav-logo" href="/">Diwakar Adhikari</a>
+  <div class="nav-right">
+    <a class="back-btn" href="/#publications">← All Publications</a>
+    <button class="theme-btn" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<!-- Cover image hero -->
+<div id="project-hero" class="project-hero">
+  <div class="project-hero-placeholder">📚</div>
+</div>
+
+<!-- Split layout -->
+<div class="project-page">
+  <!-- LEFT: text -->
+  <div class="project-left">
+    <div id="project-meta-bar" class="project-meta-bar"></div>
+    <h1 id="project-title" class="project-title"></h1>
+    <p id="project-short" class="project-short"></p>
+    <div id="project-body"></div>
+    <div id="project-video"></div>
+    <div id="project-report"></div>
+    <div id="project-related"></div>
+    <div id="project-links" class="project-links"></div>
+  </div>
+
+  <!-- RIGHT: sticky image slider -->
+  <div class="project-right">
+    <div id="img-panel" class="img-panel"></div>
+  </div>
+</div>
+
+<footer>
+  <span style="font-family:'Cormorant Garamond',serif;font-size:1rem">Diwakar Adhikari</span>
+  <a href="/" style="color:var(--accent);font-size:.88rem">← Back to portfolio</a>
+</footer>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lb-close">✕</button>
+  <button class="lb-nav lb-prev" id="lb-prev">‹</button>
+  <img id="lb-img" src="" alt=""/>
+  <button class="lb-nav lb-next" id="lb-next">›</button>
+  <div class="lb-caption" id="lb-caption"></div>
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+<script>
+// ── THEME ─────────────────────────────────────────────────────────
+const themeBtn = document.getElementById('theme-btn');
+const saved = localStorage.getItem('theme')||'light';
+document.documentElement.setAttribute('data-theme', saved);
+themeBtn.textContent = saved==='dark'?'☀️':'🌙';
+themeBtn.addEventListener('click',()=>{
+  const n = document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';
+  document.documentElement.setAttribute('data-theme',n);
+  localStorage.setItem('theme',n);
+  themeBtn.textContent = n==='dark'?'☀️':'🌙';
+});
+
+// ── FRONTMATTER PARSER ─────────────────────────────────────────────
+function parseFM(text) {
+  const m = text.match(/^---\n([\s\S]*?)\n---/);
+  if (!m) return { data:{}, content:text };
+  const data = {};
+  const lines = m[1].split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim() || line.startsWith('#')) { i++; continue; }
+    const ci = line.indexOf(':');
+    if (ci === -1) { i++; continue; }
+    const key = line.slice(0, ci).trim();
+    const val = line.slice(ci + 1).trim();
+    i++;
+    if (val === '' || val === '[]') {
+      const items = [];
+      while (i < lines.length && lines[i].match(/^  /)) {
+        const itemLine = lines[i];
+        if (itemLine.match(/^  - /)) {
+          const itemVal = itemLine.slice(4).trim();
+          if (itemVal.includes(':')) {
+            const obj = {};
+            const ici = itemVal.indexOf(':');
+            obj[itemVal.slice(0,ici).trim()] = itemVal.slice(ici+1).trim().replace(/^["']|["']$/g,'');
+            i++;
+            while (i < lines.length && lines[i].match(/^    \S/)) {
+              const cl = lines[i].trim();
+              const cci = cl.indexOf(':');
+              if (cci !== -1) obj[cl.slice(0,cci).trim()] = cl.slice(cci+1).trim().replace(/^["']|["']$/g,'');
+              i++;
+            }
+            items.push(obj);
+          } else {
+            items.push(itemVal.replace(/^["']|["']$/g,''));
+            i++;
+          }
+        } else { i++; }
+      }
+      data[key] = items;
+    } else if (val.startsWith('[')) {
+      try { data[key] = JSON.parse(val); }
+      catch(e) { data[key] = val.replace(/[\[\]"]/g,'').split(',').map(s=>s.trim()).filter(Boolean); }
+    } else {
+      data[key] = val.replace(/^["']|["']$/g,'');
+    }
+  }
+  return { data, content: text.slice(m[0].length).trim() };
+}
+
+// ── IMAGE PATH ─────────────────────────────────────────────────────
+function imgPath(p) {
+  if (!p) return '';
+  if (p.startsWith('http')) return p;
+  // Strip /public/ prefix — only /images/ works on Cloudflare
+  if (p.startsWith('/public/images/')) return p.replace('/public/images/', '/images/');
+  if (p.startsWith('public/images/')) return '/images/' + p.slice('public/images/'.length);
+  if (p.startsWith('/images/')) return p;
+  if (p.startsWith('images/')) return '/' + p;
+  return p;
+}
+
+// Smart image loader — tries /images/ first, falls back to /public/images/
+function loadImg(el, src) {
+  if (!src) return;
+  el.src = src;
+  el.onerror = () => {
+    if (src.startsWith('/images/')) {
+      el.src = src.replace('/images/', '/public/images/');
+    } else if (src.startsWith('/public/images/')) {
+      el.src = src.replace('/public/images/', '/images/');
+    }
+    el.onerror = null;
+  };
+}
+
+// ── LIGHTBOX ───────────────────────────────────────────────────────
+let lbImgs=[], lbIdx=0;
+const lb = document.getElementById('lightbox');
+function openLB(imgs, idx) {
+  lbImgs=imgs; lbIdx=idx; updateLB();
+  lb.classList.add('open'); document.body.style.overflow='hidden';
+}
+function updateLB() {
+  const g = lbImgs[lbIdx];
+  document.getElementById('lb-img').src = g.src;
+  document.getElementById('lb-caption').textContent = g.caption||'';
+  document.getElementById('lb-counter').textContent = lbImgs.length>1 ? `${lbIdx+1} / ${lbImgs.length}` : '';
+}
+function closeLB() { lb.classList.remove('open'); document.body.style.overflow=''; }
+document.getElementById('lb-close').addEventListener('click', closeLB);
+lb.addEventListener('click', e => { if(e.target===lb||e.target===document.getElementById('lb-img')) closeLB(); });
+document.getElementById('lb-prev').addEventListener('click', ()=>{ lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length; updateLB(); });
+document.getElementById('lb-next').addEventListener('click', ()=>{ lbIdx=(lbIdx+1)%lbImgs.length; updateLB(); });
+document.addEventListener('keydown', e => {
+  if (!lb.classList.contains('open')) return;
+  if (e.key==='Escape') closeLB();
+  if (e.key==='ArrowLeft') { lbIdx=(lbIdx-1+lbImgs.length)%lbImgs.length; updateLB(); }
+  if (e.key==='ArrowRight') { lbIdx=(lbIdx+1)%lbImgs.length; updateLB(); }
+});
+
+// ── BUILD IMAGE PANEL ──────────────────────────────────────────────
+// mode: 'auto' = 3s auto-slide + dots (community/education)
+//       'manual' = ‹ counter › arrows (research)
+function buildImagePanel(gallery, mode) {
+  const panel = document.getElementById('img-panel');
+  if (!gallery || gallery.length === 0) {
+    panel.style.display = 'none';
+    return;
+  }
+
+  let current = 0;
+  let autoTimer = null;
+  const INTERVAL = 3000;   // auto-slide every 3s
+  const PAUSE    = 10000;  // pause 10s after manual click then resume
+
+  // All images stacked — first is active (relative), rest absolute
+  const imgMarkup = gallery.map((g,i) =>
+    `<img data-src="${g.src}" alt="${g.caption||'Image '+(i+1)}"
+      class="${i===0?'active':''}"
+      loading="${i===0?'eager':'lazy'}"/>`
+  ).join('');
+
+  // Dots for all modes
+  const dots = gallery.length > 1
+    ? `<div class="slider-controls-auto" id="sl-dots">
+        ${gallery.map((_,i)=>`<div class="slider-dot${i===0?' active':''}" data-dot="${i}"></div>`).join('')}
+       </div>`
+    : '';
+
+  // Arrows always shown (both auto and manual modes)
+  const arrows = gallery.length > 1
+    ? `<div class="slider-controls-manual">
+        <button class="slider-arrow" id="sl-prev">‹</button>
+        <div class="slider-counter" id="sl-counter">1 / ${gallery.length}</div>
+        <button class="slider-arrow" id="sl-next">›</button>
+       </div>`
+    : '';
+
+  panel.innerHTML = `
+    <div class="slider-track" id="sl-track">
+      <div class="slider-img-wrap" id="sl-wrap">${imgMarkup}</div>
+      <button class="slider-fullscreen" id="sl-fullscreen" title="View fullscreen">⛶</button>
+    </div>
+    ${mode === 'auto' ? dots : arrows + dots}
+    <div class="slider-caption" id="sl-caption">${gallery[0].caption||''}</div>`;
+
+  const captionEl = document.getElementById('sl-caption');
+  const wrap = document.getElementById('sl-wrap');
+  const imgEls = wrap.querySelectorAll('img');
+  // Load images with fallback
+  imgEls.forEach(img => loadImg(img, imgPath(img.dataset.src)));
+
+  function goTo(idx, fromUser) {
+    imgEls[current].classList.remove('active');
+    current = (idx + gallery.length) % gallery.length;
+    imgEls[current].classList.add('active');
+    captionEl.textContent = gallery[current].caption||'';
+
+    // Update counter and dots
+    const counter = document.getElementById('sl-counter');
+    if (counter) counter.textContent = `${current+1} / ${gallery.length}`;
+    document.querySelectorAll('.slider-dot').forEach((d,i) => d.classList.toggle('active', i===current));
+
+    // If user clicked manually — pause then resume
+    if (fromUser && gallery.length > 1) {
+      clearInterval(autoTimer);
+      autoTimer = null;
+      setTimeout(() => {
+        autoTimer = setInterval(() => goTo(current+1, false), INTERVAL);
+      }, PAUSE);
+    }
+  }
+
+  // Auto-start for all modes when multiple images
+  if (gallery.length > 1) {
+    autoTimer = setInterval(() => goTo(current+1, false), INTERVAL);
+  }
+
+  // Arrow buttons — pause then resume
+  const prevBtn = document.getElementById('sl-prev');
+  const nextBtn = document.getElementById('sl-next');
+  if (prevBtn) prevBtn.addEventListener('click', e => { e.stopPropagation(); goTo(current-1, true); });
+  if (nextBtn) nextBtn.addEventListener('click', e => { e.stopPropagation(); goTo(current+1, true); });
+
+  // Click image → lightbox
+  const track = document.getElementById('sl-track');
+  track.addEventListener('click', e => {
+    if (!e.target.closest('.slider-fullscreen') && !e.target.closest('.slider-arrow')) openLB(gallery, current);
+  });
+  document.getElementById('sl-fullscreen').addEventListener('click', e => {
+    e.stopPropagation(); openLB(gallery, current);
+  });
+}
+
+
+// ── DATA LOADING ───────────────────────────────────────────────────
+// Fast path: one request for the bundle. Fallback: the raw content file (.mdoc, then .md).
+function normBools(o) {
+  const out = {};
+  Object.keys(o||{}).forEach(k => { const v = o[k]; out[k] = v === 'true' ? true : v === 'false' ? false : v; });
+  return out;
+}
+async function fetchEntry(collection, slug) {
+  slug = String(slug||'').replace(/\.mdoc?$/, '');
+  try {
+    const r = await fetch('/content/bundle.json');
+    if (r.ok) {
+      const b = await r.json();
+      const hit = (b[collection]||[]).find(x => x.slug === slug);
+      if (hit) return { data: normBools(hit), content: hit.detail || hit.body || '' };
+    }
+  } catch (e) {}
+  for (const ext of ['.mdoc', '.md']) {
+    try {
+      const r = await fetch('/content/' + collection + '/' + encodeURIComponent(slug) + ext);
+      if (r.ok) { const { data, content } = parseFM(await r.text()); return { data: normBools(data), content }; }
+    } catch (e) {}
+  }
+  return null;
+}
+// Headed sections (same rules as the main page): a line that starts with a bold label,
+// **Label**, **Label:**, **Label**: text, or a # heading. Checkbox key = prefix + CamelCase(label).
+function sectionKey(title) {
+  return String(title||'').replace(/[^A-Za-z0-9]+/g,' ').trim().split(/\s+/).map(w => w.charAt(0).toUpperCase()+w.slice(1)).join('');
+}
+function splitSections(text) {
+  const lines = String(text||'').replace(/\r\n/g,'\n').split('\n');
+  const intro = []; const sections = []; let cur = null;
+  const isTitle = t => !!t && t.length <= 70 && t.split(/\s+/).length <= 8;
+  lines.forEach(line => {
+    let title = null, rest = '';
+    const m = line.match(/^\s*(?:\*\*|__)\s*([^*_\n]+?)\s*(:)?\s*(?:\*\*|__)\s*(:)?\s*(.*)$/);
+    if (m) { const t = m[1].trim(), colon = !!(m[2]||m[3]), r = (m[4]||'').trim(); if (isTitle(t) && (r === '' || colon)) { title = t; rest = r; } }
+    if (title === null) { const h = line.match(/^\s{0,3}#{1,6}\s+(.+?)\s*:?\s*#*\s*$/); if (h && isTitle(h[1].trim())) title = h[1].trim(); }
+    if (title !== null) { cur = { title, lines: rest ? [rest] : [] }; sections.push(cur); }
+    else if (cur) cur.lines.push(line); else intro.push(line);
+  });
+  return { intro: intro.join('\n').trim(), sections: sections.map(x => ({ title: x.title, key: sectionKey(x.title), content: x.lines.join('\n').trim() })) };
+}
+const esc = t => String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const gal = raw => (Array.isArray(raw) ? raw : []).map(g => ({
+  src: imgPath(typeof g==='string' ? g : (g.src||'')),
+  caption: typeof g==='object' ? (g.caption||'') : ''
+})).filter(g => g.src);
+
+// ── LOAD PUBLICATION ───────────────────────────────────────────────
+async function load() {
+  try {
+    const slug = new URLSearchParams(location.search).get('slug')||'';
+    const entry = await fetchEntry('publications', slug);
+    if (!entry) throw new Error('Not found');
+    const p = entry.data, content = entry.content;
+    document.title = `${p.title||'Publication'} — Diwakar Adhikari`;
+
+    // Cover image (only when ticked)
+    const heroEl = document.getElementById('project-hero');
+    const coverSrc = (p.fpShowImage === true && p.image) ? imgPath(p.image) : '';
+    if (coverSrc) {
+      const coverImg = document.createElement('img');
+      loadImg(coverImg, coverSrc); coverImg.alt = p.title||'';
+      heroEl.innerHTML = '<div class="project-hero-overlay"></div>'; heroEl.prepend(coverImg);
+    } else { heroEl.style.display = 'none'; }
+
+    // Meta bar: year, status, category, journal
+    document.getElementById('project-meta-bar').innerHTML =
+      `${p.year?`<span class="project-year">${esc(p.year)}</span>`:''}
+       ${p.status?`<span class="project-status-badge">${esc(p.status)}</span>`:''}
+       ${p.category?`<span class="project-tag">${esc(p.category)}</span>`:''}
+       ${p.journal?`<span class="project-org">${esc(p.journal)}</span>`:''}`;
+    document.getElementById('project-title').textContent = p.title||'';
+    if (p.authors) {
+      const au = document.createElement('div');
+      au.style.cssText = 'font-size:.95rem;color:var(--ink2);margin:-.4rem 0 1.2rem';
+      au.textContent = p.authors;
+      document.getElementById('project-title').after(au);
+    }
+
+    // Short description (shown unless switched off)
+    const se = document.getElementById('project-short');
+    if (p.shortDesc && p.fpShowShortDesc !== false) se.innerHTML = marked.parse(p.shortDesc); else se.style.display = 'none';
+
+    // Sections, each with its own checkbox
+    let html = '';
+    if (p.fpShowAbstract === true && p.abstract) html += `<div class="section-label">Abstract</div><div class="project-detail"><p>${esc(p.abstract)}</p></div>`;
+    if (p.fpShowDetail === true && content) html += `<div class="section-label">Detail</div><div class="project-detail">${marked.parse(content)}</div>`;
+    document.getElementById('project-body').innerHTML = html;
+
+    // Figures (gallery), only when ticked
+    buildImagePanel(p.fpShowGallery === true ? gal(p.gallery) : [], 'research');
+
+    const target = p.doi || p.link || '';
+    const le = document.getElementById('project-links');
+    if (target) le.innerHTML += `<a class="link-btn primary" href="${target}" target="_blank" rel="noopener">${p.linkType === 'link' ? '↗ View Publication' : '↗ View DOI'}</a>`;
+    le.innerHTML += `<a class="link-btn outline" href="/#publications">← Back to Publications</a>`;
+  } catch(e) {
+    console.error(e);
+    document.querySelector('.project-page').innerHTML = `
+      <div style="text-align:center;padding:4rem;color:var(--ink2);grid-column:1/-1">
+        <p style="font-size:3rem;margin-bottom:1rem">🔍</p>
+        <h2 style="font-family:'Cormorant Garamond',serif;margin-bottom:1rem">Publication not found</h2>
+        <a href="/#publications" style="color:var(--accent)">← Back to publications</a>
+      </div>`;
+  } finally {
+    document.getElementById('loading').classList.add('done');
+  }
+}
+load();
+</script>
+</body>
+</html>
