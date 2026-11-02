@@ -56,6 +56,19 @@
     .hero-content{position:relative;z-index:1;display:flex;flex-direction:column;justify-content:center;padding:calc(var(--nav-h) + 4rem) clamp(1.5rem,5vw,5rem) 4rem clamp(1.5rem,8vw,8rem)}
     .hero-photo-wrap{position:relative;z-index:1;min-height:100vh;overflow:hidden}
     .hero-photo{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+    .collab-intro{max-width:720px;color:var(--ink2);line-height:1.75;margin-bottom:2rem}
+    .collab-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1.2rem}
+    .collab-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem 1.5rem;display:flex;flex-direction:column;gap:.7rem}
+    .collab-card h3{font-family:'Cormorant Garamond',serif;font-size:1.35rem;line-height:1.25;color:var(--ink)}
+    .collab-card p{font-size:.92rem;color:var(--ink2);line-height:1.65}
+    .collab-row{font-size:.85rem;color:var(--ink2)}
+    .collab-row b{color:var(--ink);font-weight:600}
+    .collab-card .collab-cta{margin-top:auto;font-size:.85rem;color:var(--accent);font-weight:500}
+    .collab-support{margin-top:2rem;border-left:3px solid var(--gold);background:var(--bg2);padding:1.2rem 1.5rem;border-radius:0 var(--radius) var(--radius) 0;max-width:820px}
+    .collab-support h3{font-family:'Cormorant Garamond',serif;font-size:1.3rem;margin-bottom:.4rem;color:var(--ink)}
+    .collab-support p{color:var(--ink2);line-height:1.7;font-size:.95rem}
+    .hero-slide{position:absolute;inset:0;opacity:0;transition:opacity 1.6s ease}
+    .hero-slide.is-active{opacity:1}
     .hero-photo-overlay{position:absolute;inset:0;background:linear-gradient(to right,var(--bg) 0%,transparent 25%),linear-gradient(to top,var(--bg) 0%,transparent 15%)}
     .hero-photo-placeholder{width:100%;height:100%;min-height:100vh;background:var(--bg2);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:1rem;color:var(--ink2);font-size:.9rem;text-align:center;padding:2rem}
     .hero-eyebrow{font-family:'JetBrains Mono',monospace;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:1.2rem;opacity:0;animation:fadeUp .6s .2s forwards}
@@ -615,6 +628,7 @@
     <li><a href="#publications">Publications</a></li>
     <li><a href="#experience">Experience</a></li>
     <li><a href="#skills">Skills</a></li>
+    <li id="nav-collab" style="display:none"><a href="#collaborate">Collaborate</a></li>
     <li><a href="#contact">Contact</a></li>
     <li>
       <div class="cv-dropdown" id="cv-dropdown">
@@ -774,6 +788,14 @@
     <div class="section-line"></div>
   </div>
   <div class="skills-grid" id="skills-grid"></div>
+</section>
+
+<section id="collaborate" style="display:none">
+  <div class="section-header reveal">
+    <h2 class="section-title" id="collab-title">Collaborate with me</h2>
+    <div class="section-line"></div>
+  </div>
+  <div id="collab-body"></div>
 </section>
 
 <section id="contact">
@@ -1363,12 +1385,14 @@ window.applyHybridAutoSync = function(bundle) {
   // Sync linked districts into mapData
   const districts = Array.isArray(mapData.districts) ? [...mapData.districts] : [];
   const byName = new Map();
-  districts.forEach(d => { if (d && d.name) byName.set(d.name.toUpperCase().trim(), d); });
+  // key = district + project, so one district can hold several projects
+  const _dk = (n, pr) => String(n||'').toUpperCase().trim() + '|' + String(pr||'').toUpperCase().trim();
+  districts.forEach(d => { if (d && d.name) byName.set(_dk(d.name, d.project), d); });
 
   function syncDist(item, defType) {
     (Array.isArray(item.districts) ? item.districts : []).forEach(raw => {
       const name = String(typeof raw === 'object' ? raw.district || raw.name : raw).toUpperCase().trim();
-      if (!name || byName.has(name)) return;
+      if (!name || byName.has(_dk(name, item.title))) return;
       const entry = {
         name,
         type: item.category === 'community' ? 'community' : defType,
@@ -1377,7 +1401,7 @@ window.applyHybridAutoSync = function(bundle) {
         note: (item.shortDesc || '').replace(/[#*_`>-]/g, '').slice(0, 140)
       };
       districts.push(entry);
-      byName.set(name, entry);
+      byName.set(_dk(name, item.title), entry);
     });
   }
   projects.forEach(p => syncDist(p, 'research'));
@@ -2122,7 +2146,7 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
   // ── SECTION ORDER ──────────────────────────────────────────
   // sectionOrder in settings: array of section ids in desired order
   // e.g. ["about","experience","projects","publications","skills","contact"]
-  const defaultOrder = ['about','timeline','nepal-map','projects','publications','experience','skills','custom-sections-wrap','contact'];
+  const defaultOrder = ['about','timeline','nepal-map','projects','publications','experience','skills','collaborate','custom-sections-wrap','contact'];
   const order = Array.isArray(s.sectionOrder) && s.sectionOrder.length
     ? [...s.sectionOrder, ...defaultOrder].filter((v,i,a)=>a.indexOf(v)===i)
     : defaultOrder;
@@ -2259,9 +2283,28 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   // Hero photo
   const pc = document.getElementById('hero-photo-container');
-  pc.innerHTML = s.photo
-    ? `<img class="hero-photo" fetchpriority="high" decoding="async" src="${imgPath(s.photo)}" alt="${safe(s.name)}"/><div class="hero-photo-overlay"></div>`
+  // Hero photo(s): up to 5 from settings.heroPhotos, falls back to the single photo
+  const heroImgs = (Array.isArray(s.heroPhotos) ? s.heroPhotos : [])
+    .map(x => typeof x === 'string' ? x : (x && (x.src || x.image || x.photo)) || '')
+    .filter(v => typeof v === 'string' && v.trim())
+    .map(v => imgPath(v)).filter(Boolean).slice(0, 5);
+  if (!heroImgs.length && s.photo) heroImgs.push(imgPath(s.photo));
+  if (window._heroTimer) { clearInterval(window._heroTimer); window._heroTimer = null; }
+  pc.innerHTML = heroImgs.length
+    ? heroImgs.map((src, i) => `<img class="hero-photo hero-slide${i===0?' is-active':''}" ${i===0?'fetchpriority="high"':'loading="lazy"'} decoding="async" src="${src}" alt="${safe(s.name)}"/>`).join('') + `<div class="hero-photo-overlay"></div>`
     : `<div class="hero-photo-placeholder"><span>🖼️</span><p>Add your photo via<br><strong>Admin → Site Settings</strong></p></div>`;
+  if (heroImgs.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const slides = pc.querySelectorAll('.hero-slide');
+    let cur = 0, paused = false;
+    pc.onmouseenter = () => { paused = true; };
+    pc.onmouseleave = () => { paused = false; };
+    window._heroTimer = setInterval(() => {
+      if (paused || document.hidden) return;
+      slides[cur].classList.remove('is-active');
+      cur = (cur + 1) % slides.length;
+      slides[cur].classList.add('is-active');
+    }, 7000);
+  }
 
   // About research
   document.getElementById('about-research-obj').textContent = safe(s.aboutResearchObjective);
@@ -2629,10 +2672,15 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
 
   // Contact
   const clEl=document.getElementById('contact-links');
+  const _waRaw = String(s.whatsapp || ((s.phoneIsWhatsapp===true||s.phoneIsWhatsapp==='true') ? s.phone : '') || '');
+  let _waDigits = _waRaw.replace(/\D/g,'');
+  if (_waDigits.startsWith('00')) _waDigits = _waDigits.slice(2);
+  if (_waDigits.length === 10 && _waDigits.startsWith('9')) _waDigits = '977' + _waDigits; // Nepal mobile without country code
   const cItems=[
     {icon:'✉️',label:'Email',val:s.email,href:`mailto:${s.email}`},
     {icon:'📍',label:'Location',val:s.location,href:null},
     {icon:'📞',label:'Phone',val:s.phone,href:`tel:${s.phone}`},
+    ...(_waDigits.length >= 8 ? [{icon:'💬',label:'WhatsApp',val:_waRaw.trim(),href:`https://wa.me/${_waDigits}`}] : []),
   ].filter(i=>i.val);
   cItems.forEach(item=>{
     const el=document.createElement(item.href?'a':'div');
@@ -2649,12 +2697,52 @@ function renderSite(s, eduItems, projects, pubs, expItems, customSections, custo
     {name:'LinkedIn',icon:'💼',url:s.linkedin},
     {name:'Facebook',icon:'📘',url:s.facebook},
     {name:'Instagram',icon:'📸',url:s.instagram},
+    {name:'ResearchGate',icon:'🔬',url:s.researchgate},
+    {name:'Google Scholar',icon:'🎓',url:s.scholarUserId?`https://scholar.google.com/citations?user=${encodeURIComponent(String(s.scholarUserId).trim())}`:''},
+    {name:'ORCID',icon:'🆔',url:s.orcid?(/^https?:/i.test(String(s.orcid).trim())?String(s.orcid).trim():`https://orcid.org/${encodeURIComponent(String(s.orcid).trim())}`):''},
     {name:'Storygraph',icon:'📚',url:s.storygraph},
     ...(s.customSocials||[]).map(c=>({name:c.name,icon:c.icon||'🔗',url:c.url}))
   ].filter(s=>s.url);
   socials.forEach(s=>{
-    slEl.innerHTML+=`<a class="social-btn" href="${s.url}" target="_blank">${s.icon} ${s.name}</a>`;
+    slEl.innerHTML+=`<a class="social-btn" href="${s.url}" target="_blank" rel="noopener noreferrer">${s.icon} ${s.name}</a>`;
   });
+
+  // Collaborate (all fields optional; section stays hidden if empty)
+  (function renderCollaborate(){
+    const c = window._collaborate;
+    const sec = document.getElementById('collaborate');
+    if (!c || !sec || c.visible === false || c.visible === 'false') return;
+    const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+    const STAGES = {'idea':'Idea','seeking-partners':'Seeking partners','seeking-funding':'Seeking financial support','in-progress':'In progress','open':'Open to collaborators'};
+    const items = (Array.isArray(c.items) ? c.items : []).filter(it => it && (it.title || it.description || it.lookingFor || it.supportNeeded));
+    const hasSupport = !!(c.supportText && String(c.supportText).trim());
+    const hasIntro = !!(c.intro && String(c.intro).trim());
+    if (!items.length && !hasSupport && !hasIntro) return;
+    if (c.title && String(c.title).trim()) document.getElementById('collab-title').textContent = c.title;
+    let html = hasIntro ? `<p class="collab-intro">${esc(c.intro)}</p>` : '';
+    if (items.length) {
+      html += '<div class="collab-grid">' + items.map(it => {
+        let href = String(it.link || '').trim();
+        if (href && !/^https?:|^mailto:/i.test(href)) href = /@/.test(href) ? 'mailto:' + href : '';
+        if (!href && s.email) href = 'mailto:' + s.email + '?subject=' + encodeURIComponent('Collaboration: ' + (it.title || ''));
+        const stage = STAGES[it.stage] || '';
+        return `<div class="collab-card">
+          ${stage ? `<span class="project-status-badge" style="align-self:flex-start">${esc(stage)}</span>` : ''}
+          ${it.title ? `<h3>${esc(it.title)}</h3>` : ''}
+          ${it.description ? `<p>${esc(it.description)}</p>` : ''}
+          ${it.lookingFor ? `<div class="collab-row"><b>Looking for:</b> ${esc(it.lookingFor)}</div>` : ''}
+          ${it.supportNeeded ? `<div class="collab-row"><b>Support needed:</b> ${esc(it.supportNeeded)}</div>` : ''}
+          ${href ? `<a class="collab-cta" href="${esc(href)}" ${/^https?:/i.test(href) ? 'target="_blank" rel="noopener noreferrer"' : ''}>Get in touch →</a>` : ''}
+        </div>`;
+      }).join('') + '</div>';
+    }
+    if (hasSupport) {
+      html += `<div class="collab-support"><h3>${esc((c.supportTitle && String(c.supportTitle).trim()) || 'Seeking support')}</h3><p>${esc(c.supportText)}</p></div>`;
+    }
+    document.getElementById('collab-body').innerHTML = html;
+    sec.style.display = '';
+    const nl = document.getElementById('nav-collab'); if (nl) nl.style.display = '';
+  })();
 
   // Typing
   startTyping(Array.isArray(s.taglines)?s.taglines:['Environmental Scientist']);
@@ -2694,7 +2782,8 @@ async function fetchBundle(def) {
         publications: (Array.isArray(prebuilt.publications) && prebuilt.publications.length) ? prebuilt.publications : def.publications,
         experience: (Array.isArray(prebuilt.experience) && prebuilt.experience.length) ? prebuilt.experience : def.experience,
         customSections: prebuilt.customSections || [],
-        customItems: prebuilt.customItems || []
+        customItems: prebuilt.customItems || [],
+        collaborate: prebuilt.collaborate || null
       };
     } else {
       const [settings, eduItems, projects, pubs, expItems, customSections, skillsData, mapData] = await Promise.all([
@@ -2778,6 +2867,7 @@ async function loadSite() {
     if (synced.skills) synced.settings.skills = synced.skills;
     if (synced.mapData) synced.settings.mapData = synced.mapData;
 
+    window._collaborate = synced.collaborate || null;
     renderSite(
       synced.settings,
       synced.education || [],
@@ -5049,7 +5139,9 @@ window.addEventListener('load', () => {
     const districtIndex = {};
     const usedTypes = new Set();
     (mapData.districts || []).forEach(d => {
-      districtIndex[(d.name||'').toUpperCase().trim()] = d;
+      const k = (d.name||'').toUpperCase().trim();
+      if (!k) return;
+      (districtIndex[k] = districtIndex[k] || []).push(d);
       if (d.type) usedTypes.add(d.type);
     });
 
@@ -5078,7 +5170,8 @@ window.addEventListener('load', () => {
         L.geoJSON(geo, {
           style: feature => {
             const name = (feature.properties.DISTRICT || '').toUpperCase().trim();
-            const data = districtIndex[name];
+            const list = districtIndex[name];
+            const data = list && list[0];
             if (!data) return {
               fillColor: 'transparent',
               fillOpacity: 0,
@@ -5097,16 +5190,24 @@ window.addEventListener('load', () => {
           },
           onEachFeature: (feature, layer) => {
             const name = (feature.properties.DISTRICT || '').toUpperCase().trim();
-            const data = districtIndex[name];
+            const list = districtIndex[name];
+            const data = list && list[0];
             if (!data) return;
             const cfg = TYPE_CONFIG[data.type] || TYPE_CONFIG.other;
+            const esc = v => String(v == null ? '' : v).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+            const rows = list.map(e => {
+              const c = TYPE_CONFIG[e.type] || TYPE_CONFIG.other;
+              return `<div style="border-left:3px solid ${c.color};padding-left:.55rem;margin-top:.6rem">
+                ${e.project ? `<div class="lp-row"><b>${esc(e.project)}</b></div>` : ''}
+                <div class="lp-row"><span class="lp-badge" style="background:${c.color}">${c.label}</span>${e.year ? ` &nbsp;📅 ${esc(e.year)}` : ''}</div>
+                ${e.note ? `<div class="lp-row" style="opacity:.75;margin-top:.2rem">${esc(e.note)}</div>` : ''}
+              </div>`;
+            }).join('');
             layer.bindPopup(`
-              <div class="lp-title">📍 ${data.name}</div>
-              <span class="lp-badge" style="background:${cfg.color}">${cfg.label}</span><br>
-              ${data.project ? `<div class="lp-row"><b>${data.project}</b></div>` : ''}
-              ${data.year    ? `<div class="lp-row">📅 ${data.year}</div>` : ''}
-              ${data.note    ? `<div class="lp-row" style="opacity:.75;margin-top:.3rem">${data.note}</div>` : ''}
-            `, { maxWidth: 240 });
+              <div class="lp-title">📍 ${esc(data.name)}</div>
+              ${list.length > 1 ? `<div class="lp-row" style="opacity:.7">${list.length} entries</div>` : ''}
+              <div style="max-height:230px;overflow-y:auto;padding-right:.3rem">${rows}</div>
+            `, { maxWidth: 290 });
             layer.on('mouseover', function() { this.setStyle({ fillOpacity: 0.8 }); });
             layer.on('mouseout',  function() { this.setStyle({ fillOpacity: 0.55 }); });
           }
