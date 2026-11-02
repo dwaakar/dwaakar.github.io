@@ -28,7 +28,7 @@ export default config({
   ui: {
     brand: { name: 'Diwakar Adhikari' },
     navigation: {
-      '⚙️ Site': ['settings', 'skills', 'map', 'sections'],
+      '⚙️ Site': ['settings', 'skills', 'map', 'collaborate', 'sections'],
       '📚 Content': ['education', 'experience', 'projects', 'publications', 'awards', 'customItems'],
     },
   },
@@ -277,8 +277,14 @@ export default config({
       name: fields.text({ label: 'Full Name', validation: { isRequired: true } }),
       email: fields.text({ label: "Email" }),
       phone: fields.text({ label: "Phone" }),
+      phoneIsWhatsapp: fields.checkbox({ label: "My phone number is also on WhatsApp", description: "Adds a WhatsApp link next to the phone number.", defaultValue: false }),
+      whatsapp: fields.text({ label: "WhatsApp number (optional)", description: "Only needed if different from Phone. Include the country code, e.g. +977 98XXXXXXXX" }),
       location: fields.text({ label: "Location" }),
       photo: fields.image({ label: "Profile Photo", ...IMG }),
+      heroPhotos: fields.array(
+        fields.object({ src: fields.image({ label: 'Photo', ...IMG }) }),
+        { label: "Hero Slideshow Photos (up to 5)", description: "Optional. 2–3 photos is fine. If empty, the Profile Photo is used.", validation: { length: { max: 5 } }, itemLabel: () => 'Photo' }
+      ),
       bio: fields.text({ label: "Bio (shown on hero)", multiline: true }),
       taglines: fields.array(fields.text({ label: 'Item' }), { label: "Typing Taglines", itemLabel: props => props.value || 'Item' }),
       aboutResearchObjective: fields.text({ label: "Research Objective", multiline: true }),
@@ -288,6 +294,7 @@ export default config({
       cvAcademic: fields.file({ label: "Academic CV (PDF)", ...IMG }),
       cvProfessional: fields.file({ label: "Professional CV (PDF)", ...IMG }),
       github: fields.text({ label: "GitHub URL" }),
+      researchgate: fields.text({ label: "ResearchGate URL" }),
       linkedin: fields.text({ label: "LinkedIn URL" }),
       facebook: fields.text({ label: "Facebook URL" }),
       instagram: fields.text({ label: "Instagram URL" }),
@@ -375,6 +382,41 @@ export default config({
           }),
           { label: 'Districts', itemLabel: props => (props.fields.name.value || 'District') + (props.fields.project.value ? ' — ' + props.fields.project.value : '') }
         ),
+      },
+    }),
+
+    collaborate: singleton({
+      label: '🤝 Collaborate with me',
+      path: 'content/collaborate',
+      format: { data: 'json' },
+      schema: {
+        visible: fields.checkbox({ label: 'Show this section on the site', defaultValue: true }),
+        title: fields.text({ label: 'Section heading', description: 'Optional. Default: "Collaborate with me"' }),
+        intro: fields.text({ label: 'Introduction', multiline: true, description: 'Optional. A short, plain sentence or two.' }),
+        items: fields.array(
+          fields.object({
+            title: fields.text({ label: 'Planned work / idea' }),
+            stage: fields.select({
+              label: 'Stage',
+              options: [
+                { label: '(none)', value: '' },
+                { label: 'Idea', value: 'idea' },
+                { label: 'Seeking partners', value: 'seeking-partners' },
+                { label: 'Seeking financial support', value: 'seeking-funding' },
+                { label: 'In progress', value: 'in-progress' },
+                { label: 'Open to collaborators', value: 'open' },
+              ],
+              defaultValue: '',
+            }),
+            description: fields.text({ label: 'What it is', multiline: true }),
+            lookingFor: fields.text({ label: 'Looking for', description: 'e.g. co-authors, field partners, data, lab access' }),
+            supportNeeded: fields.text({ label: 'Financial support needed', multiline: true, description: 'What funding would cover, e.g. field surveys, sensors, lab analysis' }),
+            link: fields.text({ label: 'Link or email (optional)', description: 'If empty, the button emails the address in Site Settings.' }),
+          }),
+          { label: 'Planned works', itemLabel: props => props.fields.title.value || 'Planned work' }
+        ),
+        supportTitle: fields.text({ label: 'Seeking support – heading', description: 'Optional. Default: "Seeking support"' }),
+        supportText: fields.text({ label: 'Seeking support – text', multiline: true, description: 'Optional. For funders and partners: what you would like support for and how to reach you.' }),
       },
     }),
 
